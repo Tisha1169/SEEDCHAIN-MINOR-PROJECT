@@ -9,6 +9,7 @@ import storageRouter from "./storage";
 import transportRouter from "./transport";
 import ordersRouter from "./orders";
 import dashboardRouter from "./dashboard";
+import trackingRouter from "./tracking";
 
 const router: IRouter = Router();
 
@@ -22,5 +23,6 @@ router.use(storageRouter);
 router.use(transportRouter);
 router.use(ordersRouter);
 router.use(dashboardRouter);
+router.use(trackingRouter);
 
 export default router;

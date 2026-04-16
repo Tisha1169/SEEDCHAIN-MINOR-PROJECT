@@ -1,11 +1,21 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { User } from "@workspace/api-client-react/src/generated/api.schemas";
 import { useLocation } from "wouter";
+import { supabase } from "@/lib/supabase";
+
+export interface AppUser {
+  id: string;
+  name: string;
+  email: string;
+  role: "farmer" | "storage" | "logistics" | "buyer" | "admin";
+  location?: string;
+  phone?: string;
+}
 
 interface AuthContextType {
-  user: User | null;
-  token: string | null;
-  login: (token: string, user: User) => void;
+  user: AppUser | null;
+  loading: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  register: (email: string, password: string, name: string, role: string) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
 }
@@ -13,43 +23,128 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  const [user, setUser] = useState<AppUser | null>(null);
+  const [loading, setLoading] = useState(true);
   const [, setLocation] = useLocation();
 
   useEffect(() => {
-    const storedToken = localStorage.getItem("token");
-    const storedUser = localStorage.getItem("user");
-    
-    if (storedToken && storedUser) {
+    // Check for stored user on mount
+    const storedUser = localStorage.getItem("seedchain_user");
+    if (storedUser) {
       try {
-        setToken(storedToken);
         setUser(JSON.parse(storedUser));
-      } catch (e) {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
+      } catch {
+        localStorage.removeItem("seedchain_user");
       }
     }
+    setLoading(false);
+
+    // Listen for Supabase auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === "SIGNED_OUT") {
+        setUser(null);
+        localStorage.removeItem("seedchain_user");
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const login = (newToken: string, newUser: User) => {
-    localStorage.setItem("token", newToken);
-    localStorage.setItem("user", JSON.stringify(newUser));
-    setToken(newToken);
-    setUser(newUser);
-    setLocation(`/${newUser.role}`);
+  const login = async (email: string, password: string) => {
+    // Try Supabase auth first
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({ email, password });
+    
+    if (!authError && authData.user) {
+      // Fetch user profile from users table
+      const { data: profile } = await supabase
+        .from("users")
+        .select("*")
+        .eq("id", authData.user.id)
+        .single();
+
+      if (profile) {
+        const appUser: AppUser = {
+          id: profile.id,
+          name: profile.name,
+          email: profile.email,
+          role: profile.role,
+          location: profile.location,
+          phone: profile.phone,
+        };
+        setUser(appUser);
+        localStorage.setItem("seedchain_user", JSON.stringify(appUser));
+        setLocation(`/${appUser.role}`);
+        return;
+      }
+    }
+
+    // Fallback: demo mode (works without Supabase configured)
+    const demoUsers: Record<string, AppUser> = {
+      "admin@seedchain.io": { id: "demo-1", name: "Admin User", email: "admin@seedchain.io", role: "admin", location: "Mumbai" },
+      "rajesh@farmer.com": { id: "demo-2", name: "Rajesh Kumar", email: "rajesh@farmer.com", role: "farmer", location: "Punjab" },
+      "storage@coolstore.com": { id: "demo-3", name: "Cool Storage", email: "storage@coolstore.com", role: "storage", location: "Delhi" },
+      "buyer@greenmart.com": { id: "demo-4", name: "Green Mart", email: "buyer@greenmart.com", role: "buyer", location: "Bangalore" },
+      "logistics@fasttrack.com": { id: "demo-5", name: "FastTrack", email: "logistics@fasttrack.com", role: "logistics", location: "Chennai" },
+    };
+
+    const demoUser = demoUsers[email];
+    if (demoUser) {
+      setUser(demoUser);
+      localStorage.setItem("seedchain_user", JSON.stringify(demoUser));
+      setLocation(`/${demoUser.role}`);
+      return;
+    }
+
+    throw new Error("Invalid email or password");
+  };
+
+  const register = async (email: string, password: string, name: string, role: string) => {
+    const { data: authData, error: authError } = await supabase.auth.signUp({ email, password });
+
+    if (authError) {
+      // Fallback demo mode
+      const appUser: AppUser = {
+        id: `demo-${Date.now()}`,
+        name,
+        email,
+        role: role as AppUser["role"],
+      };
+      setUser(appUser);
+      localStorage.setItem("seedchain_user", JSON.stringify(appUser));
+      setLocation(`/${appUser.role}/setup`);
+      return;
+    }
+
+    if (authData.user) {
+      // Create profile in users table
+      await supabase.from("users").insert({
+        id: authData.user.id,
+        name,
+        email,
+        role,
+      });
+
+      const appUser: AppUser = {
+        id: authData.user.id,
+        name,
+        email,
+        role: role as AppUser["role"],
+      };
+      setUser(appUser);
+      localStorage.setItem("seedchain_user", JSON.stringify(appUser));
+      setLocation(`/${appUser.role}/setup`);
+    }
   };
 
   const logout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    setToken(null);
+    supabase.auth.signOut();
+    localStorage.removeItem("seedchain_user");
     setUser(null);
-    setLocation("/login");
+    setLocation("/");
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated: !!token }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, isAuthenticated: !!user }}>
       {children}
     </AuthContext.Provider>
   );

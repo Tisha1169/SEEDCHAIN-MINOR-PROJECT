@@ -4,6 +4,9 @@ import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
+import { config as dotenvConfig } from "dotenv";
+dotenvConfig();
+
 const rawPort = process.env.PORT;
 
 if (!rawPort) {

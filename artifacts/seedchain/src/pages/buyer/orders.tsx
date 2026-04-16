@@ -2,6 +2,9 @@ import { useAuth } from "@/hooks/use-auth";
 import { useListOrders } from "@workspace/api-client-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Link } from "wouter";
+import { Truck } from "lucide-react";
 
 export default function BuyerOrders() {
   const { user } = useAuth();
@@ -42,16 +45,17 @@ export default function BuyerOrders() {
                 <TableHead className="font-semibold">Quantity</TableHead>
                 <TableHead className="font-semibold">Total Price</TableHead>
                 <TableHead className="font-semibold">Status</TableHead>
+                <TableHead className="font-semibold text-right">Track</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Loading...</TableCell>
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Loading...</TableCell>
                 </TableRow>
               ) : orders?.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No orders placed yet.</TableCell>
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No orders placed yet.</TableCell>
                 </TableRow>
               ) : (
                 orders?.map((order) => (
@@ -65,6 +69,14 @@ export default function BuyerOrders() {
                       <Badge variant="secondary" className={`${getStatusColor(order.status)} capitalize border-none`}>
                         {order.status.replace('_', ' ')}
                       </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Link href="/tracking">
+                        <Button size="sm" variant="outline" className="rounded-xl border-2 gap-1.5">
+                          <Truck className="w-3.5 h-3.5" />
+                          Track Order
+                        </Button>
+                      </Link>
                     </TableCell>
                   </TableRow>
                 ))
