@@ -1,22 +1,38 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: SeedChain - Potato Seed Supply Chain Tracking Platform API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication operations
+  - name: users
+    description: User management
+  - name: farms
+    description: Farm management
+  - name: batches
+    description: Seed batch management
+  - name: harvests
+    description: Harvest records
+  - name: storage
+    description: Cold storage management
+  - name: transport
+    description: Transport/logistics management
+  - name: orders
+    description: Buyer orders
+  - name: dashboard
+    description: Dashboard summary data
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +40,666 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/register:
+    post:
+      operationId: registerUser
+      tags: [auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterUserBody"
+      responses:
+        "201":
+          description: User registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Bad request
+
+  /auth/login:
+    post:
+      operationId: loginUser
+      tags: [auth]
+      summary: Login user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginUserBody"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+
+  /auth/me:
+    get:
+      operationId: getCurrentUser
+      tags: [auth]
+      summary: Get current user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+
+  /users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      summary: List all users (admin)
+      parameters:
+        - name: role
+          in: query
+          schema:
+            type: string
+            enum: [farmer, storage, logistics, buyer, admin]
+      responses:
+        "200":
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+
+  /users/{id}:
+    get:
+      operationId: getUser
+      tags: [users]
+      summary: Get user by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+    put:
+      operationId: updateUser
+      tags: [users]
+      summary: Update user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserBody"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /farms:
+    get:
+      operationId: listFarms
+      tags: [farms]
+      summary: List farms
+      responses:
+        "200":
+          description: List of farms
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Farm"
+    post:
+      operationId: createFarm
+      tags: [farms]
+      summary: Create a farm
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateFarmBody"
+      responses:
+        "201":
+          description: Created farm
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Farm"
+
+  /farms/{id}:
+    get:
+      operationId: getFarm
+      tags: [farms]
+      summary: Get farm by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Farm
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Farm"
+
+  /batches:
+    get:
+      operationId: listBatches
+      tags: [batches]
+      summary: List seed batches
+      parameters:
+        - name: farmerId
+          in: query
+          schema:
+            type: integer
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of batches
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SeedBatch"
+    post:
+      operationId: createBatch
+      tags: [batches]
+      summary: Create a seed batch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateBatchBody"
+      responses:
+        "201":
+          description: Created batch
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SeedBatch"
+
+  /batches/{id}:
+    get:
+      operationId: getBatch
+      tags: [batches]
+      summary: Get batch by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Seed batch
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SeedBatch"
+    put:
+      operationId: updateBatch
+      tags: [batches]
+      summary: Update batch status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateBatchBody"
+      responses:
+        "200":
+          description: Updated batch
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SeedBatch"
+
+  /harvests:
+    get:
+      operationId: listHarvests
+      tags: [harvests]
+      summary: List harvests
+      parameters:
+        - name: farmerId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of harvests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Harvest"
+    post:
+      operationId: createHarvest
+      tags: [harvests]
+      summary: Record a harvest
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateHarvestBody"
+      responses:
+        "201":
+          description: Created harvest
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Harvest"
+
+  /harvests/{id}:
+    get:
+      operationId: getHarvest
+      tags: [harvests]
+      summary: Get harvest by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Harvest
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Harvest"
+
+  /storage:
+    get:
+      operationId: listStorageRecords
+      tags: [storage]
+      summary: List storage records
+      parameters:
+        - name: operatorId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of storage records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StorageRecord"
+    post:
+      operationId: createStorageRecord
+      tags: [storage]
+      summary: Create storage record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateStorageRecordBody"
+      responses:
+        "201":
+          description: Created storage record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StorageRecord"
+
+  /storage/{id}:
+    get:
+      operationId: getStorageRecord
+      tags: [storage]
+      summary: Get storage record by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Storage record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StorageRecord"
+    put:
+      operationId: updateStorageRecord
+      tags: [storage]
+      summary: Update storage record
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateStorageRecordBody"
+      responses:
+        "200":
+          description: Updated storage record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StorageRecord"
+
+  /transport:
+    get:
+      operationId: listTransportRecords
+      tags: [transport]
+      summary: List transport records
+      parameters:
+        - name: driverId
+          in: query
+          schema:
+            type: integer
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of transport records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TransportRecord"
+    post:
+      operationId: createTransportRecord
+      tags: [transport]
+      summary: Create transport record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTransportRecordBody"
+      responses:
+        "201":
+          description: Created transport record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransportRecord"
+
+  /transport/{id}:
+    get:
+      operationId: getTransportRecord
+      tags: [transport]
+      summary: Get transport record by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Transport record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransportRecord"
+    put:
+      operationId: updateTransportRecord
+      tags: [transport]
+      summary: Update transport record status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTransportRecordBody"
+      responses:
+        "200":
+          description: Updated transport record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransportRecord"
+
+  /orders:
+    get:
+      operationId: listOrders
+      tags: [orders]
+      summary: List orders
+      parameters:
+        - name: buyerId
+          in: query
+          schema:
+            type: integer
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Order"
+    post:
+      operationId: createOrder
+      tags: [orders]
+      summary: Create an order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOrderBody"
+      responses:
+        "201":
+          description: Created order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+
+  /orders/{id}:
+    get:
+      operationId: getOrder
+      tags: [orders]
+      summary: Get order by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+    put:
+      operationId: updateOrder
+      tags: [orders]
+      summary: Update order status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateOrderBody"
+      responses:
+        "200":
+          description: Updated order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Get platform-wide dashboard summary
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+  /dashboard/farmer/{userId}:
+    get:
+      operationId: getFarmerDashboard
+      tags: [dashboard]
+      summary: Get farmer-specific dashboard data
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Farmer dashboard data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FarmerDashboard"
+
+  /dashboard/storage/{userId}:
+    get:
+      operationId: getStorageDashboard
+      tags: [dashboard]
+      summary: Get storage operator dashboard data
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Storage dashboard data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StorageDashboard"
+
+  /dashboard/logistics/{userId}:
+    get:
+      operationId: getLogisticsDashboard
+      tags: [dashboard]
+      summary: Get logistics dashboard data
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Logistics dashboard data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LogisticsDashboard"
+
+  /dashboard/buyer/{userId}:
+    get:
+      operationId: getBuyerDashboard
+      tags: [dashboard]
+      summary: Get buyer dashboard data
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Buyer dashboard data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BuyerDashboard"
+
+  /marketplace:
+    get:
+      operationId: listMarketplace
+      tags: [orders]
+      summary: List available crop listings for buyers
+      responses:
+        "200":
+          description: Marketplace listings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MarketplaceListing"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +710,663 @@ components:
       required:
         - status
 
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        role:
+          type: string
+          enum: [farmer, storage, logistics, buyer, admin]
+        location:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - email
+        - role
+
+    RegisterUserBody:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        password:
+          type: string
+        role:
+          type: string
+          enum: [farmer, storage, logistics, buyer]
+        location:
+          type: string
+      required:
+        - name
+        - email
+        - password
+        - role
+
+    LoginUserBody:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+      required:
+        - email
+        - password
+
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
+      required:
+        - token
+        - user
+
+    UpdateUserBody:
+      type: object
+      properties:
+        name:
+          type: string
+        phone:
+          type: string
+        location:
+          type: string
+
+    Farm:
+      type: object
+      properties:
+        id:
+          type: integer
+        farmerId:
+          type: integer
+        farmerName:
+          type: string
+        name:
+          type: string
+        location:
+          type: string
+        sizeHectares:
+          type: number
+        soilType:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - farmerId
+        - name
+        - location
+        - sizeHectares
+
+    CreateFarmBody:
+      type: object
+      properties:
+        farmerId:
+          type: integer
+        name:
+          type: string
+        location:
+          type: string
+        sizeHectares:
+          type: number
+        soilType:
+          type: string
+      required:
+        - farmerId
+        - name
+        - location
+        - sizeHectares
+
+    SeedBatch:
+      type: object
+      properties:
+        id:
+          type: integer
+        batchCode:
+          type: string
+        variety:
+          type: string
+        farmerId:
+          type: integer
+        farmerName:
+          type: string
+        farmId:
+          type: integer
+        farmName:
+          type: string
+        plantingDate:
+          type: string
+          format: date
+        expectedHarvestDate:
+          type: string
+          format: date
+        quantityKg:
+          type: number
+        status:
+          type: string
+          enum: [planted, growing, harvested, in_storage, in_transit, delivered, sold]
+        qualityGrade:
+          type: string
+          enum: [A, B, C]
+        notes:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - batchCode
+        - variety
+        - farmerId
+        - plantingDate
+        - quantityKg
+        - status
+
+    CreateBatchBody:
+      type: object
+      properties:
+        variety:
+          type: string
+        farmerId:
+          type: integer
+        farmId:
+          type: integer
+        plantingDate:
+          type: string
+          format: date
+        expectedHarvestDate:
+          type: string
+          format: date
+        quantityKg:
+          type: number
+        notes:
+          type: string
+      required:
+        - variety
+        - farmerId
+        - plantingDate
+        - quantityKg
+
+    UpdateBatchBody:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [planted, growing, harvested, in_storage, in_transit, delivered, sold]
+        qualityGrade:
+          type: string
+          enum: [A, B, C]
+        notes:
+          type: string
+
+    Harvest:
+      type: object
+      properties:
+        id:
+          type: integer
+        batchId:
+          type: integer
+        batchCode:
+          type: string
+        farmerId:
+          type: integer
+        farmerName:
+          type: string
+        quantityKg:
+          type: number
+        qualityGrade:
+          type: string
+          enum: [A, B, C]
+        harvestDate:
+          type: string
+          format: date
+        notes:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - batchId
+        - farmerId
+        - quantityKg
+        - qualityGrade
+        - harvestDate
+
+    CreateHarvestBody:
+      type: object
+      properties:
+        batchId:
+          type: integer
+        farmerId:
+          type: integer
+        quantityKg:
+          type: number
+        qualityGrade:
+          type: string
+          enum: [A, B, C]
+        harvestDate:
+          type: string
+          format: date
+        notes:
+          type: string
+      required:
+        - batchId
+        - farmerId
+        - quantityKg
+        - qualityGrade
+        - harvestDate
+
+    StorageRecord:
+      type: object
+      properties:
+        id:
+          type: integer
+        batchId:
+          type: integer
+        batchCode:
+          type: string
+        operatorId:
+          type: integer
+        operatorName:
+          type: string
+        facilityName:
+          type: string
+        location:
+          type: string
+        slotId:
+          type: string
+        temperatureCelsius:
+          type: number
+        quantityKg:
+          type: number
+        receivedAt:
+          type: string
+          format: date-time
+        releasedAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [incoming, stored, released]
+        notes:
+          type: string
+      required:
+        - id
+        - batchId
+        - operatorId
+        - facilityName
+        - quantityKg
+        - status
+
+    CreateStorageRecordBody:
+      type: object
+      properties:
+        batchId:
+          type: integer
+        operatorId:
+          type: integer
+        facilityName:
+          type: string
+        location:
+          type: string
+        slotId:
+          type: string
+        temperatureCelsius:
+          type: number
+        quantityKg:
+          type: number
+        notes:
+          type: string
+      required:
+        - batchId
+        - operatorId
+        - facilityName
+        - quantityKg
+
+    UpdateStorageRecordBody:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [incoming, stored, released]
+        slotId:
+          type: string
+        temperatureCelsius:
+          type: number
+        releasedAt:
+          type: string
+          format: date-time
+        notes:
+          type: string
+
+    TransportRecord:
+      type: object
+      properties:
+        id:
+          type: integer
+        batchId:
+          type: integer
+        batchCode:
+          type: string
+        driverId:
+          type: integer
+        driverName:
+          type: string
+        vehicleNumber:
+          type: string
+        originLocation:
+          type: string
+        destinationLocation:
+          type: string
+        quantityKg:
+          type: number
+        scheduledPickup:
+          type: string
+          format: date-time
+        actualPickup:
+          type: string
+          format: date-time
+        deliveredAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [pending, accepted, picked_up, in_transit, delivered]
+        notes:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - batchId
+        - driverId
+        - originLocation
+        - destinationLocation
+        - quantityKg
+        - status
+
+    CreateTransportRecordBody:
+      type: object
+      properties:
+        batchId:
+          type: integer
+        driverId:
+          type: integer
+        vehicleNumber:
+          type: string
+        originLocation:
+          type: string
+        destinationLocation:
+          type: string
+        quantityKg:
+          type: number
+        scheduledPickup:
+          type: string
+          format: date-time
+        notes:
+          type: string
+      required:
+        - batchId
+        - driverId
+        - originLocation
+        - destinationLocation
+        - quantityKg
+
+    UpdateTransportRecordBody:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [pending, accepted, picked_up, in_transit, delivered]
+        actualPickup:
+          type: string
+          format: date-time
+        deliveredAt:
+          type: string
+          format: date-time
+        notes:
+          type: string
+
+    Order:
+      type: object
+      properties:
+        id:
+          type: integer
+        buyerId:
+          type: integer
+        buyerName:
+          type: string
+        batchId:
+          type: integer
+        batchCode:
+          type: string
+        variety:
+          type: string
+        quantityKg:
+          type: number
+        pricePerKg:
+          type: number
+        totalPrice:
+          type: number
+        status:
+          type: string
+          enum: [pending, confirmed, dispatched, delivered, cancelled]
+        transportId:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - buyerId
+        - batchId
+        - quantityKg
+        - pricePerKg
+        - status
+
+    CreateOrderBody:
+      type: object
+      properties:
+        buyerId:
+          type: integer
+        batchId:
+          type: integer
+        quantityKg:
+          type: number
+        pricePerKg:
+          type: number
+        notes:
+          type: string
+      required:
+        - buyerId
+        - batchId
+        - quantityKg
+        - pricePerKg
+
+    UpdateOrderBody:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [pending, confirmed, dispatched, delivered, cancelled]
+        transportId:
+          type: integer
+
+    DashboardSummary:
+      type: object
+      properties:
+        totalUsers:
+          type: integer
+        totalBatches:
+          type: integer
+        totalHarvestKg:
+          type: number
+        activeStorageRecords:
+          type: integer
+        activeTransports:
+          type: integer
+        pendingOrders:
+          type: integer
+        monthlyVolumeTons:
+          type: number
+        batchesByStatus:
+          type: object
+          additionalProperties:
+            type: integer
+        recentActivity:
+          type: array
+          items:
+            $ref: "#/components/schemas/ActivityItem"
+      required:
+        - totalUsers
+        - totalBatches
+        - totalHarvestKg
+        - monthlyVolumeTons
+
+    FarmerDashboard:
+      type: object
+      properties:
+        activeCrops:
+          type: integer
+        totalHarvestKg:
+          type: number
+        inStorageKg:
+          type: number
+        soldKg:
+          type: number
+        recentBatches:
+          type: array
+          items:
+            $ref: "#/components/schemas/SeedBatch"
+        recentHarvests:
+          type: array
+          items:
+            $ref: "#/components/schemas/Harvest"
+      required:
+        - activeCrops
+        - totalHarvestKg
+
+    StorageDashboard:
+      type: object
+      properties:
+        totalInventoryKg:
+          type: number
+        incomingShipments:
+          type: integer
+        outgoingShipments:
+          type: integer
+        occupancyPercent:
+          type: number
+        recentRecords:
+          type: array
+          items:
+            $ref: "#/components/schemas/StorageRecord"
+      required:
+        - totalInventoryKg
+        - incomingShipments
+
+    LogisticsDashboard:
+      type: object
+      properties:
+        assignedDeliveries:
+          type: integer
+        inTransit:
+          type: integer
+        completedToday:
+          type: integer
+        pendingPickups:
+          type: integer
+        recentTransports:
+          type: array
+          items:
+            $ref: "#/components/schemas/TransportRecord"
+      required:
+        - assignedDeliveries
+        - inTransit
+
+    BuyerDashboard:
+      type: object
+      properties:
+        activeOrders:
+          type: integer
+        totalPurchasedKg:
+          type: number
+        inTransitOrders:
+          type: integer
+        recentOrders:
+          type: array
+          items:
+            $ref: "#/components/schemas/Order"
+      required:
+        - activeOrders
+        - totalPurchasedKg
+
+    MarketplaceListing:
+      type: object
+      properties:
+        batchId:
+          type: integer
+        batchCode:
+          type: string
+        variety:
+          type: string
+        farmerName:
+          type: string
+        location:
+          type: string
+        quantityKg:
+          type: number
+        qualityGrade:
+          type: string
+          enum: [A, B, C]
+        pricePerKg:
+          type: number
+        harvestDate:
+          type: string
+          format: date
+      required:
+        - batchId
+        - batchCode
+        - variety
+        - farmerName
+        - quantityKg
+        - qualityGrade
+        - pricePerKg
+
+    ActivityItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+        description:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+      required:
+        - id
+        - type
+        - description
+        - timestamp
