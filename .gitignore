@@ -47,7 +47,7 @@ Thumbs.db
 # Replit
 .cache/
 .local/
-# Environment variables (never commit secrets)
+# Environment variables
 .env
 .env.*
 *.env
@@ -56,5 +56,5 @@ Thumbs.db
 artifacts/seedchain/.env
 artifacts/seedchain/.env.*
 
-# Local environment backups
+# Local backups
 .env.local.backup
