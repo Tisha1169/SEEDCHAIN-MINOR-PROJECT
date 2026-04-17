@@ -54,7 +54,7 @@ router.post("/transport", authMiddleware, async (req, res) => {
 
 router.get("/transport/:id", authMiddleware, async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(String(req.params.id));
     const [record] = await db.select({
       id: transportRecordsTable.id, batchId: transportRecordsTable.batchId,
       driverId: transportRecordsTable.driverId, vehicleNumber: transportRecordsTable.vehicleNumber,
@@ -84,7 +84,7 @@ router.get("/transport/:id", authMiddleware, async (req, res) => {
 
 router.put("/transport/:id", authMiddleware, async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(String(req.params.id));
     const { status, actualPickup, deliveredAt, notes } = req.body;
     const updateData: any = {};
     if (status) updateData.status = status;

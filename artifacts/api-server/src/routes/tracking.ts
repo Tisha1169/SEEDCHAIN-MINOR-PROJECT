@@ -212,7 +212,7 @@ router.post("/tracking/update-status", authMiddleware, async (req, res) => {
 // Get all shipments for a user (based on their role)
 router.get("/shipments/user/:userId", authMiddleware, async (req, res) => {
   try {
-    const userId = parseInt(req.params.userId);
+    const userId = parseInt(String(req.params.userId));
     const role = (req as any).user.role;
 
     // Get latest tracking event for each tracking ID

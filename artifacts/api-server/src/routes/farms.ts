@@ -35,7 +35,7 @@ router.post("/farms", authMiddleware, async (req, res) => {
 
 router.get("/farms/:id", authMiddleware, async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(String(req.params.id));
     const [farm] = await db.select({
       id: farmsTable.id, farmerId: farmsTable.farmerId, name: farmsTable.name,
       location: farmsTable.location, sizeHectares: farmsTable.sizeHectares,

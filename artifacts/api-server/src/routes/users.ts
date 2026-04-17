@@ -31,7 +31,7 @@ router.get("/users", authMiddleware, async (req, res) => {
 
 router.get("/users/:id", authMiddleware, async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(String(req.params.id));
     const [user] = await db.select({
       id: usersTable.id, name: usersTable.name, email: usersTable.email,
       phone: usersTable.phone, role: usersTable.role, location: usersTable.location, createdAt: usersTable.createdAt
@@ -49,7 +49,7 @@ router.get("/users/:id", authMiddleware, async (req, res) => {
 
 router.put("/users/:id", authMiddleware, async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(String(req.params.id));
     const { name, phone, location } = req.body;
     const [user] = await db.update(usersTable).set({ name, phone, location }).where(eq(usersTable.id, id)).returning();
     if (!user) {

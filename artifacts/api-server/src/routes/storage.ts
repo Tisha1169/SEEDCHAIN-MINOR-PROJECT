@@ -49,7 +49,7 @@ router.post("/storage", authMiddleware, async (req, res) => {
 
 router.get("/storage/:id", authMiddleware, async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(String(req.params.id));
     const [record] = await db.select({
       id: storageRecordsTable.id, batchId: storageRecordsTable.batchId,
       operatorId: storageRecordsTable.operatorId, facilityName: storageRecordsTable.facilityName,
@@ -76,7 +76,7 @@ router.get("/storage/:id", authMiddleware, async (req, res) => {
 
 router.put("/storage/:id", authMiddleware, async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(String(req.params.id));
     const { status, slotId, temperatureCelsius, releasedAt, notes } = req.body;
     const updateData: any = {};
     if (status) updateData.status = status;

@@ -27,6 +27,8 @@ tags:
     description: Buyer orders
   - name: dashboard
     description: Dashboard summary data
+  - name: tracking
+    description: Shipment tracking
 paths:
   /healthz:
     get:
@@ -700,6 +702,124 @@ paths:
                 items:
                   $ref: "#/components/schemas/MarketplaceListing"
 
+  /tracking/{trackingId}:
+    get:
+      operationId: getTracking
+      tags: [tracking]
+      summary: Get shipment tracking by tracking ID
+      parameters:
+        - name: trackingId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Tracking details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrackingDetails"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /tracking:
+    post:
+      operationId: createTrackingEvent
+      tags: [tracking]
+      summary: Create a tracking event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTrackingEvent"
+      responses:
+        "201":
+          description: Tracking event created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShipmentTrackingRecord"
+
+  /tracking/update-location:
+    post:
+      operationId: updateShipmentLocation
+      tags: [tracking]
+      summary: Update shipment location
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateShipmentLocation"
+      responses:
+        "201":
+          description: Location updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShipmentTrackingRecord"
+
+  /tracking/update-status:
+    post:
+      operationId: updateShipmentStatus
+      tags: [tracking]
+      summary: Update shipment status
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateShipmentStatus"
+      responses:
+        "201":
+          description: Status updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShipmentTrackingRecord"
+
+  /tracking/all/active:
+    get:
+      operationId: getActiveShipments
+      tags: [tracking]
+      summary: Get all active shipments
+      responses:
+        "200":
+          description: Active shipments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActiveShipment"
+
+  /shipments/user/{userId}:
+    get:
+      operationId: getUserShipments
+      tags: [tracking]
+      summary: Get shipments for a user
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User shipments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActiveShipment"
+
 components:
   schemas:
     HealthStatus:
@@ -1370,3 +1490,209 @@ components:
         - type
         - description
         - timestamp
+
+    ShipmentTrackingRecord:
+      type: object
+      properties:
+        id:
+          type: integer
+        trackingId:
+          type: string
+        batchId:
+          type: integer
+        transportId:
+          type: integer
+          nullable: true
+        latitude:
+          type: string
+          nullable: true
+        longitude:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [order_created, accepted_by_logistics, picked_up_from_farm, arrived_at_cold_storage, stored, picked_up_for_delivery, in_transit, delivered_to_buyer]
+        location:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        updatedBy:
+          type: integer
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - trackingId
+        - batchId
+        - status
+        - createdAt
+
+    TrackingTimeline:
+      type: object
+      properties:
+        id:
+          type: integer
+        status:
+          type: string
+        location:
+          type: string
+          nullable: true
+        latitude:
+          type: string
+          nullable: true
+        longitude:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        timestamp:
+          type: string
+          format: date-time
+      required:
+        - id
+        - status
+        - timestamp
+
+    TransportInfo:
+      type: object
+      properties:
+        vehicleNumber:
+          type: string
+        originLocation:
+          type: string
+        destinationLocation:
+          type: string
+        driverName:
+          type: string
+
+    TrackingDetails:
+      type: object
+      properties:
+        trackingId:
+          type: string
+        batchId:
+          type: integer
+        batchCode:
+          type: string
+        variety:
+          type: string
+        currentStatus:
+          type: string
+        currentLocation:
+          type: string
+          nullable: true
+        currentLatitude:
+          type: string
+          nullable: true
+        currentLongitude:
+          type: string
+          nullable: true
+        transportInfo:
+          $ref: "#/components/schemas/TransportInfo"
+        timeline:
+          type: array
+          items:
+            $ref: "#/components/schemas/TrackingTimeline"
+      required:
+        - trackingId
+        - batchId
+        - currentStatus
+        - timeline
+
+    CreateTrackingEvent:
+      type: object
+      properties:
+        batchId:
+          type: integer
+        transportId:
+          type: integer
+        status:
+          type: string
+          enum: [order_created, accepted_by_logistics, picked_up_from_farm, arrived_at_cold_storage, stored, picked_up_for_delivery, in_transit, delivered_to_buyer]
+        location:
+          type: string
+        latitude:
+          type: string
+        longitude:
+          type: string
+        notes:
+          type: string
+      required:
+        - batchId
+
+    UpdateShipmentLocation:
+      type: object
+      properties:
+        trackingId:
+          type: string
+        latitude:
+          type: string
+        longitude:
+          type: string
+        location:
+          type: string
+        status:
+          type: string
+        notes:
+          type: string
+      required:
+        - trackingId
+
+    UpdateShipmentStatus:
+      type: object
+      properties:
+        trackingId:
+          type: string
+        status:
+          type: string
+          enum: [order_created, accepted_by_logistics, picked_up_from_farm, arrived_at_cold_storage, stored, picked_up_for_delivery, in_transit, delivered_to_buyer]
+        location:
+          type: string
+        notes:
+          type: string
+      required:
+        - trackingId
+        - status
+
+    ActiveShipment:
+      type: object
+      properties:
+        id:
+          type: integer
+        trackingId:
+          type: string
+        batchId:
+          type: integer
+        transportId:
+          type: integer
+          nullable: true
+        status:
+          type: string
+        location:
+          type: string
+          nullable: true
+        latitude:
+          type: string
+          nullable: true
+        longitude:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        batchCode:
+          type: string
+          nullable: true
+        variety:
+          type: string
+          nullable: true
+      required:
+        - id
+        - trackingId
+        - batchId
+        - status

@@ -43,7 +43,7 @@ router.post("/harvests", authMiddleware, async (req, res) => {
 
 router.get("/harvests/:id", authMiddleware, async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(String(req.params.id));
     const [harvest] = await db.select({
       id: harvestsTable.id, batchId: harvestsTable.batchId,
       farmerId: harvestsTable.farmerId, quantityKg: harvestsTable.quantityKg,

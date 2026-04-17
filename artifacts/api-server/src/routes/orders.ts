@@ -50,7 +50,7 @@ router.post("/orders", authMiddleware, async (req, res) => {
 
 router.get("/orders/:id", authMiddleware, async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(String(req.params.id));
     const [order] = await db.select({
       id: ordersTable.id, buyerId: ordersTable.buyerId,
       batchId: ordersTable.batchId, quantityKg: ordersTable.quantityKg,
@@ -76,7 +76,7 @@ router.get("/orders/:id", authMiddleware, async (req, res) => {
 
 router.put("/orders/:id", authMiddleware, async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(String(req.params.id));
     const { status, transportId } = req.body;
     const updateData: any = {};
     if (status) updateData.status = status;

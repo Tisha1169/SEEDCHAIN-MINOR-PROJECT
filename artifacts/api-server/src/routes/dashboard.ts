@@ -44,7 +44,7 @@ router.get("/dashboard/summary", authMiddleware, async (req, res) => {
 
 router.get("/dashboard/farmer/:userId", authMiddleware, async (req, res) => {
   try {
-    const userId = parseInt(req.params.userId);
+    const userId = parseInt(String(req.params.userId));
     const batches = await db.select().from(seedBatchesTable).where(eq(seedBatchesTable.farmerId, userId));
     const harvests = await db.select().from(harvestsTable).where(eq(harvestsTable.farmerId, userId));
     const activeCrops = batches.filter(b => ["planted", "growing"].includes(b.status)).length;
@@ -68,7 +68,7 @@ router.get("/dashboard/farmer/:userId", authMiddleware, async (req, res) => {
 
 router.get("/dashboard/storage/:userId", authMiddleware, async (req, res) => {
   try {
-    const userId = parseInt(req.params.userId);
+    const userId = parseInt(String(req.params.userId));
     const records = await db.select().from(storageRecordsTable).where(eq(storageRecordsTable.operatorId, userId));
     const stored = records.filter(r => r.status === "stored");
     const incoming = records.filter(r => r.status === "incoming");
@@ -92,7 +92,7 @@ router.get("/dashboard/storage/:userId", authMiddleware, async (req, res) => {
 
 router.get("/dashboard/logistics/:userId", authMiddleware, async (req, res) => {
   try {
-    const userId = parseInt(req.params.userId);
+    const userId = parseInt(String(req.params.userId));
     const records = await db.select().from(transportRecordsTable).where(eq(transportRecordsTable.driverId, userId));
     const inTransit = records.filter(r => r.status === "in_transit");
     const pending = records.filter(r => r.status === "pending");
@@ -113,7 +113,7 @@ router.get("/dashboard/logistics/:userId", authMiddleware, async (req, res) => {
 
 router.get("/dashboard/buyer/:userId", authMiddleware, async (req, res) => {
   try {
-    const userId = parseInt(req.params.userId);
+    const userId = parseInt(String(req.params.userId));
     const orders = await db.select().from(ordersTable).where(eq(ordersTable.buyerId, userId));
     const activeOrders = orders.filter(o => ["pending", "confirmed", "dispatched"].includes(o.status));
     const inTransitOrders = orders.filter(o => o.status === "dispatched");

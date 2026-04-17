@@ -55,7 +55,7 @@ router.post("/batches", authMiddleware, async (req, res) => {
 
 router.get("/batches/:id", authMiddleware, async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(String(req.params.id));
     const [batch] = await db.select({
       id: seedBatchesTable.id, batchCode: seedBatchesTable.batchCode,
       variety: seedBatchesTable.variety, farmerId: seedBatchesTable.farmerId,
@@ -81,7 +81,7 @@ router.get("/batches/:id", authMiddleware, async (req, res) => {
 
 router.put("/batches/:id", authMiddleware, async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(String(req.params.id));
     const { status, qualityGrade, notes } = req.body;
     const updateData: any = {};
     if (status) updateData.status = status;
