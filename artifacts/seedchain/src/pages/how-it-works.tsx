@@ -1,138 +1,56 @@
-import { Link } from "wouter";
-import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/layout/navbar";
 import { PageTransition, ScrollReveal } from "@/components/page-transition";
 import { motion } from "framer-motion";
-import { Sprout, Warehouse, Truck, ShoppingBag, ArrowRight, CheckCircle, Leaf } from "lucide-react";
+import { Sprout, Warehouse, Truck, ShoppingBag, QrCode, BarChart3 } from "lucide-react";
 
 const steps = [
-  {
-    step: "01",
-    icon: Sprout,
-    title: "Register & Plant",
-    desc: "Farmers register their farms, record seed batches, and log planting data. Every seed gets a unique digital identity on the platform.",
-    details: ["Create farm profile", "Register seed batches", "Record planting dates", "Set expected harvest"],
-    color: "#3FAF5E",
-    image: "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?auto=format&fit=crop&w=600&q=80",
-  },
-  {
-    step: "02",
-    icon: Leaf,
-    title: "Harvest & Grade",
-    desc: "When crops are ready, farmers record harvest data including weight, quality grade, and field conditions. Quality certificates are generated automatically.",
-    details: ["Record harvest weight", "Assign quality grade (A/B/C)", "Generate batch certificate", "List on marketplace"],
-    color: "#8FD14F",
-    image: "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?auto=format&fit=crop&w=600&q=80",
-  },
-  {
-    step: "03",
-    icon: Warehouse,
-    title: "Store Safely",
-    desc: "Harvested batches are sent to registered cold storage facilities. Operators manage inventory, monitor temperature, and assign storage slots.",
-    details: ["Accept incoming shipments", "Assign storage slots", "Monitor temperature", "Track inventory levels"],
-    color: "#3B82F6",
-    image: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=600&q=80",
-  },
-  {
-    step: "04",
-    icon: Truck,
-    title: "Ship & Track",
-    desc: "Logistics partners pick up batches and deliver them. Real-time GPS tracking shows the exact location and status of every shipment.",
-    details: ["Accept delivery jobs", "Update GPS location", "Track in real-time", "Confirm delivery"],
-    color: "#F59E0B",
-    image: "https://images.unsplash.com/photo-1519003722824-194d4455a60c?auto=format&fit=crop&w=600&q=80",
-  },
-  {
-    step: "05",
-    icon: ShoppingBag,
-    title: "Buy & Verify",
-    desc: "Buyers browse the marketplace, place orders, and receive certified potato seeds with full traceability back to the farm of origin.",
-    details: ["Browse marketplace", "Place orders", "Track delivery", "Verify seed origin"],
-    color: "#8B5CF6",
-    image: "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80",
-  },
+  { step: 1, icon: Sprout, title: "Farmer Registers Crop", desc: "Farmer creates a digital batch identity with auto-generated QR code and RFID tag. Every batch gets a unique ID like BATCH-2026-0001.", color: "#3FAF5E" },
+  { step: 2, icon: QrCode, title: "Harvest Recorded", desc: "When the crop is harvested, the farmer logs yield quantity, grade, and date. A supply chain tracking event is created automatically.", color: "#3B82F6" },
+  { step: 3, icon: Warehouse, title: "Cold Storage", desc: "The batch is shipped to cold storage. The operator scans the QR/RFID to accept the shipment — temperature and humidity are monitored.", color: "#8B5CF6" },
+  { step: 4, icon: Truck, title: "Logistics & Transport", desc: "Logistics operators pick up the batch for delivery. Real-time location tracking updates the supply chain timeline.", color: "#F59E0B" },
+  { step: 5, icon: ShoppingBag, title: "Buyer Receives Delivery", desc: "Buyers browse the marketplace, place orders, and receive fully tracked produce with complete provenance data.", color: "#EF4444" },
+  { step: 6, icon: BarChart3, title: "Full Transparency", desc: "Every step is visible on the tracking page. Admin can monitor the entire supply chain from a single dashboard.", color: "#1A1A1A" },
 ];
 
 export default function HowItWorks() {
   return (
     <PageTransition className="min-h-screen bg-[#E8E6E1]">
       <Navbar />
-
-      {/* Hero */}
-      <section className="pt-32 pb-16 px-4 max-w-[1400px] mx-auto text-center">
-        <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}>
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#3FAF5E]/10 text-[#3FAF5E] mb-6 border border-[#3FAF5E]/20">
-            <span className="text-sm font-semibold">5 Simple Steps</span>
-          </div>
-          <h1 className="text-5xl md:text-6xl font-bold text-[#1A1A1A] mb-6">
-            How SeedChain <span className="text-[#3FAF5E]">Works</span>
-          </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            From seed to sale, every step is tracked, verified, and transparent. Here's the complete journey.
+      <div className="pt-32 pb-20 px-4 sm:px-6 max-w-[1000px] mx-auto">
+        <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-16">
+          <h1 className="text-4xl md:text-5xl font-bold text-[#1A1A1A] mb-4">How It Works</h1>
+          <p className="text-lg text-[#1A1A1A]/50 max-w-2xl mx-auto">
+            From planting to delivery — every step digitally tracked and verified
           </p>
         </motion.div>
-      </section>
 
-      {/* Steps */}
-      <section className="py-8 px-4 max-w-[1400px] mx-auto">
-        {steps.map((step, i) => (
-          <ScrollReveal key={step.step}>
-            <div className={`flex flex-col ${i % 2 === 0 ? "lg:flex-row" : "lg:flex-row-reverse"} gap-8 mb-16 items-center`}>
-              {/* Image */}
-              <motion.div whileHover={{ scale: 1.02 }} className="lg:w-1/2">
-                <div className="rounded-[32px] overflow-hidden shadow-xl relative h-[320px]">
-                  <img src={step.image} alt={step.title} className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-                  <div className="absolute bottom-6 left-6">
-                    <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg" style={{ backgroundColor: step.color }}>
-                      {step.step}
-                    </div>
+        <div className="relative">
+          {/* Vertical line */}
+          <div className="absolute left-[27px] top-0 bottom-0 w-[2px] bg-[#E8E6E1] hidden sm:block" />
+          
+          <div className="space-y-6">
+            {steps.map((s, i) => (
+              <ScrollReveal key={s.step} delay={i * 0.1}>
+                <div className="flex gap-5 items-start">
+                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-sm relative z-10"
+                    style={{ backgroundColor: `${s.color}15` }}>
+                    <s.icon className="w-6 h-6" style={{ color: s.color }} />
                   </div>
+                  <motion.div whileHover={{ y: -3 }} className="flex-1 bg-white rounded-[24px] p-6 shadow-sm border border-[#E8E6E1]/60">
+                    <div className="flex items-center gap-3 mb-2">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: `${s.color}15`, color: s.color }}>
+                        Step {s.step}
+                      </span>
+                      <h3 className="text-lg font-bold text-[#1A1A1A]">{s.title}</h3>
+                    </div>
+                    <p className="text-sm text-[#1A1A1A]/50 leading-relaxed">{s.desc}</p>
+                  </motion.div>
                 </div>
-              </motion.div>
-
-              {/* Content */}
-              <div className="lg:w-1/2">
-                <div className="bg-white rounded-[24px] p-8 shadow-lg">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${step.color}15` }}>
-                      <step.icon className="w-6 h-6" style={{ color: step.color }} />
-                    </div>
-                    <div>
-                      <div className="text-xs font-semibold uppercase tracking-wider" style={{ color: step.color }}>Step {step.step}</div>
-                      <h3 className="text-2xl font-bold text-[#1A1A1A]">{step.title}</h3>
-                    </div>
-                  </div>
-                  <p className="text-muted-foreground leading-relaxed mb-6">{step.desc}</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    {step.details.map((d) => (
-                      <div key={d} className="flex items-center gap-2">
-                        <CheckCircle className="w-4 h-4 text-[#3FAF5E] shrink-0" />
-                        <span className="text-sm text-[#1A1A1A]">{d}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </ScrollReveal>
-        ))}
-      </section>
-
-      {/* CTA */}
-      <section className="py-24 px-4 max-w-[1400px] mx-auto">
-        <ScrollReveal>
-          <div className="bg-gradient-to-br from-[#3FAF5E] to-[#2D8A45] rounded-[32px] p-16 text-center shadow-xl">
-            <h2 className="text-4xl font-bold text-white mb-4">Ready To Join The Chain?</h2>
-            <p className="text-white/80 text-lg mb-8 max-w-lg mx-auto">Register for free and start tracking your potato seed supply chain today.</p>
-            <Link href="/register">
-              <Button size="lg" className="rounded-full bg-white text-[#3FAF5E] hover:bg-white/90 h-14 px-10 text-lg font-semibold shadow-lg">
-                Get Started <ArrowRight className="ml-2 w-5 h-5" />
-              </Button>
-            </Link>
+              </ScrollReveal>
+            ))}
           </div>
-        </ScrollReveal>
-      </section>
+        </div>
+      </div>
     </PageTransition>
   );
 }

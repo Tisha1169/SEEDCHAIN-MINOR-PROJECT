@@ -1,52 +1,63 @@
 import { useState } from "react";
-import { Input } from "@/components/ui/input";
-import { StepWizard } from "@/components/onboarding/step-wizard";
+import { motion } from "framer-motion";
+import { Truck } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 
 export default function LogisticsSetup() {
-  const [form, setForm] = useState({ companyName: "", location: "", vehicleNumber: "", capacity: "" });
-  const update = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
+  const { toast } = useToast();
+  const [, setLocation] = useLocation();
+  const [form, setForm] = useState({ companyName: "", driverName: "", phone: "", vehicleNo: "", vehicleType: "Refrigerated Truck" });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    toast({ title: "Profile Created!", description: "You can now accept delivery jobs." });
+    setLocation("/logistics");
+  };
 
   return (
-    <StepWizard
-      title="Logistics Partner Setup"
-      steps={[
-        { title: "Company Information", description: "Tell us about your logistics company", content: (
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium mb-1.5 block">Company Name</label>
-              <Input value={form.companyName} onChange={(e) => update("companyName", e.target.value)} placeholder="e.g. FastTrack Logistics" className="h-12 rounded-xl bg-muted/50 border-0" />
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-1.5 block">Location</label>
-              <Input value={form.location} onChange={(e) => update("location", e.target.value)} placeholder="e.g. Chennai, Tamil Nadu" className="h-12 rounded-xl bg-muted/50 border-0" />
-            </div>
+    <div className="max-w-lg mx-auto">
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-[#1A1A1A]">Setup Logistics Profile</h2>
+        <p className="text-sm text-[#1A1A1A]/40">Register your transport company and vehicle</p>
+      </div>
+      <motion.form initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} onSubmit={handleSubmit}
+        className="bg-white rounded-[28px] p-6 shadow-sm border border-[#E8E6E1]/60 space-y-4">
+        <div>
+          <label className="text-xs font-semibold text-[#1A1A1A]/60 uppercase tracking-wide mb-1.5 block">Company Name *</label>
+          <input required placeholder="e.g. FastTrack Logistics" value={form.companyName} onChange={e => setForm(p => ({ ...p, companyName: e.target.value }))}
+            className="w-full h-12 rounded-2xl border border-[#E8E6E1] bg-[#F7F7F7] px-4 text-sm focus:outline-none focus:border-[#F59E0B]" />
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="text-xs font-semibold text-[#1A1A1A]/60 uppercase tracking-wide mb-1.5 block">Driver Name *</label>
+            <input required placeholder="Full name" value={form.driverName} onChange={e => setForm(p => ({ ...p, driverName: e.target.value }))}
+              className="w-full h-12 rounded-2xl border border-[#E8E6E1] bg-[#F7F7F7] px-4 text-sm focus:outline-none focus:border-[#F59E0B]" />
           </div>
-        )},
-        { title: "Vehicle Information", description: "Details about your fleet", content: (
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium mb-1.5 block">Vehicle Number</label>
-              <Input value={form.vehicleNumber} onChange={(e) => update("vehicleNumber", e.target.value)} placeholder="e.g. TN-01-AB-1234" className="h-12 rounded-xl bg-muted/50 border-0" />
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-1.5 block">Capacity (tons)</label>
-              <Input value={form.capacity} onChange={(e) => update("capacity", e.target.value)} type="number" placeholder="e.g. 10" className="h-12 rounded-xl bg-muted/50 border-0" />
-            </div>
+          <div>
+            <label className="text-xs font-semibold text-[#1A1A1A]/60 uppercase tracking-wide mb-1.5 block">Phone</label>
+            <input placeholder="+91 XXXXX" value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))}
+              className="w-full h-12 rounded-2xl border border-[#E8E6E1] bg-[#F7F7F7] px-4 text-sm focus:outline-none focus:border-[#F59E0B]" />
           </div>
-        )},
-        { title: "Confirm Setup", content: (
-          <div className="bg-muted/30 rounded-2xl p-6 space-y-3">
-            <div className="flex justify-between"><span className="text-sm text-muted-foreground">Company</span><span className="text-sm font-semibold">{form.companyName || "—"}</span></div>
-            <div className="flex justify-between"><span className="text-sm text-muted-foreground">Location</span><span className="text-sm font-semibold">{form.location || "—"}</span></div>
-            <div className="flex justify-between"><span className="text-sm text-muted-foreground">Vehicle</span><span className="text-sm font-semibold">{form.vehicleNumber || "—"}</span></div>
-            <div className="flex justify-between"><span className="text-sm text-muted-foreground">Capacity</span><span className="text-sm font-semibold">{form.capacity ? `${form.capacity} tons` : "—"}</span></div>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="text-xs font-semibold text-[#1A1A1A]/60 uppercase tracking-wide mb-1.5 block">Vehicle No *</label>
+            <input required placeholder="e.g. PB-10-AB-1234" value={form.vehicleNo} onChange={e => setForm(p => ({ ...p, vehicleNo: e.target.value }))}
+              className="w-full h-12 rounded-2xl border border-[#E8E6E1] bg-[#F7F7F7] px-4 text-sm focus:outline-none focus:border-[#F59E0B]" />
           </div>
-        )},
-      ]}
-      onComplete={async () => {}}
-      completedTitle="Setup Complete!"
-      completedMessage="Your logistics company is now registered with SeedChain."
-      completedAction={{ label: "Go To Dashboard", href: "/logistics" }}
-    />
+          <div>
+            <label className="text-xs font-semibold text-[#1A1A1A]/60 uppercase tracking-wide mb-1.5 block">Vehicle Type</label>
+            <select value={form.vehicleType} onChange={e => setForm(p => ({ ...p, vehicleType: e.target.value }))}
+              className="w-full h-12 rounded-2xl border border-[#E8E6E1] bg-[#F7F7F7] px-4 text-sm focus:outline-none focus:border-[#F59E0B]">
+              <option>Refrigerated Truck</option><option>Open Truck</option><option>Container</option><option>Mini Truck</option>
+            </select>
+          </div>
+        </div>
+        <button type="submit" className="w-full h-12 rounded-2xl bg-[#F59E0B] text-white font-semibold hover:bg-[#F59E0B]/90 transition-colors shadow-sm">
+          Save Profile & Continue
+        </button>
+      </motion.form>
+    </div>
   );
 }

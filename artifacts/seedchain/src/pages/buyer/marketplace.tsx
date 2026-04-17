@@ -1,109 +1,87 @@
-import { useAuth } from "@/hooks/use-auth";
-import { useListMarketplace, useCreateOrder } from "@workspace/api-client-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { marketplaceListings, batchQRData, generateTrackingId } from "@/lib/supply-chain";
+import { QRCodeSVG } from "qrcode.react";
+import { MapPin, Calendar, Package, Search, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useQueryClient } from "@tanstack/react-query";
-import { Search, MapPin, Sprout, TrendingUp } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Link } from "wouter";
 
 export default function BuyerMarketplace() {
-  const { user } = useAuth();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
-  
-  const { data: listings, isLoading } = useListMarketplace({
-    query: { queryKey: ['marketplace'] }
-  });
+  const [search, setSearch] = useState("");
+  const [ordered, setOrdered] = useState<string[]>([]);
 
-  const createOrder = useCreateOrder();
+  const filtered = marketplaceListings.filter(l =>
+    l.batch.variety.toLowerCase().includes(search.toLowerCase()) || l.batch.origin.toLowerCase().includes(search.toLowerCase())
+  );
 
-  const handlePurchase = (batchId: number, quantity: number, price: number) => {
-    if (!user?.id) return;
-    
-    createOrder.mutate({
-      data: {
-        buyerId: user.id,
-        batchId,
-        quantityKg: quantity,
-        pricePerKg: price
-      }
-    }, {
-      onSuccess: () => {
-        toast({ title: "Order Placed", description: "Your order has been submitted successfully." });
-        queryClient.invalidateQueries({ queryKey: ['marketplace'] });
-      }
-    });
+  const handleOrder = (listingId: string, batchId: string) => {
+    const tid = generateTrackingId();
+    setOrdered(prev => [...prev, listingId]);
+    toast({ title: "Order Placed!", description: `Tracking ID: ${tid} — Batch ${batchId}` });
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
+    <div className="space-y-5">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Marketplace</h1>
-          <p className="text-muted-foreground">Browse and purchase high-quality potato seed batches.</p>
+          <h2 className="text-2xl font-bold text-[#1A1A1A]">Marketplace</h2>
+          <p className="text-sm text-[#1A1A1A]/40">Browse and purchase certified potato seed batches</p>
+        </div>
+        <div className="relative w-full sm:w-64">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1A1A1A]/30" />
+          <input placeholder="Search variety or origin..." value={search} onChange={e => setSearch(e.target.value)}
+            className="w-full h-11 pl-10 rounded-2xl border border-[#E8E6E1] bg-white text-sm focus:outline-none focus:border-[#8B5CF6]" />
         </div>
       </div>
 
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input className="pl-9 bg-white border-none shadow-sm rounded-xl h-12" placeholder="Search varieties, locations..." />
-      </div>
-
-      {isLoading ? (
-        <p>Loading marketplace...</p>
-      ) : listings?.length === 0 ? (
-        <div className="bg-white p-8 rounded-3xl text-center text-muted-foreground shadow-sm">
-          No batches available in the marketplace currently.
-        </div>
-      ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {listings?.map((listing) => (
-            <Card key={listing.batchId} className="border-none shadow-sm bg-white hover-lift overflow-hidden">
-              <div className="h-32 bg-muted relative">
-                <img src="https://images.unsplash.com/photo-1595841696650-6f1025dc9bd0?auto=format&fit=crop&w=400&q=80" alt="Potatoes" className="w-full h-full object-cover" />
-                <Badge variant="secondary" className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm border-none">
-                  Grade {listing.qualityGrade}
-                </Badge>
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {filtered.map((l, i) => {
+          const isOrdered = ordered.includes(l.id);
+          return (
+            <motion.div key={l.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
+              whileHover={{ y: -3 }}
+              className={`bg-white rounded-[24px] p-5 shadow-sm border transition-all ${isOrdered ? "border-[#3FAF5E]/30" : "border-[#E8E6E1]/60 hover:shadow-md"}`}>
+              <div className="flex items-start justify-between mb-3">
+                <div>
+                  <span className="text-xs font-mono text-[#1A1A1A]/35">{l.batch.batchId}</span>
+                  <h3 className="text-base font-bold text-[#1A1A1A]">{l.batch.variety}</h3>
+                </div>
+                {isOrdered ? (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-[#3FAF5E]/10 text-[#3FAF5E] flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3" /> Ordered
+                  </span>
+                ) : (
+                  <span className={`text-[10px] px-2.5 py-1 rounded-full font-semibold ${l.available ? "bg-[#3FAF5E]/10 text-[#3FAF5E]" : "bg-gray-100 text-gray-500"}`}>
+                    {l.available ? "Available" : "Sold Out"}
+                  </span>
+                )}
               </div>
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle className="text-xl">{listing.variety}</CardTitle>
-                    <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
-                      <Sprout className="w-3 h-3" /> {listing.farmerName}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-lg font-bold text-primary">${listing.pricePerKg}/kg</p>
-                  </div>
+              <div className="flex items-center justify-center bg-[#F7F7F7] rounded-2xl p-3 mb-3">
+                <QRCodeSVG value={batchQRData(l.batch)} size={80} level="M" bgColor="#F7F7F7" fgColor="#1A1A1A" />
+              </div>
+              <p className="text-xs text-[#1A1A1A]/50 mb-3 leading-relaxed">{l.description}</p>
+              <div className="space-y-1.5 text-[11px] mb-4">
+                <div className="flex justify-between"><span className="flex items-center gap-1 text-[#1A1A1A]/40"><MapPin className="w-3 h-3" />Origin</span><span className="font-medium">{l.batch.origin}</span></div>
+                <div className="flex justify-between"><span className="flex items-center gap-1 text-[#1A1A1A]/40"><Calendar className="w-3 h-3" />Harvest</span><span className="font-medium">{l.batch.harvestDate}</span></div>
+                <div className="flex justify-between"><span className="flex items-center gap-1 text-[#1A1A1A]/40"><Package className="w-3 h-3" />Min Order</span><span className="font-medium">{l.minOrder}</span></div>
+              </div>
+              <div className="flex items-center justify-between pt-3 border-t border-[#E8E6E1]/40">
+                <div>
+                  <span className="text-xl font-bold text-[#8B5CF6]">₹{l.pricePerKg}</span>
+                  <span className="text-xs text-[#1A1A1A]/40">/kg</span>
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <MapPin className="w-4 h-4" /> {listing.location || 'Unknown Location'}
-                </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <TrendingUp className="w-4 h-4" /> {listing.quantityKg.toLocaleString()} kg available
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  Harvested: {listing.harvestDate ? new Date(listing.harvestDate).toLocaleDateString() : 'N/A'}
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button 
-                  className="w-full rounded-xl bg-primary hover:bg-primary/90"
-                  onClick={() => handlePurchase(listing.batchId, listing.quantityKg, listing.pricePerKg)}
-                  disabled={createOrder.isPending}
-                >
-                  Purchase Batch
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
-      )}
+                {!isOrdered && l.available && (
+                  <button onClick={() => handleOrder(l.id, l.batch.batchId)}
+                    className="h-9 px-4 rounded-xl bg-[#8B5CF6] text-white text-xs font-medium hover:bg-[#8B5CF6]/90 transition-colors">
+                    Place Order
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          );
+        })}
+      </div>
     </div>
   );
 }

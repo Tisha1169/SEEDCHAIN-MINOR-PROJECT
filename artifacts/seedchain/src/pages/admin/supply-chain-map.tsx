@@ -1,222 +1,115 @@
-import { useAuth } from "@/hooks/use-auth";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { MapPin, Truck, Warehouse, Sprout, ShoppingBag, Navigation } from "lucide-react";
-import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { TrendingUp, Map, Leaf, ArrowRight, Package, Truck, Warehouse as WarehouseIcon, ShoppingCart } from "lucide-react";
+import { dummyBatches, allShipments, adminStats } from "@/lib/supply-chain";
+import { Sankey, Tooltip, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid } from "recharts";
 
-interface ActiveShipment {
-  id: number;
-  trackingId: string;
-  batchId: number;
-  status: string;
-  location: string | null;
-  latitude: string | null;
-  longitude: string | null;
-  createdAt: string;
-  batchCode: string | null;
-  variety: string | null;
-}
+const stageFlow = [
+  { stage: "Farm", count: adminStats.totalFarmers, icon: Leaf, color: "#3FAF5E" },
+  { stage: "Storage", count: 4, icon: WarehouseIcon, color: "#3B82F6" },
+  { stage: "Transit", count: adminStats.activeDeliveries, icon: Truck, color: "#F59E0B" },
+  { stage: "Buyer", count: 6, icon: ShoppingCart, color: "#8B5CF6" },
+];
 
-function getStatusColor(status: string) {
-  const colors: Record<string, string> = {
-    order_created: "bg-gray-100 text-gray-700",
-    accepted_by_logistics: "bg-blue-100 text-blue-700",
-    picked_up_from_farm: "bg-purple-100 text-purple-700",
-    arrived_at_cold_storage: "bg-cyan-100 text-cyan-700",
-    stored: "bg-indigo-100 text-indigo-700",
-    picked_up_for_delivery: "bg-orange-100 text-orange-700",
-    in_transit: "bg-yellow-100 text-yellow-700",
-    delivered_to_buyer: "bg-green-100 text-green-700",
-  };
-  return colors[status] || "bg-gray-100 text-gray-700";
-}
-
-function getStatusIcon(status: string) {
-  if (status.includes("transit") || status.includes("picked_up")) return Truck;
-  if (status.includes("storage") || status === "stored") return Warehouse;
-  if (status.includes("farm")) return Sprout;
-  if (status.includes("buyer") || status.includes("delivered")) return ShoppingBag;
-  return MapPin;
-}
+const throughputData = [
+  { week: "W1", batches: 4 }, { week: "W2", batches: 7 }, { week: "W3", batches: 5 },
+  { week: "W4", batches: 9 }, { week: "W5", batches: 12 }, { week: "W6", batches: 8 },
+];
 
 export default function AdminSupplyChainMap() {
-  const { user } = useAuth();
-  const [shipments, setShipments] = useState<ActiveShipment[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchShipments = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const res = await fetch("/api/tracking/all/active", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setShipments(data);
-        }
-      } catch {
-        // ignore
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchShipments();
-  }, []);
-
-  const statusGroups = {
-    "In Transit": shipments.filter(s => s.status === "in_transit" || s.status === "picked_up_for_delivery"),
-    "At Storage": shipments.filter(s => s.status === "arrived_at_cold_storage" || s.status === "stored"),
-    "Pending Pickup": shipments.filter(s => s.status === "order_created" || s.status === "accepted_by_logistics"),
-    "Being Collected": shipments.filter(s => s.status === "picked_up_from_farm"),
-  };
-
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Supply Chain Map</h1>
-        <p className="text-muted-foreground">Real-time view of all active shipments across the platform.</p>
-      </div>
-
-      {/* Map Visualization */}
-      <Card className="border-none shadow-sm bg-white rounded-3xl overflow-hidden">
-        <CardContent className="p-0">
-          <div className="h-80 bg-gradient-to-br from-[#3FAF5E]/5 via-[#3B82F6]/5 to-[#8FD14F]/5 relative">
-            <div className="absolute inset-0 opacity-10" style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%233FAF5E' fill-opacity='0.3'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
-            }}></div>
-
-            {/* Simulated map with shipment dots */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="relative w-full max-w-2xl h-64">
-                {/* Farm locations */}
-                <div className="absolute top-8 left-12 flex flex-col items-center">
-                  <div className="w-10 h-10 rounded-full bg-[#3FAF5E]/20 flex items-center justify-center border-2 border-[#3FAF5E]">
-                    <Sprout className="w-5 h-5 text-[#3FAF5E]" />
-                  </div>
-                  <span className="text-xs mt-1 font-medium">Farms</span>
+    <div className="space-y-5">
+      {/* Pipeline visualization */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+        className="bg-white rounded-[24px] p-6 shadow-sm border border-[#E8E6E1]/60">
+        <div className="flex items-center gap-2 mb-5">
+          <Map className="w-5 h-5 text-[#3FAF5E]" />
+          <h2 className="text-lg font-bold text-[#1A1A1A]">Supply Chain Pipeline</h2>
+        </div>
+        <div className="flex items-center justify-between overflow-x-auto pb-2">
+          {stageFlow.map((s, i) => (
+            <div key={s.stage} className="flex items-center">
+              <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.12 }}
+                className="flex flex-col items-center min-w-[100px]">
+                <div className="w-16 h-16 rounded-[20px] flex items-center justify-center mb-2" style={{ backgroundColor: `${s.color}15` }}>
+                  <s.icon className="w-7 h-7" style={{ color: s.color }} />
                 </div>
-
-                {/* Storage locations */}
-                <div className="absolute top-4 right-32 flex flex-col items-center">
-                  <div className="w-10 h-10 rounded-full bg-[#3B82F6]/20 flex items-center justify-center border-2 border-[#3B82F6]">
-                    <Warehouse className="w-5 h-5 text-[#3B82F6]" />
-                  </div>
-                  <span className="text-xs mt-1 font-medium">Storage</span>
-                </div>
-
-                {/* Active vehicles */}
-                {shipments.filter(s => s.status === "in_transit").slice(0, 5).map((s, i) => (
-                  <div 
-                    key={s.id}
-                    className="absolute animate-pulse flex flex-col items-center"
-                    style={{ 
-                      top: `${30 + (i * 20) % 50}%`, 
-                      left: `${25 + (i * 15) % 55}%` 
-                    }}
-                  >
-                    <div className="w-8 h-8 rounded-full bg-yellow-400 flex items-center justify-center shadow-lg">
-                      <Truck className="w-4 h-4 text-white" />
-                    </div>
-                    <span className="text-[10px] mt-0.5 font-mono bg-white/80 px-1 rounded">{s.trackingId}</span>
-                  </div>
-                ))}
-
-                {/* Buyer locations */}
-                <div className="absolute bottom-8 right-12 flex flex-col items-center">
-                  <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center border-2 border-purple-500">
-                    <ShoppingBag className="w-5 h-5 text-purple-500" />
-                  </div>
-                  <span className="text-xs mt-1 font-medium">Buyers</span>
-                </div>
-
-                {/* Connecting lines */}
-                <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: -1 }}>
-                  <line x1="15%" y1="20%" x2="45%" y2="50%" stroke="#3FAF5E" strokeWidth="1" strokeDasharray="4 4" opacity="0.4" />
-                  <line x1="45%" y1="50%" x2="75%" y2="15%" stroke="#3B82F6" strokeWidth="1" strokeDasharray="4 4" opacity="0.4" />
-                  <line x1="75%" y1="15%" x2="85%" y2="80%" stroke="#8B5CF6" strokeWidth="1" strokeDasharray="4 4" opacity="0.4" />
-                </svg>
-              </div>
+                <span className="text-sm font-bold text-[#1A1A1A]">{s.count}</span>
+                <span className="text-[10px] text-[#1A1A1A]/40">{s.stage}</span>
+              </motion.div>
+              {i < stageFlow.length - 1 && (
+                <ArrowRight className="w-5 h-5 text-[#E8E6E1] mx-2 shrink-0" />
+              )}
             </div>
+          ))}
+        </div>
+      </motion.div>
 
-            {/* Legend */}
-            <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm rounded-xl p-3 shadow-sm">
-              <div className="flex gap-4 text-xs">
-                <div className="flex items-center gap-1.5">
-                  <div className="w-3 h-3 rounded-full bg-[#3FAF5E]"></div>
-                  <span>Farms</span>
+      <div className="grid lg:grid-cols-2 gap-4">
+        {/* Throughput chart */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+          className="bg-white rounded-[24px] p-6 shadow-sm border border-[#E8E6E1]/60">
+          <h3 className="font-bold text-[#1A1A1A] mb-4">Weekly Throughput</h3>
+          <ResponsiveContainer width="100%" height={200}>
+            <LineChart data={throughputData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis dataKey="week" tick={{ fontSize: 11 }} stroke="#ccc" />
+              <YAxis tick={{ fontSize: 11 }} stroke="#ccc" />
+              <Tooltip />
+              <Line type="monotone" dataKey="batches" stroke="#3FAF5E" strokeWidth={2.5} dot={{ r: 4, fill: "#3FAF5E" }} />
+            </LineChart>
+          </ResponsiveContainer>
+        </motion.div>
+
+        {/* Active routes */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+          className="bg-white rounded-[24px] p-6 shadow-sm border border-[#E8E6E1]/60">
+          <h3 className="font-bold text-[#1A1A1A] mb-4">Active Routes</h3>
+          <div className="space-y-3">
+            {allShipments.map((s, i) => (
+              <motion.div key={s.trackingId} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.35 + i * 0.08 }}
+                className="p-3 rounded-[14px] border border-[#E8E6E1]/40">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-mono text-sm font-semibold text-[#1A1A1A]">{s.trackingId}</span>
+                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${s.status === "in-transit" ? "bg-[#F59E0B]/10 text-[#F59E0B]" : s.status === "delivered" ? "bg-[#3FAF5E]/10 text-[#3FAF5E]" : "bg-[#3B82F6]/10 text-[#3B82F6]"}`}>
+                    {s.status.replace("-", " ")}
+                  </span>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-3 h-3 rounded-full bg-[#3B82F6]"></div>
-                  <span>Storage</span>
+                <div className="flex items-center gap-2 text-[10px] text-[#1A1A1A]/40">
+                  <span>{s.origin.name}</span>
+                  <ArrowRight className="w-3 h-3" />
+                  <span>{s.destination.name}</span>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
-                  <span>In Transit</span>
+                <div className="mt-2 h-1.5 bg-[#F7F7F7] rounded-full overflow-hidden">
+                  <motion.div initial={{ width: 0 }} animate={{ width: `${Math.round((s.events.filter(e => e.completed).length / s.events.length) * 100)}%` }} transition={{ duration: 1, delay: 0.5 + i * 0.1 }}
+                    className="h-full rounded-full bg-gradient-to-r from-[#3FAF5E] to-[#8FD14F]" />
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-3 h-3 rounded-full bg-purple-500"></div>
-                  <span>Buyers</span>
-                </div>
-              </div>
-            </div>
+              </motion.div>
+            ))}
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Stats Summary */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {Object.entries(statusGroups).map(([group, items]) => (
-          <Card key={group} className="border-none shadow-sm bg-white rounded-2xl">
-            <CardContent className="p-5">
-              <p className="text-sm text-muted-foreground font-medium">{group}</p>
-              <p className="text-3xl font-bold text-[#1A1A1A] mt-1">{items.length}</p>
-            </CardContent>
-          </Card>
-        ))}
+        </motion.div>
       </div>
 
-      {/* Active Shipments List */}
-      <Card className="border-none shadow-sm bg-white rounded-3xl">
-        <CardContent className="p-6">
-          <h3 className="text-xl font-bold text-[#1A1A1A] mb-4">All Active Shipments</h3>
-          {loading ? (
-            <p className="text-muted-foreground py-4 text-center">Loading shipments...</p>
-          ) : shipments.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Navigation className="w-8 h-8 mx-auto mb-2 text-muted" />
-              <p>No active shipments found.</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {shipments.map((shipment) => {
-                const Icon = getStatusIcon(shipment.status);
-                return (
-                  <div key={shipment.id} className="flex items-center justify-between p-4 bg-[#F7F7F7] rounded-2xl hover:bg-gray-100 transition-colors">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full bg-[#3FAF5E]/10 flex items-center justify-center">
-                        <Icon className="w-5 h-5 text-[#3FAF5E]" />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-[#1A1A1A]">{shipment.trackingId}</p>
-                        <p className="text-sm text-muted-foreground">{shipment.batchCode} · {shipment.variety || 'Unknown'}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      {shipment.location && (
-                        <span className="text-sm text-muted-foreground hidden md:block">{shipment.location}</span>
-                      )}
-                      <Badge className={`${getStatusColor(shipment.status)} border-none capitalize text-xs`}>
-                        {shipment.status.replace(/_/g, ' ')}
-                      </Badge>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* Batch journey summary */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }}
+        className="bg-white rounded-[24px] p-6 shadow-sm border border-[#E8E6E1]/60">
+        <h3 className="font-bold text-[#1A1A1A] mb-4">Batch Journey Overview</h3>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {dummyBatches.map((b, i) => (
+            <motion.div key={b.batchId} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 + i * 0.06 }}
+              className="p-4 rounded-[18px] border border-[#E8E6E1]/40 hover:shadow-md transition-all">
+              <div className="flex items-center gap-2 mb-2">
+                <Package className="w-4 h-4 text-[#3FAF5E]" />
+                <span className="font-mono text-xs font-semibold">{b.batchId}</span>
+              </div>
+              <div className="text-xs text-[#1A1A1A]/50 space-y-1">
+                <div>{b.variety} · {b.quantity}</div>
+                <div>Origin: {b.origin}</div>
+                <div className="font-semibold text-[#1A1A1A] capitalize">Status: {b.status.replace("-", " ")}</div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </motion.div>
     </div>
   );
 }

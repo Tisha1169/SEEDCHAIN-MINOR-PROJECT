@@ -1,110 +1,75 @@
-import { useAuth } from "@/hooks/use-auth";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { motion } from "framer-motion";
+import { allShipments } from "@/lib/supply-chain";
 import { Link } from "wouter";
-import { Truck, MapPin, Package, Navigation } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Truck, MapPin, CheckCircle2, Clock } from "lucide-react";
 
-interface Shipment {
-  id: number;
-  trackingId: string;
-  batchId: number;
-  status: string;
-  location: string | null;
-  createdAt: string;
-  batchCode: string | null;
-  variety: string | null;
-}
-
-function getStatusColor(status: string) {
-  const colors: Record<string, string> = {
-    order_created: "bg-gray-100 text-gray-700",
-    accepted_by_logistics: "bg-blue-100 text-blue-700",
-    picked_up_from_farm: "bg-purple-100 text-purple-700",
-    arrived_at_cold_storage: "bg-cyan-100 text-cyan-700",
-    stored: "bg-indigo-100 text-indigo-700",
-    picked_up_for_delivery: "bg-orange-100 text-orange-700",
-    in_transit: "bg-yellow-100 text-yellow-700",
-    delivered_to_buyer: "bg-green-100 text-green-700",
-  };
-  return colors[status] || "bg-gray-100 text-gray-700";
-}
+const statusBadge: Record<string, { bg: string; text: string; label: string }> = {
+  created: { bg: "bg-gray-100", text: "text-gray-600", label: "Created" },
+  harvested: { bg: "bg-blue-50", text: "text-blue-600", label: "Harvested" },
+  stored: { bg: "bg-purple-50", text: "text-purple-600", label: "Stored" },
+  "in-transit": { bg: "bg-[#F59E0B]/10", text: "text-[#F59E0B]", label: "In Transit" },
+  delivered: { bg: "bg-[#3FAF5E]/10", text: "text-[#3FAF5E]", label: "Delivered" },
+};
 
 export default function FarmerShipments() {
-  const { user } = useAuth();
-  const [shipments, setShipments] = useState<Shipment[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!user?.id) return;
-    const fetchShipments = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const res = await fetch(`/api/shipments/user/${user.id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setShipments(data);
-        }
-      } catch {
-        // ignore
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchShipments();
-  }, [user?.id]);
-
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
+    <div className="space-y-5">
       <div>
-        <h1 className="text-3xl font-bold text-foreground">My Shipments</h1>
-        <p className="text-muted-foreground">Track where your crop shipments are in real time.</p>
+        <h2 className="text-2xl font-bold text-[#1A1A1A]">Shipments</h2>
+        <p className="text-sm text-[#1A1A1A]/40">Track all your batch shipments in real-time</p>
       </div>
-
-      {loading ? (
-        <p className="text-muted-foreground">Loading shipments...</p>
-      ) : shipments.length === 0 ? (
-        <Card className="border-none shadow-sm bg-white p-8 text-center">
-          <Package className="w-12 h-12 text-muted mx-auto mb-4" />
-          <p className="text-muted-foreground">No shipments found. Shipments will appear here once your crops are dispatched.</p>
-        </Card>
-      ) : (
-        <div className="grid md:grid-cols-2 gap-4">
-          {shipments.map((shipment) => (
-            <Card key={shipment.id} className="border-none shadow-sm bg-white rounded-3xl overflow-hidden hover-lift">
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between mb-4">
+      <div className="space-y-4">
+        {allShipments.map((s, i) => {
+          const sb = statusBadge[s.status] || statusBadge.created;
+          return (
+            <motion.div key={s.trackingId} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
+              className="bg-white rounded-[24px] p-6 shadow-sm border border-[#E8E6E1]/60 hover:shadow-md transition-all">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${s.status === "in-transit" ? "bg-[#F59E0B]/10" : s.status === "delivered" ? "bg-[#3FAF5E]/10" : "bg-blue-50"}`}>
+                    <Truck className={`w-6 h-6 ${s.status === "in-transit" ? "text-[#F59E0B]" : s.status === "delivered" ? "text-[#3FAF5E]" : "text-blue-500"}`} />
+                  </div>
                   <div>
-                    <p className="font-mono text-sm text-muted-foreground">{shipment.trackingId}</p>
-                    <p className="font-bold text-lg text-foreground">{shipment.batchCode || 'Unknown Batch'}</p>
-                    {shipment.variety && <p className="text-sm text-muted-foreground">{shipment.variety}</p>}
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className="text-base font-bold text-[#1A1A1A]">{s.trackingId}</span>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${sb.bg} ${sb.text}`}>{sb.label}</span>
+                    </div>
+                    <div className="text-xs text-[#1A1A1A]/40">{s.batch.batchId} · {s.batch.variety} · {s.batch.quantity}</div>
                   </div>
-                  <Badge className={`${getStatusColor(shipment.status)} border-none capitalize text-xs`}>
-                    {shipment.status.replace(/_/g, ' ')}
-                  </Badge>
                 </div>
-
-                {shipment.location && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-                    <MapPin className="w-4 h-4" />
-                    <span>{shipment.location}</span>
+                <div className="flex items-center gap-6 text-xs">
+                  <div className="flex items-center gap-1.5 text-[#1A1A1A]/40">
+                    <MapPin className="w-3.5 h-3.5" />
+                    <span>{s.origin.name.split(",")[0]}</span>
+                    <span>→</span>
+                    <span>{s.destination.name.split(",")[0]}</span>
                   </div>
-                )}
-
-                <Link href={`/tracking/${shipment.trackingId}`}>
-                  <Button className="w-full rounded-xl bg-[#3FAF5E] hover:bg-[#3FAF5E]/90 text-white gap-2">
-                    <Navigation className="w-4 h-4" />
-                    Track Shipment
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+                  <div className="flex items-center gap-1.5 text-[#1A1A1A]/40">
+                    <Clock className="w-3.5 h-3.5" />
+                    <span>ETA {s.estimatedDelivery}</span>
+                  </div>
+                  <Link href={`/tracking/${s.trackingId}`}>
+                    <button className="h-8 px-4 rounded-xl bg-[#3FAF5E]/10 text-[#3FAF5E] text-xs font-medium hover:bg-[#3FAF5E]/20 transition-colors">
+                      Track
+                    </button>
+                  </Link>
+                </div>
+              </div>
+              {/* Mini timeline */}
+              <div className="mt-4 flex items-center gap-0">
+                {s.events.map((ev, j) => (
+                  <div key={ev.id} className="flex items-center flex-1">
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${ev.completed ? "bg-[#3FAF5E] text-white" : ev.current ? "bg-[#F59E0B] text-white ring-2 ring-[#F59E0B]/30" : "bg-[#E8E6E1] text-[#1A1A1A]/30"}`}>
+                      {ev.completed ? <CheckCircle2 className="w-3 h-3" /> : <div className="w-2 h-2 rounded-full bg-current" />}
+                    </div>
+                    {j < s.events.length - 1 && <div className={`flex-1 h-[2px] ${ev.completed ? "bg-[#3FAF5E]" : "bg-[#E8E6E1]"}`} />}
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          );
+        })}
+      </div>
     </div>
   );
 }

@@ -1,195 +1,67 @@
-import { useAuth } from "@/hooks/use-auth";
-import { useListBatches, useCreateBatch } from "@workspace/api-client-react";
-import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Plus, Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast";
+import { motion } from "framer-motion";
+import { QRCodeSVG } from "qrcode.react";
+import { Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { dummyBatches, batchQRData } from "@/lib/supply-chain";
 
-const createBatchSchema = z.object({
-  variety: z.string().min(2, "Variety is required"),
-  plantingDate: z.string().min(1, "Planting date is required"),
-  expectedHarvestDate: z.string().optional(),
-  quantityKg: z.coerce.number().min(1, "Quantity must be greater than 0"),
-});
+const statusColor: Record<string, { bg: string; text: string }> = {
+  planted: { bg: "bg-blue-50", text: "text-blue-600" },
+  growing: { bg: "bg-emerald-50", text: "text-emerald-600" },
+  harvested: { bg: "bg-[#3FAF5E]/10", text: "text-[#3FAF5E]" },
+  "in-storage": { bg: "bg-purple-50", text: "text-purple-600" },
+  "in-transit": { bg: "bg-[#F59E0B]/10", text: "text-[#F59E0B]" },
+  delivered: { bg: "bg-[#3FAF5E]/10", text: "text-[#3FAF5E]" },
+  sold: { bg: "bg-gray-100", text: "text-gray-600" },
+};
 
 export default function FarmerBatches() {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  
-  const { data: batches, isLoading } = useListBatches(
-    { farmerId: user?.id },
-    { query: { enabled: !!user?.id, queryKey: ['batches', user?.id] } }
+  const [search, setSearch] = useState("");
+  const filtered = dummyBatches.filter(
+    (b) => b.batchId.toLowerCase().includes(search.toLowerCase()) || b.variety.toLowerCase().includes(search.toLowerCase())
   );
 
-  const createBatch = useCreateBatch();
-
-  const form = useForm<z.infer<typeof createBatchSchema>>({
-    resolver: zodResolver(createBatchSchema),
-    defaultValues: {
-      variety: "",
-      plantingDate: new Date().toISOString().split('T')[0],
-      quantityKg: 0,
-    }
-  });
-
-  const onSubmit = (data: z.infer<typeof createBatchSchema>) => {
-    if (!user?.id) return;
-    
-    createBatch.mutate({
-      data: {
-        ...data,
-        farmerId: user.id
-      }
-    }, {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['batches', user.id] });
-        setIsDialogOpen(false);
-        form.reset();
-        toast({ title: "Success", description: "Batch created successfully" });
-      },
-      onError: () => {
-        toast({ title: "Error", description: "Failed to create batch", variant: "destructive" });
-      }
-    });
-  };
-
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      planted: "bg-blue-100 text-blue-700",
-      growing: "bg-green-100 text-green-700",
-      harvested: "bg-yellow-100 text-yellow-700",
-      in_storage: "bg-purple-100 text-purple-700",
-      sold: "bg-gray-100 text-gray-700"
-    };
-    return colors[status] || "bg-gray-100 text-gray-700";
-  };
-
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
+    <div className="space-y-5">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Seed Batches</h1>
-          <p className="text-muted-foreground">Manage and track your potato seed batches.</p>
+          <h2 className="text-2xl font-bold text-[#1A1A1A]">Seed Batches</h2>
+          <p className="text-sm text-[#1A1A1A]/40">All registered crop batches with digital identities</p>
         </div>
-        
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="rounded-xl bg-primary hover:bg-primary/90 text-white">
-              <Plus className="w-4 h-4 mr-2" />
-              New Batch
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px] rounded-3xl">
-            <DialogHeader>
-              <DialogTitle>Register New Seed Batch</DialogTitle>
-            </DialogHeader>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mt-4">
-                <FormField
-                  control={form.control}
-                  name="variety"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Potato Variety</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g. Russet Burbank" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="plantingDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Planting Date</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="quantityKg"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Expected Yield (Kg)</FormLabel>
-                      <FormControl>
-                        <Input type="number" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <Button type="submit" className="w-full rounded-xl bg-primary" disabled={createBatch.isPending}>
-                  {createBatch.isPending ? "Saving..." : "Save Batch"}
-                </Button>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
+        <div className="relative w-full sm:w-64">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1A1A1A]/30" />
+          <Input placeholder="Search batches..." value={search} onChange={(e) => setSearch(e.target.value)}
+            className="pl-10 rounded-2xl border-[#E8E6E1] bg-white h-11" />
+        </div>
       </div>
 
-      <div className="bg-white rounded-3xl border border-border shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-border flex items-center gap-4">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input className="pl-9 bg-muted/50 border-none rounded-xl" placeholder="Search batches..." />
-          </div>
-        </div>
-        
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/30 hover:bg-muted/30">
-                <TableHead className="font-semibold">Batch Code</TableHead>
-                <TableHead className="font-semibold">Variety</TableHead>
-                <TableHead className="font-semibold">Planting Date</TableHead>
-                <TableHead className="font-semibold">Quantity</TableHead>
-                <TableHead className="font-semibold">Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Loading batches...</TableCell>
-                </TableRow>
-              ) : batches?.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No batches found. Create one to get started.</TableCell>
-                </TableRow>
-              ) : (
-                batches?.map((batch) => (
-                  <TableRow key={batch.id} className="hover:bg-muted/30 transition-colors">
-                    <TableCell className="font-medium">{batch.batchCode}</TableCell>
-                    <TableCell>{batch.variety}</TableCell>
-                    <TableCell>{new Date(batch.plantingDate).toLocaleDateString()}</TableCell>
-                    <TableCell>{batch.quantityKg.toLocaleString()} kg</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className={`${getStatusColor(batch.status)} hover:${getStatusColor(batch.status)} capitalize border-none`}>
-                        {batch.status.replace('_', ' ')}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {filtered.map((b, i) => {
+          const sc = statusColor[b.status] || statusColor.planted;
+          return (
+            <motion.div key={b.batchId} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
+              whileHover={{ y: -3 }}
+              className="bg-white rounded-[24px] border border-[#E8E6E1]/60 p-5 shadow-sm hover:shadow-md transition-all cursor-pointer">
+              <div className="flex items-start justify-between mb-3">
+                <div>
+                  <span className="text-xs font-mono text-[#1A1A1A]/35">{b.batchId}</span>
+                  <h3 className="text-base font-bold text-[#1A1A1A]">{b.variety}</h3>
+                </div>
+                <span className={`text-[10px] px-2.5 py-1 rounded-full font-semibold capitalize ${sc.bg} ${sc.text}`}>{b.status.replace("-", " ")}</span>
+              </div>
+              <div className="flex items-center justify-center bg-[#F7F7F7] rounded-2xl p-4 mb-3">
+                <QRCodeSVG value={batchQRData(b)} size={90} level="M" bgColor="#F7F7F7" fgColor="#1A1A1A" />
+              </div>
+              <div className="space-y-1.5 text-[11px]">
+                <div className="flex justify-between"><span className="text-[#1A1A1A]/40">Quantity</span><span className="font-medium">{b.quantity}</span></div>
+                <div className="flex justify-between"><span className="text-[#1A1A1A]/40">Harvest Date</span><span className="font-medium">{b.harvestDate}</span></div>
+                <div className="flex justify-between"><span className="text-[#1A1A1A]/40">Grade</span><span className={`font-semibold ${b.grade === "A" ? "text-[#3FAF5E]" : "text-[#F59E0B]"}`}>Grade {b.grade}</span></div>
+                <div className="flex justify-between"><span className="text-[#1A1A1A]/40">RFID</span><span className="font-mono text-[10px] text-[#1A1A1A]/50">{b.rfidTag}</span></div>
+                <div className="flex justify-between"><span className="text-[#1A1A1A]/40">Origin</span><span className="font-medium">{b.origin}</span></div>
+              </div>
+            </motion.div>
+          );
+        })}
       </div>
     </div>
   );

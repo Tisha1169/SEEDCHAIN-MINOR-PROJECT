@@ -1,89 +1,65 @@
-import { useAuth } from "@/hooks/use-auth";
-import { useListOrders } from "@workspace/api-client-react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { motion } from "framer-motion";
+import { buyerOrders } from "@/lib/supply-chain";
+import { Package, Truck, CheckCircle2 } from "lucide-react";
 import { Link } from "wouter";
-import { Truck } from "lucide-react";
+
+const statusBadge: Record<string, { bg: string; text: string; icon: any }> = {
+  pending: { bg: "bg-gray-100", text: "text-gray-600", icon: Package },
+  confirmed: { bg: "bg-[#3B82F6]/10", text: "text-[#3B82F6]", icon: Package },
+  shipped: { bg: "bg-[#F59E0B]/10", text: "text-[#F59E0B]", icon: Truck },
+  delivered: { bg: "bg-[#3FAF5E]/10", text: "text-[#3FAF5E]", icon: CheckCircle2 },
+};
 
 export default function BuyerOrders() {
-  const { user } = useAuth();
-  
-  const { data: orders, isLoading } = useListOrders(
-    { buyerId: user?.id },
-    { query: { enabled: !!user?.id, queryKey: ['orders', user?.id] } }
-  );
-
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      pending: "bg-gray-100 text-gray-700",
-      confirmed: "bg-blue-100 text-blue-700",
-      dispatched: "bg-purple-100 text-purple-700",
-      delivered: "bg-green-100 text-green-700",
-      cancelled: "bg-red-100 text-red-700"
-    };
-    return colors[status] || "bg-gray-100 text-gray-700";
-  };
-
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">My Orders</h1>
-          <p className="text-muted-foreground">Track your purchased seed batches.</p>
-        </div>
+    <div className="space-y-5">
+      <div>
+        <h2 className="text-2xl font-bold text-[#1A1A1A]">My Orders</h2>
+        <p className="text-sm text-[#1A1A1A]/40">Track all your potato seed orders</p>
       </div>
 
-      <div className="bg-white rounded-3xl border border-border shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/30 hover:bg-muted/30">
-                <TableHead className="font-semibold">Order ID</TableHead>
-                <TableHead className="font-semibold">Batch Code</TableHead>
-                <TableHead className="font-semibold">Variety</TableHead>
-                <TableHead className="font-semibold">Quantity</TableHead>
-                <TableHead className="font-semibold">Total Price</TableHead>
-                <TableHead className="font-semibold">Status</TableHead>
-                <TableHead className="font-semibold text-right">Track</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Loading...</TableCell>
-                </TableRow>
-              ) : orders?.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No orders placed yet.</TableCell>
-                </TableRow>
-              ) : (
-                orders?.map((order) => (
-                  <TableRow key={order.id} className="hover:bg-muted/30 transition-colors">
-                    <TableCell className="font-medium">#{order.id}</TableCell>
-                    <TableCell>{order.batchCode}</TableCell>
-                    <TableCell>{order.variety}</TableCell>
-                    <TableCell>{order.quantityKg.toLocaleString()} kg</TableCell>
-                    <TableCell>${order.totalPrice?.toLocaleString()}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className={`${getStatusColor(order.status)} capitalize border-none`}>
-                        {order.status.replace('_', ' ')}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Link href="/tracking">
-                        <Button size="sm" variant="outline" className="rounded-xl border-2 gap-1.5">
-                          <Truck className="w-3.5 h-3.5" />
-                          Track Order
-                        </Button>
-                      </Link>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
+      <div className="space-y-4">
+        {buyerOrders.map((o, i) => {
+          const sb = statusBadge[o.status] || statusBadge.pending;
+          const Icon = sb.icon;
+          return (
+            <motion.div key={o.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
+              className="bg-white rounded-[24px] p-6 shadow-sm border border-[#E8E6E1]/60 hover:shadow-md transition-all">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${sb.bg}`}>
+                    <Icon className={`w-6 h-6 ${sb.text}`} />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className="font-bold text-[#1A1A1A]">{o.id}</span>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold capitalize ${sb.bg} ${sb.text}`}>{o.status}</span>
+                    </div>
+                    <div className="text-xs text-[#1A1A1A]/40">{o.variety} · {o.quantityKg.toLocaleString()} kg · {o.farmerName} · {o.origin}</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="text-right">
+                    <div className="text-lg font-bold text-[#1A1A1A]">₹{o.totalPrice.toLocaleString()}</div>
+                    <div className="text-[10px] text-[#1A1A1A]/40">Ordered {o.orderDate}</div>
+                  </div>
+                  <Link href={`/tracking/${o.trackingId}`}>
+                    <button className="h-9 px-4 rounded-xl bg-[#3FAF5E]/10 text-[#3FAF5E] text-xs font-medium hover:bg-[#3FAF5E]/20 transition-colors">
+                      Track
+                    </button>
+                  </Link>
+                </div>
+              </div>
+
+              <div className="mt-4 bg-[#F7F7F7] rounded-2xl p-4 grid grid-cols-2 sm:grid-cols-4 gap-3 text-[11px]">
+                <div><span className="text-[#1A1A1A]/40 block">Batch ID</span><span className="font-mono font-medium">{o.batchId}</span></div>
+                <div><span className="text-[#1A1A1A]/40 block">Tracking ID</span><span className="font-mono font-medium">{o.trackingId}</span></div>
+                <div><span className="text-[#1A1A1A]/40 block">Quantity</span><span className="font-medium">{o.quantityKg.toLocaleString()} kg</span></div>
+                <div><span className="text-[#1A1A1A]/40 block">Price/kg</span><span className="font-medium">₹{(o.totalPrice / o.quantityKg).toFixed(0)}</span></div>
+              </div>
+            </motion.div>
+          );
+        })}
       </div>
     </div>
   );

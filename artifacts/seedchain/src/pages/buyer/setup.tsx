@@ -1,57 +1,61 @@
 import { useState } from "react";
-import { Input } from "@/components/ui/input";
-import { StepWizard } from "@/components/onboarding/step-wizard";
+import { motion } from "framer-motion";
+import { ShoppingBag } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 
 export default function BuyerSetup() {
-  const [form, setForm] = useState({ businessName: "", location: "", preferredVariety: "", typicalQuantity: "" });
-  const update = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
+  const { toast } = useToast();
+  const [, setLocation] = useLocation();
+  const [form, setForm] = useState({ businessName: "", contactName: "", phone: "", location: "", type: "Wholesaler" });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    toast({ title: "Profile Created!", description: "You can now browse the marketplace." });
+    setLocation("/buyer");
+  };
 
   return (
-    <StepWizard
-      title="Buyer Onboarding"
-      steps={[
-        { title: "Business Information", description: "Tell us about your business", content: (
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium mb-1.5 block">Business Name</label>
-              <Input value={form.businessName} onChange={(e) => update("businessName", e.target.value)} placeholder="e.g. Green Mart" className="h-12 rounded-xl bg-muted/50 border-0" />
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-1.5 block">Location</label>
-              <Input value={form.location} onChange={(e) => update("location", e.target.value)} placeholder="e.g. Bangalore, Karnataka" className="h-12 rounded-xl bg-muted/50 border-0" />
-            </div>
+    <div className="max-w-lg mx-auto">
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-[#1A1A1A]">Setup Buyer Profile</h2>
+        <p className="text-sm text-[#1A1A1A]/40">Tell us about your business</p>
+      </div>
+      <motion.form initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} onSubmit={handleSubmit}
+        className="bg-white rounded-[28px] p-6 shadow-sm border border-[#E8E6E1]/60 space-y-4">
+        <div>
+          <label className="text-xs font-semibold text-[#1A1A1A]/60 uppercase tracking-wide mb-1.5 block">Business Name *</label>
+          <input required placeholder="e.g. Green Mart Pvt Ltd" value={form.businessName} onChange={e => setForm(p => ({ ...p, businessName: e.target.value }))}
+            className="w-full h-12 rounded-2xl border border-[#E8E6E1] bg-[#F7F7F7] px-4 text-sm focus:outline-none focus:border-[#8B5CF6]" />
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="text-xs font-semibold text-[#1A1A1A]/60 uppercase tracking-wide mb-1.5 block">Contact Name *</label>
+            <input required placeholder="Full name" value={form.contactName} onChange={e => setForm(p => ({ ...p, contactName: e.target.value }))}
+              className="w-full h-12 rounded-2xl border border-[#E8E6E1] bg-[#F7F7F7] px-4 text-sm focus:outline-none focus:border-[#8B5CF6]" />
           </div>
-        )},
-        { title: "Purchase Preferences", description: "What are you looking for?", content: (
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium mb-1.5 block">Preferred Variety</label>
-              <select value={form.preferredVariety} onChange={(e) => update("preferredVariety", e.target.value)} className="w-full h-12 rounded-xl bg-muted/50 border-0 px-3 text-sm">
-                <option value="">All varieties</option>
-                <option value="Kufri Jyoti">Kufri Jyoti</option>
-                <option value="Kufri Pukhraj">Kufri Pukhraj</option>
-                <option value="Kufri Badshah">Kufri Badshah</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-1.5 block">Typical Order Quantity (kg)</label>
-              <Input value={form.typicalQuantity} onChange={(e) => update("typicalQuantity", e.target.value)} type="number" placeholder="e.g. 5000" className="h-12 rounded-xl bg-muted/50 border-0" />
-            </div>
+          <div>
+            <label className="text-xs font-semibold text-[#1A1A1A]/60 uppercase tracking-wide mb-1.5 block">Phone</label>
+            <input placeholder="+91 XXXXX" value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))}
+              className="w-full h-12 rounded-2xl border border-[#E8E6E1] bg-[#F7F7F7] px-4 text-sm focus:outline-none focus:border-[#8B5CF6]" />
           </div>
-        )},
-        { title: "Confirm Setup", content: (
-          <div className="bg-muted/30 rounded-2xl p-6 space-y-3">
-            <div className="flex justify-between"><span className="text-sm text-muted-foreground">Business</span><span className="text-sm font-semibold">{form.businessName || "—"}</span></div>
-            <div className="flex justify-between"><span className="text-sm text-muted-foreground">Location</span><span className="text-sm font-semibold">{form.location || "—"}</span></div>
-            <div className="flex justify-between"><span className="text-sm text-muted-foreground">Preferred</span><span className="text-sm font-semibold">{form.preferredVariety || "All"}</span></div>
-            <div className="flex justify-between"><span className="text-sm text-muted-foreground">Quantity</span><span className="text-sm font-semibold">{form.typicalQuantity ? `${form.typicalQuantity} kg` : "—"}</span></div>
-          </div>
-        )},
-      ]}
-      onComplete={async () => {}}
-      completedTitle="Account Ready!"
-      completedMessage="You can now browse the marketplace and order certified potato seeds."
-      completedAction={{ label: "Browse Marketplace", href: "/buyer/marketplace" }}
-    />
+        </div>
+        <div>
+          <label className="text-xs font-semibold text-[#1A1A1A]/60 uppercase tracking-wide mb-1.5 block">Business Location *</label>
+          <input required placeholder="City, State" value={form.location} onChange={e => setForm(p => ({ ...p, location: e.target.value }))}
+            className="w-full h-12 rounded-2xl border border-[#E8E6E1] bg-[#F7F7F7] px-4 text-sm focus:outline-none focus:border-[#8B5CF6]" />
+        </div>
+        <div>
+          <label className="text-xs font-semibold text-[#1A1A1A]/60 uppercase tracking-wide mb-1.5 block">Business Type</label>
+          <select value={form.type} onChange={e => setForm(p => ({ ...p, type: e.target.value }))}
+            className="w-full h-12 rounded-2xl border border-[#E8E6E1] bg-[#F7F7F7] px-4 text-sm focus:outline-none focus:border-[#8B5CF6]">
+            <option>Wholesaler</option><option>Retailer</option><option>Processor</option><option>Exporter</option>
+          </select>
+        </div>
+        <button type="submit" className="w-full h-12 rounded-2xl bg-[#8B5CF6] text-white font-semibold hover:bg-[#8B5CF6]/90 transition-colors shadow-sm">
+          Save Profile & Continue
+        </button>
+      </motion.form>
+    </div>
   );
 }

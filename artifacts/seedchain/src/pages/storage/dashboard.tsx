@@ -1,203 +1,119 @@
 import { motion } from "framer-motion";
-import { Warehouse, Package, ThermometerSun, AlertTriangle, ArrowUpRight, ArrowDownRight, ArrowRight } from "lucide-react";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
-import { Link } from "wouter";
+import { Warehouse, Package, Thermometer, TrendingUp, ArrowUpRight } from "lucide-react";
+import { storageInventory } from "@/lib/supply-chain";
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 
-const capacityData = [
-  { month: "Jan", used: 60 }, { month: "Feb", used: 65 }, { month: "Mar", used: 72 },
-  { month: "Apr", used: 68 }, { month: "May", used: 78 }, { month: "Jun", used: 82 },
-  { month: "Jul", used: 75 },
+const flowData = [
+  { day: "Mon", in: 800, out: 400 }, { day: "Tue", in: 1200, out: 600 }, { day: "Wed", in: 600, out: 900 },
+  { day: "Thu", in: 1500, out: 700 }, { day: "Fri", in: 900, out: 1100 }, { day: "Sat", in: 400, out: 300 },
 ];
 
-const inventoryByVariety = [
-  { name: "Jyoti", value: 4200 }, { name: "Pukhraj", value: 3100 }, { name: "Badshah", value: 2400 },
-  { name: "Chipsona", value: 1800 },
-];
-
-const recentInbound = [
-  { id: "BT-4521", farmer: "Rajesh Kumar", variety: "Kufri Jyoti", quantity: "2,500 kg", grade: "A", date: "2 hours ago" },
-  { id: "BT-4520", farmer: "Suresh Patel", variety: "Kufri Pukhraj", quantity: "1,800 kg", grade: "A", date: "5 hours ago" },
-  { id: "BT-4519", farmer: "Anita Devi", variety: "Kufri Badshah", quantity: "3,200 kg", grade: "B", date: "1 day ago" },
-  { id: "BT-4518", farmer: "Mohan Singh", variety: "Kufri Jyoti", quantity: "1,500 kg", grade: "A", date: "2 days ago" },
-];
+const stored = storageInventory.filter(s => s.status === "stored");
+const totalKg = storageInventory.reduce((a, s) => a + s.quantityKg, 0);
 
 const metrics = [
-  { label: "Total Capacity", value: "50t", change: "75% used", positive: true, icon: Warehouse, gradient: "from-[#3B82F6] to-[#60A5FA]" },
-  { label: "Active Batches", value: "148", change: "+12", positive: true, icon: Package, gradient: "from-[#3FAF5E] to-[#8FD14F]" },
-  { label: "Avg Temperature", value: "4.2°C", change: "Optimal", positive: true, icon: ThermometerSun, gradient: "from-[#F59E0B] to-[#FBBF24]" },
-  { label: "Alerts", value: "2", change: "Action needed", positive: false, icon: AlertTriangle, gradient: "from-[#EF4444] to-[#F87171]" },
+  { label: "Total Stored", value: `${(totalKg / 1000).toFixed(1)}t`, change: "+12%", gradient: "from-[#3FAF5E] to-[#8FD14F]", icon: Warehouse },
+  { label: "Active Batches", value: String(stored.length), change: "+2", gradient: "from-[#3B82F6] to-[#60A5FA]", icon: Package },
+  { label: "Avg Temp", value: "3.8°C", change: "Optimal", gradient: "from-[#8B5CF6] to-[#A78BFA]", icon: Thermometer },
+  { label: "Throughput", value: "98%", change: "+3%", gradient: "from-[#F59E0B] to-[#FBBF24]", icon: TrendingUp },
 ];
 
 export default function StorageDashboard() {
   return (
-    <div className="space-y-6">
-      {/* Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="space-y-5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {metrics.map((m, i) => (
-          <motion.div
-            key={m.label}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.1 }}
-            whileHover={{ y: -4, boxShadow: "0 20px 40px -8px rgba(0,0,0,0.12)" }}
-            className="bg-white rounded-[20px] p-5 shadow-sm border border-border/50 cursor-pointer transition-all"
-          >
+          <motion.div key={m.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
+            whileHover={{ y: -4 }}
+            className="bg-white rounded-[24px] p-5 shadow-sm border border-[#E8E6E1]/60">
             <div className="flex items-center justify-between mb-3">
-              <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${m.gradient} flex items-center justify-center shadow-md`}>
+              <div className={`w-11 h-11 rounded-2xl bg-gradient-to-br ${m.gradient} flex items-center justify-center`}>
                 <m.icon className="w-5 h-5 text-white" />
               </div>
-              <div className={`flex items-center gap-1 text-xs font-semibold ${m.positive ? "text-[#3FAF5E]" : "text-red-500"}`}>
-                {m.positive ? <ArrowUpRight className="w-3 h-3" /> : <AlertTriangle className="w-3 h-3" />}
-                {m.change}
-              </div>
+              <span className="text-xs font-semibold text-[#3FAF5E] flex items-center gap-0.5"><ArrowUpRight className="w-3 h-3" />{m.change}</span>
             </div>
             <div className="text-2xl font-bold text-[#1A1A1A]">{m.value}</div>
-            <div className="text-xs text-muted-foreground mt-0.5">{m.label}</div>
+            <div className="text-xs text-[#1A1A1A]/40">{m.label}</div>
           </motion.div>
         ))}
       </div>
 
-      {/* Charts Row */}
       <div className="grid lg:grid-cols-3 gap-4">
-        {/* Storage Zones Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="bg-gradient-to-br from-[#3B82F6] to-[#1D4ED8] rounded-[20px] p-6 text-white shadow-lg"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-sm font-medium text-white/80">Storage Zones</span>
-            <span className="text-xs bg-white/20 px-2 py-1 rounded-full">Live</span>
+        {/* Capacity gauge */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
+          className="bg-gradient-to-br from-[#3B82F6] to-[#2563EB] rounded-[24px] p-6 text-white shadow-sm">
+          <div className="flex items-center justify-between mb-6">
+            <span className="text-sm font-medium text-white/70">Chamber Capacity</span>
+            <span className="text-[10px] bg-white/15 px-2.5 py-1 rounded-full">Live</span>
           </div>
-          <div className="space-y-4">
-            {[
-              { zone: "Cold Storage A", capacity: 85, temp: "2°C" },
-              { zone: "Cold Storage B", capacity: 62, temp: "4°C" },
-              { zone: "Ambient Zone", capacity: 78, temp: "18°C" },
-            ].map((z) => (
-              <div key={z.zone} className="space-y-1.5">
-                <div className="flex justify-between text-sm">
-                  <span>{z.zone}</span>
-                  <span className="text-white/70">{z.temp} · {z.capacity}%</span>
-                </div>
-                <div className="h-2.5 bg-white/20 rounded-full">
-                  <div className={`h-2.5 rounded-full transition-all ${z.capacity > 80 ? "bg-yellow-300" : "bg-white"}`} style={{ width: `${z.capacity}%` }} />
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="mt-6 pt-4 border-t border-white/20 flex justify-between">
-            <div><div className="text-xl font-bold">37.5t</div><div className="text-xs text-white/70">Currently Stored</div></div>
-            <div className="text-right"><div className="text-xl font-bold">50t</div><div className="text-xs text-white/70">Total Capacity</div></div>
-          </div>
-        </motion.div>
-
-        {/* Capacity Utilization Chart */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="lg:col-span-2 bg-white rounded-[20px] p-6 shadow-sm border border-border/50"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="font-bold text-[#1A1A1A]">Capacity Utilization</h3>
-              <p className="text-xs text-muted-foreground">Percentage used over time</p>
+          <div className="relative w-32 h-32 mx-auto mb-4">
+            <svg viewBox="0 0 120 120" className="w-full h-full -rotate-90">
+              <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="12" />
+              <circle cx="60" cy="60" r="50" fill="none" stroke="white" strokeWidth="12" strokeLinecap="round" strokeDasharray={`${0.67 * 314} ${314}`} />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-3xl font-bold">67%</span>
+              <span className="text-xs text-white/60">Used</span>
             </div>
           </div>
-          <ResponsiveContainer width="100%" height={200}>
-            <AreaChart data={capacityData}>
+          <div className="text-center text-sm text-white/60">{totalKg.toLocaleString()} / 16,000 kg</div>
+        </motion.div>
+
+        {/* Flow chart */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
+          className="lg:col-span-2 bg-white rounded-[24px] p-6 shadow-sm border border-[#E8E6E1]/60">
+          <h3 className="font-bold text-[#1A1A1A] mb-1">Weekly Flow</h3>
+          <p className="text-xs text-[#1A1A1A]/40 mb-4">Incoming vs Outgoing (kg)</p>
+          <ResponsiveContainer width="100%" height={190}>
+            <AreaChart data={flowData}>
               <defs>
-                <linearGradient id="colorUsed" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
-                </linearGradient>
+                <linearGradient id="sIn" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#3FAF5E" stopOpacity={0.3}/><stop offset="95%" stopColor="#3FAF5E" stopOpacity={0}/></linearGradient>
+                <linearGradient id="sOut" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3}/><stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/></linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="#999" />
-              <YAxis tick={{ fontSize: 12 }} stroke="#999" unit="%" />
+              <XAxis dataKey="day" tick={{ fontSize: 11 }} stroke="#ccc" />
+              <YAxis tick={{ fontSize: 11 }} stroke="#ccc" />
               <Tooltip />
-              <Area type="monotone" dataKey="used" stroke="#3B82F6" strokeWidth={2.5} fillOpacity={1} fill="url(#colorUsed)" />
+              <Area type="monotone" dataKey="in" stroke="#3FAF5E" strokeWidth={2} fill="url(#sIn)" name="Incoming" />
+              <Area type="monotone" dataKey="out" stroke="#3B82F6" strokeWidth={2} fill="url(#sOut)" name="Outgoing" />
             </AreaChart>
           </ResponsiveContainer>
         </motion.div>
       </div>
 
-      {/* Bottom row */}
-      <div className="grid lg:grid-cols-3 gap-4">
-        {/* Inventory by Variety */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-          className="bg-white rounded-[20px] p-6 shadow-sm border border-border/50"
-        >
-          <h3 className="font-bold text-[#1A1A1A] mb-4">Inventory by Variety</h3>
-          <ResponsiveContainer width="100%" height={180}>
-            <BarChart data={inventoryByVariety} layout="vertical">
-              <XAxis type="number" hide />
-              <YAxis dataKey="name" type="category" tick={{ fontSize: 12 }} width={70} />
-              <Tooltip />
-              <Bar dataKey="value" fill="#3B82F6" radius={[0, 8, 8, 0]} barSize={20} />
-            </BarChart>
-          </ResponsiveContainer>
-        </motion.div>
-
-        {/* Recent Inbound Table */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7 }}
-          className="lg:col-span-2 bg-white rounded-[20px] p-6 shadow-sm border border-border/50"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-[#1A1A1A]">Recent Inbound</h3>
-            <Link href="/storage/incoming" className="text-xs text-[#3B82F6] font-medium hover:underline">View All</Link>
-          </div>
-          <div className="space-y-3">
-            {recentInbound.map((a) => (
-              <div key={a.id} className="flex items-center justify-between py-2.5 border-b border-border/30 last:border-0">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-[#3B82F6]/10 flex items-center justify-center">
-                    <Package className="w-4 h-4 text-[#3B82F6]" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium text-[#1A1A1A]">{a.farmer}</div>
-                    <div className="text-xs text-muted-foreground">{a.variety} · {a.quantity}</div>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${a.grade === "A" ? "bg-[#3FAF5E]/10 text-[#3FAF5E]" : "bg-yellow-100 text-yellow-700"}`}>
-                    Grade {a.grade}
-                  </span>
-                  <div className="text-xs text-muted-foreground mt-1">{a.date}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {[
-          { label: "View Inventory", href: "/storage/inventory", emoji: "📦" },
-          { label: "Incoming Batches", href: "/storage/incoming", emoji: "📥" },
-          { label: "Outgoing Batches", href: "/storage/outgoing", emoji: "📤" },
-          { label: "Facility Setup", href: "/storage/setup", emoji: "⚙️" },
-        ].map((action) => (
-          <Link key={action.label} href={action.href}>
-            <motion.div
-              whileHover={{ y: -3 }}
-              className="bg-white rounded-2xl p-4 shadow-sm border border-border/50 cursor-pointer text-center hover:border-[#3B82F6]/30 transition-all"
-            >
-              <span className="text-2xl mb-2 block">{action.emoji}</span>
-              <span className="text-sm font-medium text-[#1A1A1A]">{action.label}</span>
-            </motion.div>
-          </Link>
-        ))}
-      </div>
+      {/* Batches table */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
+        className="bg-white rounded-[24px] p-6 shadow-sm border border-[#E8E6E1]/60">
+        <h3 className="font-bold text-[#1A1A1A] mb-4">Stored Batches</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-[#E8E6E1]/60">
+                {["Batch ID", "Variety", "Farmer", "Qty (kg)", "Temp", "Chamber", "Status"].map(h => (
+                  <th key={h} className="text-left text-xs font-semibold text-[#1A1A1A]/40 pb-3 pr-4">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {storageInventory.map((s) => (
+                <tr key={s.id} className="border-b border-[#E8E6E1]/30 hover:bg-[#F7F7F7] transition-colors">
+                  <td className="py-3 pr-4 font-mono text-xs text-[#1A1A1A]/60">{s.batchId}</td>
+                  <td className="py-3 pr-4 font-semibold">{s.variety}</td>
+                  <td className="py-3 pr-4 text-[#1A1A1A]/60">{s.farmerName}</td>
+                  <td className="py-3 pr-4 font-semibold">{s.quantityKg.toLocaleString()}</td>
+                  <td className="py-3 pr-4 text-[#3B82F6] font-medium">{s.temperatureC}°C</td>
+                  <td className="py-3 pr-4 text-[#1A1A1A]/60">{s.chamber}</td>
+                  <td className="py-3">
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${s.status === "stored" ? "bg-[#3FAF5E]/10 text-[#3FAF5E]" : s.status === "released" ? "bg-gray-100 text-gray-500" : "bg-[#F59E0B]/10 text-[#F59E0B]"}`}>
+                      {s.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </motion.div>
     </div>
   );
 }

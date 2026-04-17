@@ -1,108 +1,93 @@
-import { useAuth } from "@/hooks/use-auth";
-import { useListTransportRecords, useUpdateTransportRecord } from "@workspace/api-client-react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { deliveryJobs } from "@/lib/supply-chain";
+import { Truck, CheckCircle2, Package, MapPin, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { UpdateTransportRecordBodyStatus } from "@workspace/api-client-react/src/generated/api.schemas";
+import { Link } from "wouter";
+
+const statusBadge: Record<string, { bg: string; text: string }> = {
+  pending: { bg: "bg-[#3B82F6]/10", text: "text-[#3B82F6]" },
+  accepted: { bg: "bg-purple-50", text: "text-purple-600" },
+  "picked-up": { bg: "bg-[#F59E0B]/10", text: "text-[#F59E0B]" },
+  "in-transit": { bg: "bg-[#F59E0B]/10", text: "text-[#F59E0B]" },
+  delivered: { bg: "bg-[#3FAF5E]/10", text: "text-[#3FAF5E]" },
+};
 
 export default function LogisticsDeliveries() {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
   const { toast } = useToast();
-  
-  const { data: records, isLoading } = useListTransportRecords(
-    { driverId: user?.id },
-    { query: { enabled: !!user?.id, queryKey: ['transportRecords', user?.id] } }
-  );
+  const [jobs, setJobs] = useState(deliveryJobs);
 
-  const updateRecord = useUpdateTransportRecord();
-
-  const handleUpdateStatus = (id: number, newStatus: UpdateTransportRecordBodyStatus) => {
-    updateRecord.mutate({
-      id,
-      data: { status: newStatus }
-    }, {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['transportRecords', user?.id] });
-        toast({ title: "Success", description: `Delivery marked as ${newStatus.replace('_', ' ')}.` });
-      }
-    });
+  const accept = (id: string) => {
+    setJobs(prev => prev.map(j => j.id === id ? { ...j, status: "accepted" as const } : j));
+    toast({ title: "Delivery Accepted!", description: "You can now pick up the shipment." });
   };
 
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      pending: "bg-gray-100 text-gray-700",
-      accepted: "bg-blue-100 text-blue-700",
-      picked_up: "bg-purple-100 text-purple-700",
-      in_transit: "bg-yellow-100 text-yellow-700",
-      delivered: "bg-green-100 text-green-700"
-    };
-    return colors[status] || "bg-gray-100 text-gray-700";
+  const pickup = (id: string) => {
+    setJobs(prev => prev.map(j => j.id === id ? { ...j, status: "in-transit" as const } : j));
+    toast({ title: "Shipment Picked Up!", description: "Update your location during transit." });
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Deliveries</h1>
-          <p className="text-muted-foreground">Manage your assigned transport jobs.</p>
-        </div>
+    <div className="space-y-5">
+      <div>
+        <h2 className="text-2xl font-bold text-[#1A1A1A]">Delivery Jobs</h2>
+        <p className="text-sm text-[#1A1A1A]/40">Accept and manage delivery assignments</p>
       </div>
 
-      <div className="bg-white rounded-3xl border border-border shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/30 hover:bg-muted/30">
-                <TableHead className="font-semibold">Batch Code</TableHead>
-                <TableHead className="font-semibold">Origin</TableHead>
-                <TableHead className="font-semibold">Destination</TableHead>
-                <TableHead className="font-semibold">Status</TableHead>
-                <TableHead className="font-semibold text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Loading...</TableCell>
-                </TableRow>
-              ) : records?.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No deliveries assigned yet.</TableCell>
-                </TableRow>
-              ) : (
-                records?.map((record) => (
-                  <TableRow key={record.id} className="hover:bg-muted/30 transition-colors">
-                    <TableCell className="font-medium">{record.batchCode}</TableCell>
-                    <TableCell>{record.originLocation}</TableCell>
-                    <TableCell>{record.destinationLocation}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className={`${getStatusColor(record.status)} capitalize border-none`}>
-                        {record.status.replace('_', ' ')}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right space-x-2">
-                      {record.status === 'pending' && (
-                        <Button size="sm" variant="outline" className="rounded-xl border-2" onClick={() => handleUpdateStatus(record.id, 'accepted')} disabled={updateRecord.isPending}>Accept</Button>
-                      )}
-                      {record.status === 'accepted' && (
-                        <Button size="sm" variant="outline" className="rounded-xl border-2" onClick={() => handleUpdateStatus(record.id, 'picked_up')} disabled={updateRecord.isPending}>Mark Picked Up</Button>
-                      )}
-                      {record.status === 'picked_up' && (
-                        <Button size="sm" variant="outline" className="rounded-xl border-2" onClick={() => handleUpdateStatus(record.id, 'in_transit')} disabled={updateRecord.isPending}>Start Transit</Button>
-                      )}
-                      {record.status === 'in_transit' && (
-                        <Button size="sm" className="rounded-xl bg-primary" onClick={() => handleUpdateStatus(record.id, 'delivered')} disabled={updateRecord.isPending}>Mark Delivered</Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
+      <div className="space-y-4">
+        {jobs.map((d, i) => {
+          const sb = statusBadge[d.status] || statusBadge.pending;
+          return (
+            <motion.div key={d.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
+              className="bg-white rounded-[24px] p-6 shadow-sm border border-[#E8E6E1]/60 hover:shadow-md transition-all">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${d.status === "delivered" ? "bg-[#3FAF5E]/10" : "bg-[#F59E0B]/10"}`}>
+                    {d.status === "delivered" ? <CheckCircle2 className="w-6 h-6 text-[#3FAF5E]" /> : <Truck className="w-6 h-6 text-[#F59E0B]" />}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className="font-bold text-[#1A1A1A]">{d.trackingId}</span>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold capitalize ${sb.bg} ${sb.text}`}>{d.status.replace("-", " ")}</span>
+                    </div>
+                    <div className="text-xs text-[#1A1A1A]/40">{d.batchId} · {d.driverName} · {d.vehicleNo}</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <div className="flex items-center gap-1.5 text-xs text-[#1A1A1A]/40">
+                    <MapPin className="w-3.5 h-3.5" />
+                    {d.pickup.split(",")[0]} → {d.dropoff.split(",")[0]}
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs text-[#1A1A1A]/40">
+                    <Clock className="w-3.5 h-3.5" /> {d.scheduledDate}
+                  </div>
+                  {d.status === "pending" && (
+                    <button onClick={() => accept(d.id)} className="h-8 px-4 rounded-xl bg-[#3B82F6] text-white text-xs font-medium hover:bg-[#3B82F6]/90 transition-colors">
+                      Accept
+                    </button>
+                  )}
+                  {d.status === "accepted" && (
+                    <button onClick={() => pickup(d.id)} className="h-8 px-4 rounded-xl bg-[#F59E0B] text-white text-xs font-medium hover:bg-[#F59E0B]/90 transition-colors">
+                      Confirm Pickup
+                    </button>
+                  )}
+                  {(d.status === "in-transit" || d.status === "picked-up") && (
+                    <Link href="/logistics/update-location">
+                      <button className="h-8 px-4 rounded-xl bg-[#3FAF5E]/10 text-[#3FAF5E] text-xs font-medium hover:bg-[#3FAF5E]/20 transition-colors">
+                        Update Location
+                      </button>
+                    </Link>
+                  )}
+                  <Link href={`/tracking/${d.trackingId}`}>
+                    <button className="h-8 px-4 rounded-xl bg-gray-100 text-[#1A1A1A]/60 text-xs font-medium hover:bg-gray-200 transition-colors">
+                      Track
+                    </button>
+                  </Link>
+                </div>
+              </div>
+            </motion.div>
+          );
+        })}
       </div>
     </div>
   );
