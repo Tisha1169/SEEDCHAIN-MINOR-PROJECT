@@ -1,0 +1,38 @@
+# Vercel Build Ignore List
+# Files listed here will NOT be included in Vercel builds
+
+# Version Control
+.git
+.gitignore
+
+# Local Development
+.replit
+.replitignore
+.env
+.env.local
+.env.*.local
+.local
+
+# Node modules (installed during build)
+node_modules/
+
+# Build outputs (recreated during build)
+dist/
+build/
+*.log
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Replit specific
+.replit
+.env.local.backup
+
+# Keep these for build:
+# - pnpm-lock.yaml (needed for reproducible installs)
+# - All source files in artifacts/
+# - All config files (vite.config.ts, tsconfig.json, etc.)
