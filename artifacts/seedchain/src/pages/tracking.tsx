@@ -53,7 +53,7 @@ export default function TrackingPage() {
   const statusStyle = s ? getStatusColor(s.status) : null;
 
   return (
-    <PageTransition className="min-h-screen bg-[#F7F7F7]">
+    <PageTransition className="min-h-screen bg-[#FAFAF8]">
       <Navbar />
 
       <div className="pt-28 pb-20 px-4 sm:px-6 max-w-[1100px] mx-auto">

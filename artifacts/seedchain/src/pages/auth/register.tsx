@@ -34,7 +34,7 @@ export default function Register() {
   };
 
   return (
-    <PageTransition className="min-h-screen bg-[#F7F7F7]">
+    <PageTransition className="min-h-screen bg-[#FAFAF8]">
       <Navbar />
       <div className="pt-28 pb-20 px-4 flex items-center justify-center">
         <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">

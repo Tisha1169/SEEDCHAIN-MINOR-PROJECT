@@ -3,27 +3,38 @@ import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/layout/navbar";
 import { PageTransition, ScrollReveal } from "@/components/page-transition";
 import { motion } from "framer-motion";
-import { ArrowRight, Leaf, TrendingUp, Truck, Warehouse, ShoppingBag, BarChart3, Shield, Sprout, ChevronDown, ArrowDown } from "lucide-react";
+import { ArrowRight, Leaf, TrendingUp, Truck, Warehouse, ShoppingBag, BarChart3, Shield, Sprout, ArrowDown } from "lucide-react";
 
 export default function Landing() {
   return (
-    <PageTransition className="min-h-screen bg-[#E8E6E1] relative overflow-hidden">
+    <PageTransition className="min-h-screen bg-[#FAFAF8] relative overflow-hidden">
       <Navbar />
 
-      {/* ===== HERO — Exact reference image match ===== */}
+      {/* ===== HERO — Improved UI ===== */}
       <section className="relative pt-28 pb-12 px-4 sm:px-6 max-w-[1360px] mx-auto">
-        {/* Headline row */}
+        {/* Eyebrow + Headline row */}
         <div className="flex items-end justify-between mb-10">
-          <motion.h1
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7 }}
-            className="text-[clamp(2.5rem,5.5vw,4rem)] font-bold tracking-tight text-[#1A1A1A] leading-[1.08]"
-          >
-            What Is Our Success?
-          </motion.h1>
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="hidden sm:flex items-center gap-2 text-base text-[#1A1A1A]/60 whitespace-nowrap pb-2">
-            <Link href="/about" className="hover:text-[#3FAF5E] transition-colors font-medium underline underline-offset-4 decoration-[#1A1A1A]/20">
+          <div>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="inline-flex items-center gap-2 bg-[#3FAF5E]/12 border border-[#3FAF5E]/25 rounded-full px-4 py-1.5 mb-4"
+            >
+              <Sprout className="w-3.5 h-3.5 text-[#3FAF5E]" />
+              <span className="text-xs font-semibold text-[#3FAF5E] tracking-wide uppercase">Potato Seed Supply Chain</span>
+            </motion.div>
+            <motion.h1
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.1 }}
+              className="text-[clamp(2.5rem,5.5vw,4.25rem)] font-bold tracking-tight text-[#1A1A1A] leading-[1.06]"
+            >
+              What Is Our <span className="text-[#3FAF5E]">Success?</span>
+            </motion.h1>
+          </div>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.35 }} className="hidden sm:flex items-center gap-2 text-base text-[#1A1A1A]/55 whitespace-nowrap pb-2">
+            <Link href="/about" className="hover:text-[#3FAF5E] transition-colors font-semibold underline underline-offset-4 decoration-[#1A1A1A]/20">
               Learn More
             </Link>
             <ArrowRight className="w-4 h-4" />
@@ -38,21 +49,26 @@ export default function Landing() {
             initial={{ opacity: 0, x: -40 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.15 }}
-            className="relative rounded-[32px] overflow-hidden min-h-[520px] group"
+            className="relative rounded-[32px] overflow-hidden min-h-[540px] group shadow-2xl"
           >
             {/* Hero image */}
             <img
-              src="https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?auto=format&fit=crop&w=900&q=80"
-              alt="Fresh carrot harvest"
-              className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700"
+              src="https://images.unsplash.com/photo-1560493676-04071c5f467b?auto=format&fit=crop&w=1000&q=85"
+              alt="Potato farm field"
+              className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-700"
             />
-            {/* Soft gradient */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
+            {/* Rich gradient overlay — warm amber-to-dark at bottom */}
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0D1F0A]/80 via-[#0D1F0A]/20 to-transparent pointer-events-none" />
+            {/* Left-edge soft vignette */}
+            <div className="absolute inset-0 bg-gradient-to-r from-[#0D1F0A]/30 via-transparent to-transparent pointer-events-none" />
 
             {/* Top-left overlay text */}
-            <div className="absolute top-7 left-7 max-w-[300px]">
-              <h2 className="text-[28px] md:text-[32px] font-bold text-white leading-[1.15]">
-                New Opportunities<br />For <span className="text-[#D6F279]">Agricultural</span><br />Production
+            <div className="absolute top-7 left-7 max-w-[320px]">
+              <p className="text-[#D6F279]/90 text-xs font-semibold tracking-widest uppercase mb-2">Fresh Potato Harvest</p>
+              <h2 className="text-[28px] md:text-[34px] font-bold text-white leading-[1.12]">
+                New Opportunities<br />For{" "}
+                <span className="text-[#D6F279]">Agricultural</span>
+                <br />Production
               </h2>
             </div>
 
@@ -63,15 +79,15 @@ export default function Landing() {
               transition={{ delay: 0.55 }}
               className="absolute top-7 right-7 flex flex-col gap-2.5"
             >
-              <div className="bg-white rounded-full px-4 py-2 flex items-center gap-2 shadow-md">
-                <div className="w-6 h-6 rounded-full bg-[#3FAF5E]/20 flex items-center justify-center">
-                  <Sprout className="w-3.5 h-3.5 text-[#3FAF5E]" />
+              <div className="bg-white/95 backdrop-blur-sm rounded-full px-4 py-2 flex items-center gap-2 shadow-lg">
+                <div className="w-6 h-6 rounded-full bg-[#3FAF5E] flex items-center justify-center">
+                  <Sprout className="w-3.5 h-3.5 text-white" />
                 </div>
-                <span className="text-sm font-medium text-[#1A1A1A]">alv/ Fresh food</span>
+                <span className="text-sm font-semibold text-[#1A1A1A]">Certified Seed</span>
               </div>
-              <div className="bg-white rounded-full px-4 py-2 flex items-center gap-2 shadow-md">
-                <span className="text-xs text-[#1A1A1A]/50">2026/</span>
-                <span className="text-sm font-medium text-[#1A1A1A]">New harvest</span>
+              <div className="bg-white/95 backdrop-blur-sm rounded-full px-4 py-2 flex items-center gap-2 shadow-lg">
+                <span className="text-xs font-bold text-[#3FAF5E]">2026/</span>
+                <span className="text-sm font-semibold text-[#1A1A1A]">New Harvest</span>
               </div>
             </motion.div>
 
@@ -80,107 +96,132 @@ export default function Landing() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.75 }}
-              className="absolute bottom-7 left-7 bg-white rounded-[20px] p-5 shadow-xl w-[220px]"
+              className="absolute bottom-7 left-7 bg-white rounded-[22px] p-5 shadow-2xl w-[230px] border border-white/60"
             >
-              <div className="flex items-baseline gap-1.5 mb-2.5">
-                <span className="text-[40px] font-bold leading-none text-[#1A1A1A]">120</span>
-                <span className="text-base font-medium text-[#1A1A1A]/50">tons</span>
+              <div className="flex items-baseline gap-1.5 mb-3">
+                <span className="text-[42px] font-extrabold leading-none text-[#1A1A1A]">120</span>
+                <span className="text-sm font-bold text-[#3FAF5E] bg-[#3FAF5E]/10 rounded-full px-2 py-0.5">tons</span>
               </div>
-              {/* Progress dots row */}
-              <div className="flex gap-[3px] mb-2.5">
+              {/* Progress bar */}
+              <div className="flex gap-[3px] mb-3">
                 {Array.from({ length: 18 }).map((_, i) => (
-                  <div key={i} className={`w-[7px] h-[7px] rounded-full ${i < 12 ? "bg-[#3FAF5E]" : i < 15 ? "bg-[#F59E0B]" : "bg-[#EF4444]"}`} />
+                  <div
+                    key={i}
+                    className={`h-[6px] flex-1 rounded-full ${
+                      i < 11 ? "bg-[#3FAF5E]" : i < 15 ? "bg-[#F59E0B]" : "bg-[#EF4444]/60"
+                    }`}
+                  />
                 ))}
               </div>
-              <p className="text-[11px] leading-relaxed text-[#1A1A1A]/50">
-                of green crops per month thanks to the vertical farms
+              <p className="text-[11.5px] leading-relaxed text-[#1A1A1A]/55 font-medium">
+                of certified seeds/month via our verified supply chain
               </p>
+              <div className="mt-3 flex items-center gap-1.5">
+                <TrendingUp className="w-3.5 h-3.5 text-[#3FAF5E]" />
+                <span className="text-xs font-semibold text-[#3FAF5E]">+18% vs last season</span>
+              </div>
             </motion.div>
 
-            {/* Bottom-right stacked buttons */}
-            <div className="absolute bottom-7 right-7 flex flex-col gap-2.5 items-center">
-              <motion.div whileHover={{ scale: 1.1 }} className="w-11 h-11 rounded-full bg-[#3FAF5E] flex items-center justify-center shadow-lg cursor-pointer">
-                <span className="text-white text-2xl leading-none">+</span>
-              </motion.div>
-              <div className="w-11 h-11 rounded-full bg-white flex items-center justify-center shadow-lg">
-                <ChevronDown className="w-5 h-5 text-[#3FAF5E]" />
-              </div>
-              <div className="w-11 h-11 rounded-full bg-white flex items-center justify-center shadow-lg">
-                <ChevronDown className="w-5 h-5 text-[#3FAF5E]" />
-              </div>
-            </div>
-
-            {/* Scroll-down indicator */}
-            <div className="absolute bottom-7 left-1/2 -translate-x-1/2">
-              <motion.div animate={{ y: [0, 6, 0] }} transition={{ repeat: Infinity, duration: 1.6 }} className="w-10 h-10 rounded-full bg-[#1A1A1A]/70 backdrop-blur flex items-center justify-center">
-                <ArrowDown className="w-4 h-4 text-white" />
+            {/* Bottom-right: animated scroll button */}
+            <div className="absolute bottom-7 right-7">
+              <motion.div
+                animate={{ y: [0, 6, 0] }}
+                transition={{ repeat: Infinity, duration: 1.8 }}
+                className="w-12 h-12 rounded-full bg-[#D6F279] flex items-center justify-center shadow-xl cursor-pointer"
+              >
+                <ArrowDown className="w-5 h-5 text-[#1A1A1A]" />
               </motion.div>
             </div>
           </motion.div>
 
-          {/* ── RIGHT COLUMN: Green panel with feature cards ── */}
+          {/* ── RIGHT COLUMN: Dark forest-green panel with vibrant feature cards ── */}
           <motion.div
             initial={{ opacity: 0, x: 40 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.35 }}
-            className="rounded-[32px] overflow-hidden flex flex-col"
+            className="rounded-[32px] overflow-hidden flex flex-col bg-[#162E1F] shadow-2xl"
           >
-            {/* Top half — header area with lime bg */}
-            <div className="bg-[#E8E6E1] rounded-t-[32px] p-8 pb-4">
-              <h2 className="text-[28px] md:text-[32px] font-bold text-[#1A1A1A] leading-[1.15] mb-1">
-                Innovations In<br />Vertical Farming!
+            {/* Header area */}
+            <div className="p-8 pb-5">
+              <div className="inline-flex items-center gap-1.5 bg-[#D6F279]/15 rounded-full px-3 py-1 mb-3">
+                <Leaf className="w-3 h-3 text-[#D6F279]" />
+                <span className="text-[10px] font-bold text-[#D6F279] tracking-widest uppercase">AgriTech 2026</span>
+              </div>
+              <h2 className="text-[26px] md:text-[30px] font-bold text-white leading-[1.18]">
+                Innovations In<br />
+                <span className="text-[#D6F279]">Vertical Farming!</span>
               </h2>
+              <p className="text-sm text-white/50 mt-2 font-medium">Sustainable practices for the modern era</p>
             </div>
 
-            {/* Bottom half — two feature cards */}
-            <div className="grid grid-cols-2 gap-3 px-3 pb-3 bg-[#E8E6E1] rounded-b-[32px] flex-1">
-              {/* Card 1 — Left */}
-              <motion.div whileHover={{ y: -4 }} className="relative rounded-[24px] overflow-hidden group cursor-pointer min-h-[300px] bg-[#D6F279]">
-                <div className="absolute inset-0 bg-gradient-to-t from-[#2D5016]/80 via-transparent to-transparent z-10 pointer-events-none" />
+            {/* Two feature cards */}
+            <div className="grid grid-cols-2 gap-3 px-3 pb-3 flex-1">
+
+              {/* Card 1 — Lime/Yellow-green */}
+              <motion.div
+                whileHover={{ y: -5, scale: 1.01 }}
+                transition={{ type: "spring", stiffness: 300 }}
+                className="relative rounded-[22px] overflow-hidden group cursor-pointer min-h-[300px] bg-[#B5D92A]"
+              >
+                {/* Full-bleed image */}
                 <img
-                  src="https://t3.ftcdn.net/jpg/09/70/22/76/360_F_970227655_kcRO0B23kJACeob15rK2czWow7TAZ544.jpg"
-                  alt="Fresh apples"
-                  className="absolute inset-x-0 bottom-0 w-full h-3/4 object-cover group-hover:scale-105 transition-transform duration-500"
+                  src="https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=500&q=85"
+                  alt="Sustainable farm field with irrigation"
+                  className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.06] transition-transform duration-600"
                 />
+                {/* Color-tinted gradient: lime at top fading to dark-green at bottom */}
+                <div className="absolute inset-0 bg-gradient-to-b from-[#B5D92A]/70 via-[#3a6b00]/30 to-[#1a3800]/85 pointer-events-none" />
+
                 {/* Top labels */}
                 <div className="relative z-20 p-4">
-                  <span className="text-[#2D5016] font-bold text-base leading-tight block">Less Water</span>
-                  <span className="text-[#2D5016] font-bold text-base leading-tight block">And Pesticides</span>
+                  <span className="text-[#0D1F0A] font-extrabold text-[15px] leading-tight block drop-shadow-sm">Less Water</span>
+                  <span className="text-[#0D1F0A] font-extrabold text-[15px] leading-tight block drop-shadow-sm">& Pesticides</span>
                 </div>
+
                 {/* Bottom labels */}
                 <div className="absolute bottom-4 left-4 z-20">
-                  <span className="text-[#D6F279] font-semibold text-sm block">More Yield</span>
-                  <span className="text-white font-semibold text-sm block">All Year Around</span>
+                  <span className="text-[#D6F279] font-bold text-sm block drop-shadow">More Yield</span>
+                  <span className="text-white font-semibold text-[13px] block drop-shadow">All Year Around</span>
                 </div>
                 <div className="absolute bottom-4 right-4 z-20">
-                  <div className="bg-white/20 backdrop-blur rounded-full px-3 py-1.5 text-white text-xs flex items-center gap-1.5 font-medium">
-                    Explore <span className="w-1.5 h-1.5 bg-white rounded-full" />
+                  <div className="bg-white/20 backdrop-blur-md border border-white/30 rounded-full px-3 py-1.5 text-white text-[11px] flex items-center gap-1.5 font-semibold">
+                    Explore <span className="w-1.5 h-1.5 bg-[#D6F279] rounded-full" />
                   </div>
                 </div>
               </motion.div>
 
-              {/* Card 2 — Right */}
-              <motion.div whileHover={{ y: -4 }} className="relative rounded-[24px] overflow-hidden group cursor-pointer min-h-[300px] bg-[#3FAF5E]">
-                <div className="absolute inset-0 bg-gradient-to-t from-[#1A3A10]/80 via-transparent to-transparent z-10 pointer-events-none" />
+              {/* Card 2 — Deep emerald */}
+              <motion.div
+                whileHover={{ y: -5, scale: 1.01 }}
+                transition={{ type: "spring", stiffness: 300 }}
+                className="relative rounded-[22px] overflow-hidden group cursor-pointer min-h-[300px] bg-[#1B6B3A]"
+              >
+                {/* Full-bleed image */}
                 <img
-                  src="https://images.unsplash.com/photo-1416879595882-3373a0480b5b?auto=format&fit=crop&w=400&q=80"
-                  alt="Asparagus stalks"
-                  className="absolute inset-x-0 bottom-0 w-full h-3/4 object-cover group-hover:scale-105 transition-transform duration-500"
+                  src="https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?auto=format&fit=crop&w=500&q=85"
+                  alt="Vertical greenhouse farming shelves"
+                  className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.06] transition-transform duration-600"
                 />
-                {/* Top labels */}
+                {/* Emerald-tinted gradient overlay */}
+                <div className="absolute inset-0 bg-gradient-to-b from-[#1B6B3A]/65 via-transparent to-[#0A2218]/90 pointer-events-none" />
+
+                {/* Top-left labels */}
                 <div className="relative z-20 p-4">
-                  <span className="text-[#D6F279] font-bold text-base leading-tight block">Minimum</span>
-                  <span className="text-white font-bold text-base leading-tight block">Space Usage</span>
+                  <span className="text-[#D6F279] font-extrabold text-[15px] leading-tight block drop-shadow">Minimum</span>
+                  <span className="text-white font-extrabold text-[15px] leading-tight block drop-shadow">Space Usage</span>
                 </div>
+
+                {/* Top-right badge */}
                 <div className="absolute top-4 right-4 z-20">
-                  <div className="bg-white/20 backdrop-blur rounded-full px-3 py-1.5 text-white text-xs flex items-center gap-1.5 font-medium">
-                    More <span className="w-1.5 h-1.5 bg-white rounded-full" />
+                  <div className="bg-white/20 backdrop-blur-md border border-white/30 rounded-full px-3 py-1.5 text-white text-[11px] flex items-center gap-1.5 font-semibold">
+                    More <span className="w-1.5 h-1.5 bg-[#D6F279] rounded-full" />
                   </div>
                 </div>
+
                 {/* Bottom labels */}
                 <div className="absolute bottom-4 left-4 z-20">
-                  <span className="text-[#D6F279] font-semibold text-sm block">Maximum</span>
-                  <span className="text-white font-semibold text-sm block">Harvest In 2026</span>
+                  <span className="text-[#D6F279] font-bold text-sm block drop-shadow">Maximum</span>
+                  <span className="text-white font-semibold text-[13px] block drop-shadow">Harvest In 2026</span>
                 </div>
               </motion.div>
             </div>

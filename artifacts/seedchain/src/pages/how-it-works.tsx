@@ -14,7 +14,7 @@ const steps = [
 
 export default function HowItWorks() {
   return (
-    <PageTransition className="min-h-screen bg-[#E8E6E1]">
+    <PageTransition className="min-h-screen bg-[#FAFAF8]">
       <Navbar />
       <div className="pt-32 pb-20 px-4 sm:px-6 max-w-[1000px] mx-auto">
         <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-16">

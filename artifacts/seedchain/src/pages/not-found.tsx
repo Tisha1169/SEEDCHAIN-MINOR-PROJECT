@@ -5,7 +5,7 @@ import { Home } from "lucide-react";
 
 export default function NotFound() {
   return (
-    <PageTransition className="min-h-screen bg-[#F7F7F7]">
+    <PageTransition className="min-h-screen bg-[#FAFAF8]">
       <Navbar />
       <div className="pt-40 pb-20 px-4 flex flex-col items-center justify-center text-center">
         <div className="text-7xl font-bold text-[#1A1A1A]/10 mb-4">404</div>

@@ -119,7 +119,7 @@ export default function TrackingPage() {
     : -1;
 
   return (
-    <PageTransition className="min-h-screen bg-[#F7F7F7]">
+    <PageTransition className="min-h-screen bg-[#FAFAF8]">
       <Navbar />
 
       <div className="pt-28 pb-16 px-4 max-w-5xl mx-auto">

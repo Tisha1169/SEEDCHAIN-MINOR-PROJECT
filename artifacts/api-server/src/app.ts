@@ -31,4 +31,13 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", router);
 
+app.get("/health", (_req, res) => {
+  res.status(200).send("OK");
+});
+
+const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+app.get(/.*/, (_req, res) => {
+  res.redirect(frontendUrl);
+});
+
 export default app;
