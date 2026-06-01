@@ -5,5 +5,17 @@
   "framework": "vite",
   "rewrites": [
     { "source": "/((?!assets/).*)", "destination": "/index.html" }
-  ]
+  ],
+  "git": {
+    "deploymentEnabled": {
+      "main": true
+    }
+  },
+  "regions": ["sfo1"],
+  "functions": {
+    "api/**/*.ts": {
+      "memory": 1024,
+      "maxDuration": 60
+    }
+  }
 }
