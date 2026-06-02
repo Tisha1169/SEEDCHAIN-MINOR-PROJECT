@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
-import { Package, Truck, Users, Warehouse, TrendingUp, ArrowUpRight, ArrowDownRight, DollarSign } from "lucide-react";
-import { adminStats, allShipments, dummyBatches } from "@/lib/supply-chain";
+import { Package, Truck, Users, Warehouse, TrendingUp, ArrowUpRight, ArrowDownRight, Loader } from "lucide-react";
+import { useListBatches } from "@lib/api-client-react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, BarChart, Bar, PieChart, Pie, Cell } from "recharts";
 import { Link } from "wouter";
 
@@ -17,14 +17,16 @@ const statusDistribution = [
   { name: "Harvested", value: 4, color: "#8B5CF6" },
 ];
 
-const metrics = [
-  { label: "Total Batches", value: String(adminStats.totalBatches), change: "+8", positive: true, gradient: "from-[#3FAF5E] to-[#8FD14F]", icon: Package },
-  { label: "Active Deliveries", value: String(adminStats.activeDeliveries), change: "+3", positive: true, gradient: "from-[#F59E0B] to-[#FBBF24]", icon: Truck },
-  { label: "Total Farmers", value: String(adminStats.totalFarmers), change: "+5", positive: true, gradient: "from-[#3B82F6] to-[#60A5FA]", icon: Users },
-  { label: "Storage Usage", value: `${adminStats.storageUsagePct}%`, change: "-4%", positive: false, gradient: "from-[#8B5CF6] to-[#A78BFA]", icon: Warehouse },
-];
-
 export default function AdminDashboard() {
+  const { data: batches = [], isLoading } = useListBatches();
+  
+  const metrics = [
+    { label: "Total Batches", value: String(batches.length), change: "+8", positive: true, gradient: "from-[#3FAF5E] to-[#8FD14F]", icon: Package },
+    { label: "Active Deliveries", value: "12", change: "+3", positive: true, gradient: "from-[#F59E0B] to-[#FBBF24]", icon: Truck },
+    { label: "Total Farmers", value: "24", change: "+5", positive: true, gradient: "from-[#3B82F6] to-[#60A5FA]", icon: Users },
+    { label: "Storage Usage", value: "68%", change: "-4%", positive: false, gradient: "from-[#8B5CF6] to-[#A78BFA]", icon: Warehouse },
+  ];
+
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

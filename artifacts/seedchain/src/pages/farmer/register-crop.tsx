@@ -1,36 +1,61 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
-import { generateBatchId, generateRFID, dummyBatches, batchQRData, type BatchIdentity } from "@/lib/supply-chain";
+import { batchQRData } from "@/lib/supply-chain";
 import { QRCodeSVG } from "qrcode.react";
 import { Sprout, CheckCircle2 } from "lucide-react";
+import { useCreateBatch, useListBatches } from "@lib/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 const varieties = ["Kufri Jyoti", "Kufri Pukhraj", "Kufri Badshah", "Kufri Chipsona", "Kufri Sinduri", "Kufri Lauvkar"];
 
 export default function FarmerRegisterCrop() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [step, setStep] = useState<"form" | "success">("form");
-  const [newBatch, setNewBatch] = useState<BatchIdentity | null>(null);
+  const [newBatch, setNewBatch] = useState<any>(null);
   const [form, setForm] = useState({ variety: "", plantingDate: "2026-04-16", expectedHarvest: "", area: "", location: "" });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const batch: BatchIdentity = {
-      batchId: generateBatchId(),
-      farmerId: "farmer-001",
-      farmerName: "Aman Singh",
-      variety: form.variety,
-      harvestDate: form.expectedHarvest || "2026-07-16",
-      rfidTag: generateRFID(),
-      grade: "A",
-      quantity: `${form.area || "1"} acre`,
-      origin: form.location || "Punjab, India",
-      status: "planted",
-      plantingDate: form.plantingDate,
-    };
-    setNewBatch(batch);
-    setStep("success");
-    toast({ title: "Batch Registered!", description: `${batch.batchId} created with QR & RFID` });
+    setIsSubmitting(true);
+    try {
+      const response = await fetch("/api/batches", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+          variety: form.variety,
+          plantingDate: form.plantingDate,
+          expectedHarvestDate: form.expectedHarvest || "2026-07-16",
+          quantityKg: parseInt(form.area) || 1000,
+          notes: form.location || "Punjab, India",
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to create batch");
+      const batch = await response.json();
+      setNewBatch(batch);
+      
+      // Invalidate and refetch batches
+      await queryClient.invalidateQueries({ queryKey: ["/api/batches"] });
+      
+      setStep("success");
+      toast({ title: "Batch Registered!", description: `${batch.batchCode} created successfully` });
+      
+      // Reset form after 3 seconds
+      setTimeout(() => {
+        setForm({ variety: "", plantingDate: "2026-04-16", expectedHarvest: "", area: "", location: "" });
+        setStep("form");
+      }, 3000);
+    } catch (err) {
+      toast({ title: "Error", description: err instanceof Error ? err.message : "Failed to register batch", variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (step === "success" && newBatch) return (
@@ -42,21 +67,21 @@ export default function FarmerRegisterCrop() {
         <h2 className="text-2xl font-bold text-[#1A1A1A] mb-1">Batch Registered!</h2>
         <p className="text-[#1A1A1A]/40 text-sm mb-6">Your crop batch has a digital identity</p>
         <div className="bg-[#F7F7F7] rounded-2xl p-6 mb-6 flex flex-col items-center gap-4">
-          <QRCodeSVG value={batchQRData(newBatch)} size={160} level="H" bgColor="#F7F7F7" fgColor="#1A1A1A" />
+          <QRCodeSVG value={JSON.stringify({ batchCode: newBatch.batchCode, variety: newBatch.variety })} size={160} level="H" bgColor="#F7F7F7" fgColor="#1A1A1A" />
           <div className="text-xs text-[#1A1A1A]/40 text-center">
-            <div className="font-mono font-semibold text-[#1A1A1A] text-base mb-1">{newBatch.batchId}</div>
-            <div>{newBatch.rfidTag}</div>
+            <div className="font-mono font-semibold text-[#1A1A1A] text-base mb-1">{newBatch.batchCode}</div>
+            <div>ID: {newBatch.id}</div>
           </div>
         </div>
         <div className="space-y-2 text-sm text-left mb-6">
-          {[["Variety", newBatch.variety], ["Planting Date", newBatch.plantingDate], ["Expected Harvest", newBatch.harvestDate], ["Origin", newBatch.origin]].map(([k, v]) => (
+          {[["Variety", newBatch.variety], ["Planting Date", newBatch.plantingDate], ["Expected Harvest", newBatch.expectedHarvestDate], ["Quantity", `${newBatch.quantityKg} kg`]].map(([k, v]) => (
             <div key={k} className="flex justify-between py-2 border-b border-[#E8E6E1]/40">
               <span className="text-[#1A1A1A]/40">{k}</span>
               <span className="font-medium text-[#1A1A1A]">{v}</span>
             </div>
           ))}
         </div>
-        <button onClick={() => setStep("form")} className="w-full h-12 rounded-2xl bg-[#3FAF5E] text-white font-medium hover:bg-[#3FAF5E]/90 transition-colors">
+        <button onClick={() => { setStep("form"); setNewBatch(null); }} className="w-full h-12 rounded-2xl bg-[#3FAF5E] text-white font-medium hover:bg-[#3FAF5E]/90 transition-colors">
           Register Another Batch
         </button>
       </div>
@@ -107,8 +132,8 @@ export default function FarmerRegisterCrop() {
           <Sprout className="w-5 h-5 text-[#3FAF5E] shrink-0" />
           <p className="text-xs text-[#1A1A1A]/60">A unique Batch ID, QR code, and RFID tag will be auto-generated upon registration.</p>
         </div>
-        <button type="submit" className="w-full h-12 rounded-2xl bg-[#3FAF5E] text-white font-semibold hover:bg-[#3FAF5E]/90 transition-colors shadow-sm">
-          Register Batch & Generate QR
+        <button type="submit" disabled={isSubmitting} className="w-full h-12 rounded-2xl bg-[#3FAF5E] text-white font-semibold hover:bg-[#3FAF5E]/90 transition-colors shadow-sm disabled:opacity-50">
+          {isSubmitting ? "Creating..." : "Register Batch & Generate QR"}
         </button>
       </motion.form>
     </div>

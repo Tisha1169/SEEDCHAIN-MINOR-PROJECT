@@ -1,9 +1,9 @@
 import { motion } from "framer-motion";
-import { Sprout, Package, Warehouse, TrendingUp, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { Sprout, Package, Warehouse, TrendingUp, ArrowUpRight, ArrowDownRight, Loader } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 import { QRCodeSVG } from "qrcode.react";
 import { Link } from "wouter";
-import { dummyBatches, batchQRData } from "@/lib/supply-chain";
+import { useListBatches } from "@lib/api-client-react";
 
 const harvestData = [
   { month: "Jan", qty: 1200 }, { month: "Feb", qty: 1800 }, { month: "Mar", qty: 2400 },
@@ -16,14 +16,20 @@ const batchData = [
   { name: "Chipsona", value: 17 },
 ];
 
-const metrics = [
-  { label: "Active Crops", value: "12", change: "+3", positive: true, icon: Sprout, gradient: "from-[#3FAF5E] to-[#8FD14F]" },
-  { label: "Total Harvest", value: "18.4t", change: "+18.7%", positive: true, icon: Package, gradient: "from-[#3B82F6] to-[#60A5FA]" },
-  { label: "In Storage", value: "8.2t", change: "-2.1%", positive: false, icon: Warehouse, gradient: "from-[#F59E0B] to-[#FBBF24]" },
-  { label: "Revenue", value: "₹4.2L", change: "+24.5%", positive: true, icon: TrendingUp, gradient: "from-[#8B5CF6] to-[#A78BFA]" },
-];
-
 export default function FarmerDashboard() {
+  const { data: batches = [], isLoading } = useListBatches();
+  
+  // Calculate metrics from batches
+  const activeBatches = batches.filter((b: any) => b.status === "planted" || b.status === "growing").length;
+  const totalQuantity = batches.reduce((sum: number, b: any) => sum + (b.quantityKg || 0), 0);
+  const inStorage = batches.filter((b: any) => b.status === "in_storage").reduce((sum: number, b: any) => sum + (b.quantityKg || 0), 0);
+
+  const metrics = [
+    { label: "Active Crops", value: String(activeBatches), change: "+3", positive: true, icon: Sprout, gradient: "from-[#3FAF5E] to-[#8FD14F]" },
+    { label: "Total Harvest", value: `${(totalQuantity / 1000).toFixed(1)}t`, change: "+18.7%", positive: true, icon: Package, gradient: "from-[#3B82F6] to-[#60A5FA]" },
+    { label: "In Storage", value: `${(inStorage / 1000).toFixed(1)}t`, change: "-2.1%", positive: false, icon: Warehouse, gradient: "from-[#F59E0B] to-[#FBBF24]" },
+    { label: "Revenue", value: "₹4.2L", change: "+24.5%", positive: true, icon: TrendingUp, gradient: "from-[#8B5CF6] to-[#A78BFA]" },
+  ];
   return (
     <div className="space-y-5">
       {/* Metrics */}
@@ -118,30 +124,41 @@ export default function FarmerDashboard() {
           <h3 className="font-bold text-[#1A1A1A]">My Batches</h3>
           <Link href="/farmer/batches" className="text-xs text-[#3FAF5E] font-medium hover:underline">View All</Link>
         </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {dummyBatches.map((b) => (
-            <motion.div key={b.batchId} whileHover={{ y: -3 }}
-              className="rounded-[20px] border border-[#E8E6E1]/60 p-4 hover:shadow-md transition-all cursor-pointer">
-              <div className="flex items-start justify-between mb-3">
-                <div>
-                  <span className="text-xs font-mono text-[#1A1A1A]/35 block">{b.batchId}</span>
-                  <span className="text-sm font-bold text-[#1A1A1A]">{b.variety}</span>
+        
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader className="w-6 h-6 text-[#3FAF5E] animate-spin" />
+          </div>
+        ) : batches.length === 0 ? (
+          <div className="text-center py-8 text-[#1A1A1A]/40">
+            <p>No batches yet. Create your first batch to get started!</p>
+          </div>
+        ) : (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {batches.slice(0, 4).map((b: any) => (
+              <motion.div key={b.id} whileHover={{ y: -3 }}
+                className="rounded-[20px] border border-[#E8E6E1]/60 p-4 hover:shadow-md transition-all cursor-pointer">
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <span className="text-xs font-mono text-[#1A1A1A]/35 block">{b.batchCode}</span>
+                    <span className="text-sm font-bold text-[#1A1A1A]">{b.variety}</span>
+                  </div>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${b.qualityGrade === "A" ? "bg-[#3FAF5E]/10 text-[#3FAF5E]" : "bg-[#F59E0B]/10 text-[#F59E0B]"}`}>
+                    Grade {b.qualityGrade || "N/A"}
+                  </span>
                 </div>
-                <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${b.grade === "A" ? "bg-[#3FAF5E]/10 text-[#3FAF5E]" : "bg-[#F59E0B]/10 text-[#F59E0B]"}`}>
-                  Grade {b.grade}
-                </span>
-              </div>
-              <div className="flex items-center justify-center bg-[#F7F7F7] rounded-2xl p-3 mb-3">
-                <QRCodeSVG value={batchQRData(b)} size={80} level="M" bgColor="#F7F7F7" fgColor="#1A1A1A" />
-              </div>
-              <div className="space-y-1 text-[11px]">
-                <div className="flex justify-between"><span className="text-[#1A1A1A]/40">Quantity</span><span className="font-medium text-[#1A1A1A]">{b.quantity}</span></div>
-                <div className="flex justify-between"><span className="text-[#1A1A1A]/40">Harvest</span><span className="font-medium text-[#1A1A1A]">{b.harvestDate}</span></div>
-                <div className="flex justify-between"><span className="text-[#1A1A1A]/40">RFID</span><span className="font-mono text-[#1A1A1A]/50 text-[10px]">{b.rfidTag}</span></div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+                <div className="flex items-center justify-center bg-[#F7F7F7] rounded-2xl p-3 mb-3">
+                  <QRCodeSVG value={JSON.stringify({ batchCode: b.batchCode, variety: b.variety })} size={80} level="M" bgColor="#F7F7F7" fgColor="#1A1A1A" />
+                </div>
+                <div className="space-y-1 text-[11px]">
+                  <div className="flex justify-between"><span className="text-[#1A1A1A]/40">Quantity</span><span className="font-medium text-[#1A1A1A]">{b.quantityKg} kg</span></div>
+                  <div className="flex justify-between"><span className="text-[#1A1A1A]/40">Harvest</span><span className="font-medium text-[#1A1A1A]">{b.expectedHarvestDate?.split("T")[0]}</span></div>
+                  <div className="flex justify-between"><span className="text-[#1A1A1A]/40">Status</span><span className="font-medium capitalize">{b.status.replace(/_/g, " ")}</span></div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
       </motion.div>
 
       {/* Bottom: Varieties chart + Quick actions */}

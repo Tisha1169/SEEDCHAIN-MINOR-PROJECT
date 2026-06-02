@@ -1,12 +1,12 @@
 import { motion } from "framer-motion";
 import { TrendingUp, Map, Leaf, ArrowRight, Package, Truck, Warehouse as WarehouseIcon, ShoppingCart } from "lucide-react";
-import { dummyBatches, allShipments, adminStats } from "@/lib/supply-chain";
 import { Sankey, Tooltip, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid } from "recharts";
+import { useListBatches } from "@lib/api-client-react";
 
 const stageFlow = [
-  { stage: "Farm", count: adminStats.totalFarmers, icon: Leaf, color: "#3FAF5E" },
+  { stage: "Farm", count: 24, icon: Leaf, color: "#3FAF5E" },
   { stage: "Storage", count: 4, icon: WarehouseIcon, color: "#3B82F6" },
-  { stage: "Transit", count: adminStats.activeDeliveries, icon: Truck, color: "#F59E0B" },
+  { stage: "Transit", count: 8, icon: Truck, color: "#F59E0B" },
   { stage: "Buyer", count: 6, icon: ShoppingCart, color: "#8B5CF6" },
 ];
 
@@ -15,7 +15,15 @@ const throughputData = [
   { week: "W4", batches: 9 }, { week: "W5", batches: 12 }, { week: "W6", batches: 8 },
 ];
 
+const allShipments = [
+  { trackingId: "SHIP-001", status: "delivered", origin: { name: "Punjab Farm" }, destination: { name: "Delhi Storage" }, events: [{completed: true}, {completed: true}, {completed: true}] },
+  { trackingId: "SHIP-002", status: "in-transit", origin: { name: "Haryana Farm" }, destination: { name: "Mumbai Buyer" }, events: [{completed: true}, {completed: true}] },
+  { trackingId: "SHIP-003", status: "in-storage", origin: { name: "Gujarat Farm" }, destination: { name: "Bangalore Market" }, events: [{completed: true}, {completed: false}] },
+];
+
 export default function AdminSupplyChainMap() {
+  const { data: batches = [] } = useListBatches();
+
   return (
     <div className="space-y-5">
       {/* Pipeline visualization */}
@@ -94,17 +102,17 @@ export default function AdminSupplyChainMap() {
         className="bg-white rounded-[24px] p-6 shadow-sm border border-[#E8E6E1]/60">
         <h3 className="font-bold text-[#1A1A1A] mb-4">Batch Journey Overview</h3>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {dummyBatches.map((b, i) => (
-            <motion.div key={b.batchId} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 + i * 0.06 }}
+          {batches.slice(0, 4).map((b: any, i) => (
+            <motion.div key={b.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 + i * 0.06 }}
               className="p-4 rounded-[18px] border border-[#E8E6E1]/40 hover:shadow-md transition-all">
               <div className="flex items-center gap-2 mb-2">
                 <Package className="w-4 h-4 text-[#3FAF5E]" />
-                <span className="font-mono text-xs font-semibold">{b.batchId}</span>
+                <span className="font-mono text-xs font-semibold">{b.batchCode}</span>
               </div>
               <div className="text-xs text-[#1A1A1A]/50 space-y-1">
-                <div>{b.variety} · {b.quantity}</div>
-                <div>Origin: {b.origin}</div>
-                <div className="font-semibold text-[#1A1A1A] capitalize">Status: {b.status.replace("-", " ")}</div>
+                <div>{b.variety} · {b.quantityKg}kg</div>
+                <div>Planted: {b.plantingDate?.split("T")[0]}</div>
+                <div className="font-semibold text-[#1A1A1A] capitalize">Status: {b.status.replace(/_/g, " ")}</div>
               </div>
             </motion.div>
           ))}

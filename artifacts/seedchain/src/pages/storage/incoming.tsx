@@ -1,29 +1,62 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Search, Scan, CheckCircle2, Package, AlertCircle } from "lucide-react";
+import { Search, Scan, CheckCircle2, Package, AlertCircle, Loader } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
-import { dummyBatches, batchQRData, pendingIncoming } from "@/lib/supply-chain";
 import { useToast } from "@/hooks/use-toast";
 
 export default function StorageIncoming() {
   const { toast } = useToast();
   const [rfidInput, setRfidInput] = useState("");
-  const [found, setFound] = useState<typeof dummyBatches[0] | null>(null);
+  const [found, setFound] = useState<any>(null);
   const [notFound, setNotFound] = useState(false);
   const [accepted, setAccepted] = useState<string[]>([]);
 
-  const handleScan = (e: React.FormEvent) => {
+  const handleScan = async (e: React.FormEvent) => {
     e.preventDefault();
-    const batch = dummyBatches.find(b => b.rfidTag.toLowerCase() === rfidInput.toLowerCase() || b.batchId.toLowerCase() === rfidInput.toLowerCase());
-    if (batch) { setFound(batch); setNotFound(false); }
-    else { setFound(null); setNotFound(true); }
+    try {
+      const response = await fetch(`/api/batches?search=${rfidInput}`, {
+        headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` },
+      });
+      const batches = await response.json();
+      const batch = batches.find((b: any) => 
+        b.batchCode.toLowerCase() === rfidInput.toLowerCase() || 
+        b.id.toString() === rfidInput
+      );
+      if (batch) { setFound(batch); setNotFound(false); }
+      else { setFound(null); setNotFound(true); }
+    } catch (err) {
+      setNotFound(true);
+    }
   };
 
-  const handleAccept = (batchId: string) => {
-    setAccepted(prev => [...prev, batchId]);
-    setFound(null);
-    setRfidInput("");
-    toast({ title: "Batch Accepted!", description: `${batchId} — status updated to Stored` });
+  const handleAccept = async (batchId: string) => {
+    try {
+      const response = await fetch("/api/storage", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+          batchId: parseInt(batchId),
+          facilityName: "Cool Store",
+          location: "Delhi",
+          slotId: "A-101",
+          temperatureCelsius: 4,
+          quantityKg: found?.quantityKg || 0,
+          notes: "Batch received and stored",
+        }),
+      });
+      
+      if (response.ok) {
+        setAccepted(prev => [...prev, batchId]);
+        setFound(null);
+        setRfidInput("");
+        toast({ title: "Batch Accepted!", description: `Batch ${found.batchCode} — status updated to Stored` });
+      }
+    } catch (err) {
+      toast({ title: "Error", description: "Failed to accept batch" });
+    }
   };
 
   return (
@@ -55,13 +88,8 @@ export default function StorageIncoming() {
             Scan
           </button>
         </form>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <span className="text-[10px] text-[#1A1A1A]/40">Try:</span>
-          {dummyBatches.map(b => (
-            <button key={b.rfidTag} onClick={() => setRfidInput(b.rfidTag)} className="text-[10px] px-2 py-1 rounded-lg bg-[#F7F7F7] border border-[#E8E6E1] text-[#1A1A1A]/60 hover:border-[#3B82F6] hover:text-[#3B82F6] transition-colors font-mono">
-              {b.rfidTag}
-            </button>
-          ))}
+        <div className="mt-3 text-[10px] text-[#1A1A1A]/40">
+          Enter batch code or ID to search
         </div>
       </motion.div>
 

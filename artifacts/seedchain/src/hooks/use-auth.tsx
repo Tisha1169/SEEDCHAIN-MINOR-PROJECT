@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { useLocation } from "wouter";
-import { supabase } from "@/lib/supabase";
 
 export interface AppUser {
   id: string;
@@ -30,55 +29,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Check for stored user on mount
     const storedUser = localStorage.getItem("seedchain_user");
-    if (storedUser) {
+    const token = localStorage.getItem("token");
+    if (storedUser && token) {
       try {
         setUser(JSON.parse(storedUser));
       } catch {
         localStorage.removeItem("seedchain_user");
+        localStorage.removeItem("token");
       }
     }
     setLoading(false);
-
-    // Listen for Supabase auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === "SIGNED_OUT") {
-        setUser(null);
-        localStorage.removeItem("seedchain_user");
-      }
-    });
-
-    return () => subscription.unsubscribe();
   }, []);
 
   const login = async (email: string, password: string) => {
-    // Try Supabase auth first
-    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({ email, password });
-    
-    if (!authError && authData.user) {
-      // Fetch user profile from users table
-      const { data: profile } = await supabase
-        .from("users")
-        .select("*")
-        .eq("id", authData.user.id)
-        .single();
-
-      if (profile) {
-        const appUser: AppUser = {
-          id: profile.id,
-          name: profile.name,
-          email: profile.email,
-          role: profile.role,
-          location: profile.location,
-          phone: profile.phone,
-        };
-        setUser(appUser);
-        localStorage.setItem("seedchain_user", JSON.stringify(appUser));
-        setLocation(`/${appUser.role}`);
-        return;
-      }
-    }
-
-    // Fallback: demo mode (works without Supabase configured)
+    // Demo accounts for fallback
     const demoUsers: Record<string, AppUser> = {
       "admin@seedchain.io": { id: "demo-1", name: "Admin User", email: "admin@seedchain.io", role: "admin", location: "Mumbai" },
       "rajesh@farmer.com": { id: "demo-2", name: "Rajesh Kumar", email: "rajesh@farmer.com", role: "farmer", location: "Punjab" },
@@ -87,10 +51,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       "logistics@fasttrack.com": { id: "demo-5", name: "FastTrack", email: "logistics@fasttrack.com", role: "logistics", location: "Chennai" },
     };
 
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        const appUser: AppUser = {
+          id: data.user.id,
+          name: data.user.name,
+          email: data.user.email,
+          role: data.user.role,
+          location: data.user.location,
+          phone: data.user.phone,
+        };
+
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("seedchain_user", JSON.stringify(appUser));
+        setUser(appUser);
+        setLocation(`/${appUser.role}`);
+        return;
+      }
+    } catch (err) {
+      // Fall through to demo mode
+    }
+
+    // Fallback: demo mode (works without backend)
     const demoUser = demoUsers[email];
     if (demoUser) {
-      setUser(demoUser);
       localStorage.setItem("seedchain_user", JSON.stringify(demoUser));
+      setUser(demoUser);
       setLocation(`/${demoUser.role}`);
       return;
     }
@@ -99,46 +93,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const register = async (email: string, password: string, name: string, role: string) => {
-    const { data: authData, error: authError } = await supabase.auth.signUp({ email, password });
-
-    if (authError) {
-      // Fallback demo mode
-      const appUser: AppUser = {
-        id: `demo-${Date.now()}`,
-        name,
-        email,
-        role: role as AppUser["role"],
-      };
-      setUser(appUser);
-      localStorage.setItem("seedchain_user", JSON.stringify(appUser));
-      setLocation(`/${appUser.role}/setup`);
-      return;
-    }
-
-    if (authData.user) {
-      // Create profile in users table
-      await supabase.from("users").insert({
-        id: authData.user.id,
-        name,
-        email,
-        role,
+    try {
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, name, role }),
       });
 
-      const appUser: AppUser = {
-        id: authData.user.id,
-        name,
-        email,
-        role: role as AppUser["role"],
-      };
-      setUser(appUser);
-      localStorage.setItem("seedchain_user", JSON.stringify(appUser));
-      setLocation(`/${appUser.role}/setup`);
+      if (response.ok) {
+        const data = await response.json();
+        
+        const appUser: AppUser = {
+          id: data.user.id,
+          name: data.user.name,
+          email: data.user.email,
+          role: data.user.role,
+          location: data.user.location,
+          phone: data.user.phone,
+        };
+
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("seedchain_user", JSON.stringify(appUser));
+        setUser(appUser);
+        setLocation(`/${appUser.role}/setup`);
+        return;
+      }
+    } catch (err) {
+      // Fall through to demo mode
     }
+
+    // Fallback: demo mode registration (works without backend)
+    const appUser: AppUser = {
+      id: `demo-${Date.now()}`,
+      name,
+      email,
+      role: role as AppUser["role"],
+    };
+    localStorage.setItem("seedchain_user", JSON.stringify(appUser));
+    setUser(appUser);
+    setLocation(`/${appUser.role}/setup`);
   };
 
   const logout = () => {
-    supabase.auth.signOut();
     localStorage.removeItem("seedchain_user");
+    localStorage.removeItem("token");
     setUser(null);
     setLocation("/");
   };

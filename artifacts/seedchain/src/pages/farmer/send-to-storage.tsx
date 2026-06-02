@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { CheckCircle2, Warehouse } from "lucide-react";
+import { CheckCircle2, Warehouse, Loader } from "lucide-react";
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
-import { dummyBatches, generateTrackingId } from "@/lib/supply-chain";
+import { useListBatches } from "@lib/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 const storages = [
   { id: "ST-001", name: "CoolStore Amritsar", location: "Amritsar, Punjab", capacity: "10,000 kg", temp: "3-5°C" },
@@ -13,16 +14,46 @@ const storages = [
 
 export default function FarmerSendToStorage() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const { data: batches = [], isLoading } = useListBatches();
   const [step, setStep] = useState<"form" | "success">("form");
   const [trackingId, setTrackingId] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [form, setForm] = useState({ batchId: "", storageId: "", scheduledDate: "2026-04-17" });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const tid = generateTrackingId();
-    setTrackingId(tid);
-    toast({ title: "Shipment Created!", description: `Tracking ID: ${tid}` });
-    setStep("success");
+    setIsSubmitting(true);
+    try {
+      const response = await fetch("/api/storage", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+          batchId: parseInt(form.batchId),
+          facilityName: storages.find(s => s.id === form.storageId)?.name || "Storage",
+          location: storages.find(s => s.id === form.storageId)?.location || "Unknown",
+          slotId: form.storageId,
+          temperatureCelsius: 4,
+          quantityKg: 1000,
+          notes: "Farmer shipment to cold storage",
+        }),
+      });
+
+      if (response.ok) {
+        const tid = `TRACK-${Date.now()}`;
+        setTrackingId(tid);
+        toast({ title: "Shipment Created!", description: `Tracking ID: ${tid}` });
+        await queryClient.invalidateQueries({ queryKey: ["/api/batches"] });
+        setStep("success");
+      }
+    } catch (err) {
+      toast({ title: "Error", description: "Failed to create shipment" });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (step === "success") return (
@@ -62,9 +93,10 @@ export default function FarmerSendToStorage() {
         <div>
           <label className="text-xs font-semibold text-[#1A1A1A]/60 uppercase tracking-wide mb-1.5 block">Batch to Ship *</label>
           <select required value={form.batchId} onChange={e => setForm(p => ({ ...p, batchId: e.target.value }))}
-            className="w-full h-12 rounded-2xl border border-[#E8E6E1] bg-[#F7F7F7] px-4 text-sm focus:outline-none focus:border-[#3FAF5E]">
-            <option value="">Select harvested batch</option>
-            {dummyBatches.map(b => <option key={b.batchId} value={b.batchId}>{b.batchId} — {b.variety} ({b.quantity})</option>)}
+            disabled={isLoading || isSubmitting}
+            className="w-full h-12 rounded-2xl border border-[#E8E6E1] bg-[#F7F7F7] px-4 text-sm focus:outline-none focus:border-[#3FAF5E] disabled:opacity-50">
+            <option value="">{isLoading ? "Loading batches..." : "Select harvested batch"}</option>
+            {batches.map((b: any) => <option key={b.id} value={b.id}>{b.batchCode} — {b.variety} ({b.quantityKg}kg)</option>)}
           </select>
         </div>
         <div>
@@ -90,9 +122,10 @@ export default function FarmerSendToStorage() {
           <input type="date" value={form.scheduledDate} onChange={e => setForm(p => ({ ...p, scheduledDate: e.target.value }))}
             className="w-full h-12 rounded-2xl border border-[#E8E6E1] bg-[#F7F7F7] px-4 text-sm focus:outline-none focus:border-[#3FAF5E]" />
         </div>
-        <button type="submit" disabled={!form.batchId || !form.storageId}
-          className="w-full h-12 rounded-2xl bg-[#3FAF5E] text-white font-semibold hover:bg-[#3FAF5E]/90 disabled:opacity-40 transition-colors shadow-sm">
-          Create Shipment & Get Tracking ID
+        <button type="submit" disabled={!form.batchId || !form.storageId || isSubmitting}
+          className="w-full h-12 rounded-2xl bg-[#3FAF5E] text-white font-semibold hover:bg-[#3FAF5E]/90 disabled:opacity-40 transition-colors shadow-sm flex items-center justify-center gap-2">
+          {isSubmitting ? <Loader className="w-4 h-4 animate-spin" /> : null}
+          {isSubmitting ? "Creating Shipment..." : "Create Shipment & Get Tracking ID"}
         </button>
       </motion.form>
     </div>

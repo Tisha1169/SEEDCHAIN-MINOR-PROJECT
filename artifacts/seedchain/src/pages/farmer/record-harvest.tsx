@@ -1,18 +1,58 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { CheckCircle2, Package } from "lucide-react";
+import { CheckCircle2, Package, Loader } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { dummyBatches } from "@/lib/supply-chain";
+import { useListBatches } from "@lib/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function FarmerRecordHarvest() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const { data: batches = [], isLoading: batchesLoading } = useListBatches();
   const [step, setStep] = useState<"form" | "success">("form");
   const [form, setForm] = useState({ batchId: "", quantityKg: "", grade: "A", harvestDate: "2026-04-16", notes: "" });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [harvest, setHarvest] = useState<any>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast({ title: "Harvest Recorded!", description: `${form.quantityKg} kg Grade ${form.grade} — supply chain event created` });
-    setStep("success");
+    setIsSubmitting(true);
+    try {
+      const response = await fetch("/api/harvests", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+          batchId: parseInt(form.batchId),
+          quantityKg: parseInt(form.quantityKg),
+          qualityGrade: form.grade,
+          harvestDate: form.harvestDate,
+          notes: form.notes,
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to record harvest");
+      const harvestData = await response.json();
+      setHarvest(harvestData);
+      
+      // Invalidate batch queries to reflect status change
+      await queryClient.invalidateQueries({ queryKey: ["/api/batches"] });
+      
+      toast({ title: "Harvest Recorded!", description: `${form.quantityKg} kg Grade ${form.grade} — supply chain event created` });
+      setStep("success");
+      
+      // Reset after 3 seconds
+      setTimeout(() => {
+        setForm({ batchId: "", quantityKg: "", grade: "A", harvestDate: "2026-04-16", notes: "" });
+        setStep("form");
+      }, 3000);
+    } catch (err) {
+      toast({ title: "Error", description: err instanceof Error ? err.message : "Failed to record harvest", variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (step === "success") return (
@@ -24,13 +64,13 @@ export default function FarmerRecordHarvest() {
         <h2 className="text-2xl font-bold text-[#1A1A1A] mb-1">Harvest Recorded!</h2>
         <p className="text-[#1A1A1A]/50 text-sm mb-6">Supply chain event created. Storage operator has been notified.</p>
         <div className="bg-[#F7F7F7] rounded-2xl p-4 space-y-2 text-sm text-left mb-6">
-          {[["Batch", form.batchId], ["Quantity", `${form.quantityKg} kg`], ["Grade", `Grade ${form.grade}`], ["Harvest Date", form.harvestDate]].map(([k, v]) => (
+          {[["Batch ID", form.batchId], ["Quantity", `${form.quantityKg} kg`], ["Grade", `Grade ${form.grade}`], ["Harvest Date", form.harvestDate]].map(([k, v]) => (
             <div key={k} className="flex justify-between py-1.5 border-b border-[#E8E6E1]/40 last:border-0">
               <span className="text-[#1A1A1A]/40">{k}</span><span className="font-medium">{v}</span>
             </div>
           ))}
         </div>
-        <button onClick={() => setStep("form")} className="w-full h-12 rounded-2xl bg-[#3FAF5E] text-white font-medium hover:bg-[#3FAF5E]/90 transition-colors">
+        <button onClick={() => { setStep("form"); setHarvest(null); }} className="w-full h-12 rounded-2xl bg-[#3FAF5E] text-white font-medium hover:bg-[#3FAF5E]/90 transition-colors">
           Record Another Harvest
         </button>
       </div>
@@ -48,9 +88,9 @@ export default function FarmerRecordHarvest() {
         <div>
           <label className="text-xs font-semibold text-[#1A1A1A]/60 uppercase tracking-wide mb-1.5 block">Select Batch *</label>
           <select required value={form.batchId} onChange={e => setForm(p => ({ ...p, batchId: e.target.value }))}
-            className="w-full h-12 rounded-2xl border border-[#E8E6E1] bg-[#F7F7F7] px-4 text-sm focus:outline-none focus:border-[#3FAF5E]">
-            <option value="">Choose batch</option>
-            {dummyBatches.map(b => <option key={b.batchId} value={b.batchId}>{b.batchId} — {b.variety}</option>)}
+            className="w-full h-12 rounded-2xl border border-[#E8E6E1] bg-[#F7F7F7] px-4 text-sm focus:outline-none focus:border-[#3FAF5E]" disabled={batchesLoading}>
+            <option value="">{batchesLoading ? "Loading..." : "Choose batch"}</option>
+            {batches.map((b: any) => <option key={b.id} value={b.id}>{b.batchCode} — {b.variety}</option>)}
           </select>
         </div>
         <div className="grid grid-cols-2 gap-4">
@@ -79,8 +119,8 @@ export default function FarmerRecordHarvest() {
           <textarea rows={3} placeholder="Quality observations, pest damage, etc." value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))}
             className="w-full rounded-2xl border border-[#E8E6E1] bg-[#F7F7F7] px-4 py-3 text-sm resize-none focus:outline-none focus:border-[#3FAF5E]" />
         </div>
-        <button type="submit" className="w-full h-12 rounded-2xl bg-[#3FAF5E] text-white font-semibold hover:bg-[#3FAF5E]/90 transition-colors shadow-sm">
-          Record Harvest
+        <button type="submit" disabled={isSubmitting || batchesLoading} className="w-full h-12 rounded-2xl bg-[#3FAF5E] text-white font-semibold hover:bg-[#3FAF5E]/90 transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-2">
+          {isSubmitting ? <><Loader className="w-4 h-4 animate-spin" /> Recording...</> : "Record Harvest"}
         </button>
       </motion.form>
     </div>
