@@ -56,7 +56,7 @@ export function FarmerPassport({ data }: LandingProps) {
 /** 08: real-time intelligence. Every figure is a live database/external-source value with its provenance. */
 export function Intelligence({ data, loading }: LandingProps) {
   const reduce = useReducedMotion();
-  const cov = data?.traceabilityCoverage.percent;
+  const cov = data?.traceabilityCoverage?.percent;
   const m = data?.market;
   const w = data?.featured?.weather;
   const cards: Array<{ k: string; v: string; sub: string; icon: typeof Gauge }> = [

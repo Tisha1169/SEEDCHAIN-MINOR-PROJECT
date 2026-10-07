@@ -81,7 +81,7 @@ export function CinematicFrame({ data, loading, failed }: LandingProps) {
   const scale = useTransform(scrollYProgress, [0, 1], [0.86, 1]);
   const opacity = useTransform(scrollYProgress, [0, 0.5], [0.15, 1]);
   const f = data?.featured;
-  const cov = data?.traceabilityCoverage.percent;
+  const cov = data?.traceabilityCoverage?.percent;
   const stats: Array<[string, number | null, string]> = [
     ["Verified farmers", data?.verifiedFarmers ?? null, ""],
     ["Lots on sale", data?.listedLots ?? null, ""],

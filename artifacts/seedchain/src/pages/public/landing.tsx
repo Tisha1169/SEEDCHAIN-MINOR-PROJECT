@@ -10,7 +10,9 @@ const Proof = lazy(() => import("@/components/landing/proof-bundle"));
 
 export default function Landing() {
   const q = useGetPublicOverview({ query: { queryKey: ["/api/public/overview"], staleTime: 30_000, refetchInterval: 60_000, retry: 1 } });
-  const props: LandingProps = { data: q.data, loading: q.isLoading, failed: !!q.error && !q.data };
+  // Only trust a well-formed overview; anything else (e.g. no backend reachable) is treated as "no data".
+  const data = q.data && typeof q.data === "object" && q.data.traceabilityCoverage ? q.data : undefined;
+  const props: LandingProps = { data, loading: q.isLoading, failed: !data && !q.isLoading };
 
   useEffect(() => {
     let hash: string | null = null;
