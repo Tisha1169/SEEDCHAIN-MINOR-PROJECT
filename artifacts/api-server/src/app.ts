@@ -55,8 +55,12 @@ app.use(
         frameAncestors: ["'none'"],
         objectSrc: ["'none'"],
         baseUri: ["'self'"],
+        // Only force HTTPS when the deployment really is HTTPS; on plain-http localhost
+        // Safari would otherwise rewrite every asset to https://localhost and fail to load.
+        upgradeInsecureRequests: config.cookieSecure ? [] : null,
       },
     },
+    strictTransportSecurity: config.cookieSecure ? undefined : false,
     crossOriginEmbedderPolicy: false,
   }),
 );
