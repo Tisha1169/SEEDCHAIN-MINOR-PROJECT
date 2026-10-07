@@ -134,7 +134,7 @@ describe("pipeline end to end", () => {
     expect(run.recordCount).toBeGreaterThanOrEqual(20);
     expect(run.fetchedCount).toBe(run.recordCount + run.rejectedCount);
     const [raw] = await db.select().from(externalRawPayloadsTable).where(eq(externalRawPayloadsTable.runId, run.id));
-    expect(raw.body).toContain("Potato Cultivation in Punjab"); // untouched raw copy
+    expect(raw.body).toMatch(/Area and Production of Potato Crop/i); // untouched raw copy
     expect(raw.sha256).toMatch(/^[0-9a-f]{64}$/);
     const before = ((await db.execute(sql`SELECT count(*)::int n FROM reference_statistics WHERE source_id='pau_potato_punjab'`)).rows[0] as { n: number }).n;
     await ingestPau();
