@@ -1,114 +1,122 @@
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Button } from "@/components/ui/button";
+import { AnimatePresence, motion } from "framer-motion";
+import { Menu, ScanLine, X } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { Menu, X, Home, Settings, Image, Briefcase } from "lucide-react";
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 
-const navLinks = [
-  { label: "Home", href: "/", icon: Home },
-  { label: "About Us", href: "/about", icon: Settings },
-  { label: "Gallery", href: "/how-it-works", icon: Image },
-  { label: "Services", href: "/marketplace", icon: Briefcase },
-];
+export const HASH_KEY = "sc.pendingHash";
+
+const links = [
+  { label: "Platform", hash: "platform" },
+  { label: "Trace", href: "/scan" },
+  { label: "Marketplace", href: "/marketplace" },
+  { label: "For Farmers", hash: "farmers" },
+  { label: "Insights", hash: "insights" },
+] as const;
+
+export function Logo({ className = "" }: { className?: string }) {
+  return (
+    <span className={`inline-flex items-center gap-2.5 ${className}`}>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M12 2.5c4.6 1.3 7.6 5.1 7.6 9.7 0 4.9-3.4 8.3-7.6 9.3-4.2-1-7.6-4.4-7.6-9.3 0-4.6 3-8.4 7.6-9.7Z" stroke="#86d6a0" strokeWidth="1.4" />
+        <path d="M12 21.5V9m0 4.5c-2-.2-3.6-1.3-4.4-3M12 15.5c2-.2 3.6-1.3 4.4-3" stroke="#86d6a0" strokeWidth="1.4" strokeLinecap="round" />
+      </svg>
+      <span className="text-[15px] font-medium tracking-[0.2em] text-ink">SEEDCHAIN</span>
+    </span>
+  );
+}
 
 export function Navbar() {
   const { isAuthenticated, user } = useAuth();
-  const [location] = useLocation();
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [location, navigate] = useLocation();
+  const [open, setOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
+  useEffect(() => {
+    let raf = 0;
+    const on = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => setScrolled(window.scrollY > 24));
+    };
+    on();
+    window.addEventListener("scroll", on, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", on);
+      cancelAnimationFrame(raf);
+    };
+  }, []);
+
+  const goHash = (hash: string) => {
+    setOpen(false);
+    if (location === "/") document.getElementById(hash)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    else {
+      try {
+        sessionStorage.setItem(HASH_KEY, hash);
+      } catch {
+        /* ignore */
+      }
+      navigate("/");
+    }
+  };
+
+  const item = "rounded-full px-4 py-2 text-[13px] text-ink/60 transition-colors hover:text-ink";
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 px-4 sm:px-6 pt-5">
-      <nav className="max-w-[1200px] mx-auto flex items-center justify-between">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2.5 shrink-0">
-          <div className="w-8 h-8 flex items-center justify-center">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <path d="M12 2L4 7v10l8 5 8-5V7l-8-5z" fill="#1A1A1A" />
-              <path d="M12 6L8 8.5v5L12 16l4-2.5v-5L12 6z" fill="#E8E6E1" />
-            </svg>
-          </div>
-          <span className="font-bold text-lg tracking-tight text-[#1A1A1A]">SeedChain</span>
-        </Link>
+    <header className="fixed inset-x-0 top-0 z-50 flex justify-center px-3 pt-3 sm:px-6 sm:pt-4">
+      <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-6 focus:top-5 focus:z-[60] focus:rounded-full focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:text-neutral-950">Skip to content</a>
+      <nav
+        aria-label="Primary"
+        className={`glass-strong flex w-full max-w-[1060px] items-center justify-between rounded-full transition-all duration-500 ease-out ${scrolled ? "px-3 py-1.5 sm:px-4 !bg-black/50 !backdrop-blur-2xl" : "px-4 py-2.5 sm:px-5"}`}
+      >
+        <Link href="/" aria-label="SeedChain home"><Logo /></Link>
 
-        {/* Center — pill nav (matches XFarm ref: rounded capsule buttons) */}
-        <div className="hidden md:flex items-center bg-white rounded-full px-1.5 py-1.5 shadow-sm border border-[#E8E6E1]">
-          {navLinks.map((link) => {
-            const Icon = link.icon;
-            const isActive = location === link.href;
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`relative flex items-center gap-1.5 text-[13px] font-medium px-4 py-2 rounded-full transition-all duration-200 ${
-                  isActive
-                    ? "bg-[#F4F4F4] text-[#1A1A1A]"
-                    : "text-[#1A1A1A]/55 hover:text-[#1A1A1A] hover:bg-[#F4F4F4]/60"
-                }`}
-              >
-                <Icon className="w-3.5 h-3.5" />
-                {link.label}
-              </Link>
-            );
-          })}
+        <div className="hidden items-center md:flex">
+          {links.map((l) =>
+            "hash" in l ? (
+              <button key={l.label} type="button" onClick={() => goHash(l.hash)} className={item}>{l.label}</button>
+            ) : (
+              <Link key={l.label} href={l.href} className={`${item} ${location.startsWith(l.href) ? "!text-ink" : ""}`}>{l.label}</Link>
+            ),
+          )}
         </div>
 
-        {/* Right — CTA */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <Link href="/scan" className="hidden items-center gap-1.5 rounded-full px-3 py-2 text-[13px] text-ink/70 transition-colors hover:text-ink sm:flex"><ScanLine className="h-4 w-4" />Scan QR</Link>
           {isAuthenticated ? (
-            <Link href={`/${user?.role}`}>
-              <Button className="rounded-full bg-[#3B5BDB] text-white hover:bg-[#3B5BDB]/90 font-medium text-[13px] px-5 h-9 shadow-sm">
-                Dashboard
-              </Button>
-            </Link>
+            <Link href={`/${user?.role}`} className="rounded-full bg-white px-4 py-2 text-[13px] font-medium text-neutral-950 transition-shadow hover:shadow-[0_0_30px_-6px_rgba(255,255,255,0.55)]">Dashboard</Link>
           ) : (
-            <Link href="/register">
-              <Button className="rounded-full bg-[#3B5BDB] text-white hover:bg-[#3B5BDB]/90 font-medium text-[13px] px-5 h-9 shadow-sm flex items-center gap-1.5">
-                Become a client
-                <span className="w-1.5 h-1.5 bg-white rounded-full" />
-              </Button>
-            </Link>
+            <>
+              <Link href="/login" className="hidden px-3 py-2 text-[13px] text-ink/70 transition-colors hover:text-ink sm:block">Sign in</Link>
+              <Link href="/register" className="rounded-full bg-white px-4 py-2 text-[13px] font-medium text-neutral-950 transition-shadow hover:shadow-[0_0_30px_-6px_rgba(255,255,255,0.55)]">Get started</Link>
+            </>
           )}
-          {/* Mobile toggle */}
-          <button className="md:hidden p-2 rounded-full hover:bg-[#F4F4F4] transition" onClick={() => setMobileOpen(!mobileOpen)}>
-            {mobileOpen ? <X className="w-5 h-5 text-[#1A1A1A]" /> : <Menu className="w-5 h-5 text-[#1A1A1A]" />}
+          <button type="button" className="rounded-full p-2 text-ink md:hidden" onClick={() => setOpen(!open)} aria-expanded={open} aria-label={open ? "Close menu" : "Open menu"}>
+            {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
       </nav>
 
-      {/* Mobile menu */}
       <AnimatePresence>
-        {mobileOpen && (
+        {open && (
           <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="md:hidden mt-3 bg-white rounded-[20px] shadow-lg border border-[#E8E6E1] p-3 max-w-[1200px] mx-auto"
+            initial={{ opacity: 0, y: -8, filter: "blur(6px)" }}
+            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            exit={{ opacity: 0, y: -8, filter: "blur(6px)" }}
+            transition={{ duration: 0.25 }}
+            className="glass-strong absolute left-3 right-3 top-[68px] rounded-[28px] p-3 md:hidden"
           >
-            {navLinks.map((link) => {
-              const Icon = link.icon;
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setMobileOpen(false)}
-                  className={`flex items-center gap-2.5 text-sm font-medium px-4 py-3 rounded-xl transition-all ${
-                    location === link.href ? "bg-[#F4F4F4] text-[#1A1A1A]" : "text-[#1A1A1A]/55 hover:bg-[#F4F4F4]/60"
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  {link.label}
-                </Link>
-              );
-            })}
-            {!isAuthenticated && (
-              <Link href="/register" onClick={() => setMobileOpen(false)} className="block mt-2 text-sm font-medium px-4 py-3 rounded-xl bg-[#3B5BDB] text-white text-center">
-                Become a client
-              </Link>
+            {links.map((l) =>
+              "hash" in l ? (
+                <button key={l.label} type="button" onClick={() => goHash(l.hash)} className="block w-full rounded-2xl px-4 py-3.5 text-left text-[15px] text-ink/80 hover:bg-white/5">{l.label}</button>
+              ) : (
+                <Link key={l.label} href={l.href} onClick={() => setOpen(false)} className="block rounded-2xl px-4 py-3.5 text-[15px] text-ink/80 hover:bg-white/5">{l.label}</Link>
+              ),
             )}
+            <div className="hairline my-2" />
+            <Link href="/scan" onClick={() => setOpen(false)} className="flex items-center gap-2 rounded-2xl px-4 py-3.5 text-[15px] text-ink/80 hover:bg-white/5"><ScanLine className="h-4 w-4" />Scan QR</Link>
+            {!isAuthenticated && <Link href="/login" onClick={() => setOpen(false)} className="block rounded-2xl px-4 py-3.5 text-[15px] text-ink/80 hover:bg-white/5">Sign in</Link>}
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </header>
   );
 }

@@ -1,11 +1,9 @@
 import { createRoot } from "react-dom/client";
+import { setBaseUrl } from "@workspace/api-client-react";
 import App from "./App";
 import "./index.css";
-import { setBaseUrl, setAuthTokenGetter } from "@lib/api-client-react";
 
-const base = import.meta.env.BASE_URL.replace(/\/$/, "");
-setBaseUrl(base || "");
-
-setAuthTokenGetter(() => localStorage.getItem("token"));
+// Same-origin by default (the API serves or proxies the SPA). Set VITE_API_BASE_URL only for split deployments.
+setBaseUrl((import.meta.env.VITE_API_BASE_URL as string | undefined) || null);
 
 createRoot(document.getElementById("root")!).render(<App />);
