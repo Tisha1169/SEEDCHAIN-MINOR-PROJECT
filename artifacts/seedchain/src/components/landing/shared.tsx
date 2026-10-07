@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { PublicOverview } from "@workspace/api-client-react";
 import { Reveal } from "@/components/motion";
+import { currentLocale } from "@/i18n";
 
 export type Featured = NonNullable<PublicOverview["featured"]>;
 export interface LandingProps {
@@ -53,4 +54,4 @@ export function Row({ k, v, accent = false }: { k: string; v: ReactNode; accent?
 }
 
 export const fmtDate = (iso?: string | null) =>
-  iso ? new Date(iso.length === 10 ? `${iso}T00:00:00` : iso).toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" }).toUpperCase() : dash;
+  iso ? new Date(iso.length === 10 ? `${iso}T00:00:00` : iso).toLocaleDateString(currentLocale(), { day: "2-digit", month: "short", year: "numeric" }).toUpperCase() : dash;

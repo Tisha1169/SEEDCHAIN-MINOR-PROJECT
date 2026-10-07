@@ -160,7 +160,7 @@ export default function TracePage() {
               {t.storage && (
                 <div className="mt-4 rounded-2xl bg-white/[0.04] p-3.5 text-sm">
                   <div className="mb-1 flex items-center gap-2 text-xs font-medium tracking-wide text-ink/70"><Thermometer className="h-4 w-4 text-accent" />{tr("trace.storage")}</div>
-                  <div className="text-ink/60">{enumLabel("storageKind", t.storage.storageType)} {tr("trace.since")} {dateOnly(t.storage.storageStart)}{t.storage.temperatureC != null && ` · ${t.storage.temperatureC}°C`}{t.storage.storageCondition && ` · ${t.storage.storageCondition}`}</div>
+                  <div className="text-ink/60">{enumLabel("storageKind", t.storage.storageType)} {tr("trace.since")} {dateOnly(t.storage.storageStart)}{t.storage.temperatureC != null && ` · ${t.storage.temperatureC}°C`}{t.storage.storageCondition && ` · ${tr(`farmer.detail.cond.${t.storage.storageCondition}`, { defaultValue: t.storage.storageCondition })}`}</div>
                 </div>
               )}
               {t.publicNotes && <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-ink/60">{t.publicNotes}</p>}
