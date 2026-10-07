@@ -233,3 +233,9 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* Indic scripts: Inter has no Devanagari/Gurmukhi glyphs; use Noto and avoid the ultra-light weights that wash out. */
+html[lang="hi"] body, html[lang="hi"] :where(h1,h2,h3,button,input,select) { font-family: "Noto Sans Devanagari", Inter, system-ui, sans-serif; }
+html[lang="pa"] body, html[lang="pa"] :where(h1,h2,h3,button,input,select) { font-family: "Noto Sans Gurmukhi", Inter, system-ui, sans-serif; }
+html[lang="hi"] .font-extralight, html[lang="pa"] .font-extralight, html[lang="hi"] .font-thin, html[lang="pa"] .font-thin { font-weight: 300; }
+html[lang="hi"] [class*="tracking-["], html[lang="pa"] [class*="tracking-["] { letter-spacing: 0.02em; }

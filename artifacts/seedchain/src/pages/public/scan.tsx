@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { BrowserQRCodeReader, type IScannerControls } from "@zxing/browser";
 import { recordScan } from "@workspace/api-client-react";
+import i18n from "@/i18n";
 import { AlertTriangle, Camera, CameraOff, Flashlight, RefreshCw, ScanLine, ShieldAlert } from "lucide-react";
 import { Navbar } from "@/components/layout/navbar";
 import { Button } from "@/components/ui/button";
@@ -44,15 +45,12 @@ export default function ScanPage() {
           navigate(`/trace/${token}?s=app`);
           return;
         }
-        const msg = {
-          UNKNOWN: ["Unknown QR", "This looks like a SeedChain code but it is not in our records. It may be counterfeit or damaged."],
-          REVOKED: ["QR revoked", "This label was revoked by an administrator. Do not rely on it. Contact the seller."],
-          REPLACED: ["QR replaced", "This label was replaced by a newer one. Scan the current label on the produce."],
-          INVALID: ["Invalid QR", "This code is not a SeedChain trace QR."],
-        }[r.result];
+        const k = (n: string): string[] => [i18n.t(`scan.${n}Title`), i18n.t(`scan.${n}Body`)];
+        const messages: Record<string, string[]> = { DISABLED: k("disabled"), UNKNOWN: k("unknown"), REVOKED: k("revoked"), REPLACED: k("replaced"), INVALID: k("invalid") };
+        const msg = messages[r.result] ?? messages.INVALID;
         setState({ kind: "problem", title: msg[0], detail: msg[1] });
       } catch (err) {
-        setState({ kind: "problem", title: "Cannot reach SeedChain", detail: `${errMsg(err)} Check your connection and try again.`, retryToken: token });
+        setState({ kind: "problem", title: i18n.t("scan.unreachable"), detail: `${errMsg(err)} ${i18n.t("scan.checkConnection")}`, retryToken: token });
       } finally {
         handling.current = false;
       }

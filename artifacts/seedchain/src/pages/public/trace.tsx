@@ -9,6 +9,7 @@ import { Card, Kv, Loading, Pill } from "@/components/app/common";
 import { ProduceTile } from "@/components/art";
 import { Reveal } from "@/components/motion";
 import { motion, useReducedMotion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { dateOnly, dateTime, qty, timeAgo, titleCase } from "@/lib/format";
 import { errMsg, uuid } from "@/lib/api";
 import { LotStatusPill } from "@/components/app/common";
@@ -35,6 +36,7 @@ function Shell({ children }: { children: React.ReactNode }) {
 }
 
 export default function TracePage() {
+  const { t: tr } = useTranslation();
   const [, params] = useRoute("/trace/:token");
   const token = params?.token ?? "";
   const fromApp = new URLSearchParams(window.location.search).get("s") === "app";
@@ -63,7 +65,7 @@ export default function TracePage() {
     return () => es.close();
   }, [lotId, token, qc]);
 
-  if (q.isLoading) return <Shell><Loading label="Verifying QR…" /></Shell>;
+  if (q.isLoading) return <Shell><Loading label={tr("trace.verifying")} /></Shell>;
 
   if (q.error) {
     const e = q.error;
@@ -72,9 +74,9 @@ export default function TracePage() {
         <Shell>
           <Card className="p-8 text-center">
             <ShieldAlert className="mx-auto mb-3 h-12 w-12 text-rose-500" />
-            <h1 className="text-xl font-medium">Not a recognised SeedChain QR</h1>
-            <p className="mt-2 text-sm text-ink/60">This code does not match any lot in our records. Do not rely on the label. It may be damaged or counterfeit.</p>
-            <Link href="/scan"><Button className="mt-5 rounded-full">Scan another QR</Button></Link>
+            <h1 className="text-xl font-medium">{tr("trace.unknownTitle")}</h1>
+            <p className="mt-2 text-sm text-ink/60">{tr("trace.unknownBody")}</p>
+            <Link href="/scan"><Button className="mt-5 rounded-full">{tr("trace.scanAnother")}</Button></Link>
           </Card>
         </Shell>
       );
@@ -85,7 +87,7 @@ export default function TracePage() {
         <Shell>
           <Card className="border-rose-400/25 p-8 text-center">
             <AlertTriangle className="mx-auto mb-3 h-12 w-12 text-amber-500" />
-            <h1 className="text-xl font-medium">{st === "REVOKED" ? "This QR label was revoked" : "This QR label was replaced"}</h1>
+            <h1 className="text-xl font-medium">{st === "REVOKED" ? tr("trace.revokedTitle") : st === "DISABLED" ? tr("trace.disabledTitle") : tr("trace.replacedTitle")}</h1>
             <p className="mt-2 text-sm text-ink/60">{(e.data as { message?: string } | null)?.message}</p>
           </Card>
         </Shell>
@@ -95,9 +97,9 @@ export default function TracePage() {
       <Shell>
         <Card className="p-8 text-center">
           <AlertTriangle className="mx-auto mb-3 h-12 w-12 text-amber-500" />
-          <h1 className="text-xl font-medium">Could not reach SeedChain</h1>
-          <p className="mt-2 text-sm text-ink/60">{errMsg(e)} We are not showing cached or sample data.</p>
-          <Button onClick={() => void q.refetch()} variant="outline" className="mt-5 rounded-full"><RefreshCw className="mr-2 h-4 w-4" />Try again</Button>
+          <h1 className="text-xl font-medium">{tr("trace.unreachableTitle")}</h1>
+          <p className="mt-2 text-sm text-ink/60">{errMsg(e)} {tr("trace.noCache")}</p>
+          <Button onClick={() => void q.refetch()} variant="outline" className="mt-5 rounded-full"><RefreshCw className="mr-2 h-4 w-4" />{tr("trace.tryAgain")}</Button>
         </Card>
       </Shell>
     );
@@ -117,11 +119,11 @@ export default function TracePage() {
                 {verified ? <BadgeCheck className="h-7 w-7" strokeWidth={1.4} /> : <AlertTriangle className="h-7 w-7" strokeWidth={1.4} />}
               </span>
               <div className="min-w-0">
-                <div className={`text-[11px] font-medium tracking-[0.28em] ${verified ? "text-accent" : "text-amber-300"}`}>{verified ? "SEEDCHAIN VERIFIED" : "REGISTERED · FARMER NOT VERIFIED"}</div>
+                <div className={`text-[11px] font-medium tracking-[0.28em] ${verified ? "text-accent" : "text-amber-300"}`}>{verified ? tr("trace.verified") : tr("trace.unverified")}</div>
                 <div className="mt-0.5 truncate font-mono text-xl tracking-wide">{t.lotCode}</div>
               </div>
             </div>
-            <p className="relative mt-3 text-xs leading-relaxed text-ink/55">{verified ? "This lot exists in the SeedChain database and belongs to an admin-verified farmer." : "This lot exists in the SeedChain database, but its farmer has not been verified by an admin."}</p>
+            <p className="relative mt-3 text-xs leading-relaxed text-ink/55">{verified ? tr("trace.verifiedBody") : tr("trace.unverifiedBody")}</p>
           </div>
         </Reveal>
 
@@ -136,18 +138,18 @@ export default function TracePage() {
               </div>
             </div>
             <div className="p-5">
-              <Kv k="Farmer" v={<span className="inline-flex items-center gap-1.5"><User className="h-3.5 w-3.5 text-ink/40" />{t.farmer.publicName}{t.farmer.verified && <BadgeCheck className="h-4 w-4 text-accent" />}</span>} />
-              <Kv k="Farm" v={t.farmName} />
-              <Kv k="Origin" v={<span className="inline-flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-ink/40" />{t.origin}</span>} />
-              <Kv k="Harvest date" v={dateOnly(t.harvestDate)} />
-              <Kv k="Harvested" v={qty(t.harvestedQuantity, t.unit)} />
-              {t.availableQuantity != null && <Kv k="Available now" v={qty(t.availableQuantity, t.unit)} />}
-              <Kv k="Quality" v={t.qualityGrade ? `Grade ${t.qualityGrade}` : "Not recorded"} />
-              {t.qualityNotes && <Kv k="Quality notes" v={t.qualityNotes} />}
+              <Kv k={tr("trace.farmer")} v={<span className="inline-flex items-center gap-1.5"><User className="h-3.5 w-3.5 text-ink/40" />{t.farmer.publicName}{t.farmer.verified && <BadgeCheck className="h-4 w-4 text-accent" />}</span>} />
+              <Kv k={tr("trace.farm")} v={t.farmName} />
+              <Kv k={tr("trace.origin")} v={<span className="inline-flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-ink/40" />{t.origin}</span>} />
+              <Kv k={tr("trace.harvestDate")} v={dateOnly(t.harvestDate)} />
+              <Kv k={tr("trace.harvested")} v={qty(t.harvestedQuantity, t.unit)} />
+              {t.availableQuantity != null && <Kv k={tr("trace.availableNow")} v={qty(t.availableQuantity, t.unit)} />}
+              <Kv k={tr("trace.quality")} v={t.qualityGrade ? `${tr("trace.grade")} ${t.qualityGrade}` : tr("trace.notRecorded")} />
+              {t.qualityNotes && <Kv k={tr("trace.qualityNotes")} v={t.qualityNotes} />}
               {t.storage && (
                 <div className="mt-4 rounded-2xl bg-white/[0.04] p-3.5 text-sm">
-                  <div className="mb-1 flex items-center gap-2 text-xs font-medium tracking-wide text-ink/70"><Thermometer className="h-4 w-4 text-accent" />Storage (recorded by farmer)</div>
-                  <div className="text-ink/60">{titleCase(t.storage.storageType)} since {dateOnly(t.storage.storageStart)}{t.storage.temperatureC != null && ` · ${t.storage.temperatureC}°C`}{t.storage.storageCondition && ` · ${t.storage.storageCondition}`}</div>
+                  <div className="mb-1 flex items-center gap-2 text-xs font-medium tracking-wide text-ink/70"><Thermometer className="h-4 w-4 text-accent" />{tr("trace.storage")}</div>
+                  <div className="text-ink/60">{titleCase(t.storage.storageType)} {tr("trace.since")} {dateOnly(t.storage.storageStart)}{t.storage.temperatureC != null && ` · ${t.storage.temperatureC}°C`}{t.storage.storageCondition && ` · ${t.storage.storageCondition}`}</div>
                 </div>
               )}
               {t.publicNotes && <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-ink/60">{t.publicNotes}</p>}
@@ -156,13 +158,13 @@ export default function TracePage() {
         </Reveal>
 
         {t.listed && (t.availableQuantity ?? 0) > 0 && (
-          <Link href={`/marketplace/${t.lotId}`} className="flex h-14 items-center justify-center gap-2 rounded-full bg-white text-[15px] font-medium text-neutral-950 transition-shadow hover:shadow-[0_0_44px_-8px_rgba(255,255,255,0.55)]"><ShoppingBag className="h-5 w-5" />Order directly from the farmer</Link>
+          <Link href={`/marketplace/${t.lotId}`} className="flex h-14 items-center justify-center gap-2 rounded-full bg-white text-[15px] font-medium text-neutral-950 transition-shadow hover:shadow-[0_0_44px_-8px_rgba(255,255,255,0.55)]"><ShoppingBag className="h-5 w-5" />{tr("trace.orderDirect")}</Link>
         )}
 
         {/* journey */}
         <Reveal blur={false}>
           <div className="glass rounded-[28px] p-5 sm:p-6">
-            <h2 className="mb-6 flex items-center gap-2 text-[11px] font-medium tracking-[0.24em] text-ink/60"><Sprout className="h-4 w-4 text-accent" />TRACEABILITY JOURNEY</h2>
+            <h2 className="mb-6 flex items-center gap-2 text-[11px] font-medium tracking-[0.24em] text-ink/60"><Sprout className="h-4 w-4 text-accent" />{tr("trace.journey")}</h2>
             <ol className="relative space-y-6 pl-8">
               <span aria-hidden className="absolute bottom-2 left-[11px] top-2 w-px bg-gradient-to-b from-accent/60 via-accent/25 to-transparent" />
               {t.timeline.map((e, i) => (
@@ -179,15 +181,15 @@ export default function TracePage() {
 
         <div className="glass flex flex-wrap items-center justify-between gap-3 rounded-[28px] p-4 text-xs text-ink/50">
           <div>
-            <div>Last updated {dateTime(t.lastUpdatedAt)} ({timeAgo(t.lastUpdatedAt)})</div>
-            <div className="mt-0.5 text-ink/35">Retrieved {timeAgo(t.retrievedAt)} from the live database · QR v{t.qrVersion}</div>
+            <div>{tr("trace.lastUpdated")} {dateTime(t.lastUpdatedAt)} ({timeAgo(t.lastUpdatedAt)})</div>
+            <div className="mt-0.5 text-ink/35">{tr("trace.retrieved")} {timeAgo(t.retrievedAt)} {tr("trace.fromLiveDb")} · QR v{t.qrVersion}</div>
           </div>
           <div className="flex items-center gap-2">
-            <Pill className={live ? "bg-emerald-400/15 text-emerald-300" : "bg-white/10 text-ink/60"}>{live ? "Live" : "Refreshes every 30 s"}</Pill>
-            <Button size="sm" variant="outline" onClick={() => void q.refetch()} disabled={q.isFetching}><RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${q.isFetching ? "animate-spin" : ""}`} />Refresh</Button>
+            <Pill className={live ? "bg-emerald-400/15 text-emerald-300" : "bg-white/10 text-ink/60"}>{live ? tr("trace.live") : tr("trace.refreshes")}</Pill>
+            <Button size="sm" variant="outline" onClick={() => void q.refetch()} disabled={q.isFetching}><RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${q.isFetching ? "animate-spin" : ""}`} />{tr("trace.refresh")}</Button>
           </div>
         </div>
-        <p className="px-4 pb-4 text-center text-[11px] leading-relaxed text-ink/30"><QrCode className="mr-1 inline h-3 w-3" />Database-backed traceability. Entries are recorded by the farmer and platform and are append-only; they are not independently audited unless stated.</p>
+        <p className="px-4 pb-4 text-center text-[11px] leading-relaxed text-ink/30"><QrCode className="mr-1 inline h-3 w-3" />{tr("trace.disclaimer")}</p>
       </div>
     </Shell>
   );

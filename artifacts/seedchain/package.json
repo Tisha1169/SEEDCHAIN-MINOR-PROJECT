@@ -78,6 +78,8 @@
     "@workspace/api-client-react": "workspace:*",
     "@zxing/browser": "^0.2.1",
     "@zxing/library": "^0.23.0",
-    "qrcode.react": "^4.2.0"
+    "i18next": "^26.4.2",
+    "qrcode.react": "^4.2.0",
+    "react-i18next": "^17.0.16"
   }
 }
