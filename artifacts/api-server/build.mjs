@@ -20,6 +20,7 @@ async function buildAll() {
       path.resolve(artifactDir, "src/cli/create-admin.ts"),
       path.resolve(artifactDir, "src/cli/seed-pilot.ts"),
       path.resolve(artifactDir, "src/cli/import-mandi.ts"),
+      path.resolve(artifactDir, "src/cli/run-source.ts"),
     ],
     platform: "node",
     bundle: true,
