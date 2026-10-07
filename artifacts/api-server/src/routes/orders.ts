@@ -1,121 +1,56 @@
 import { Router } from "express";
-import { db } from "@workspace/db";
-import { ordersTable, usersTable, seedBatchesTable, harvestsTable } from "@workspace/db";
-import { eq, and } from "drizzle-orm";
-import { authMiddleware } from "../lib/auth";
+import {
+  CreateOrderBody,
+  GetOrderParams,
+  ListOrdersQueryParams,
+  SubmitOrderFeedbackBody,
+  TransitionOrderBody,
+  TransitionOrderParams,
+} from "@workspace/api-zod";
+import { requireAuth, requireRole } from "../lib/auth";
+import { badRequest } from "../lib/errors";
+import { actorOf, parse, withIdempotency } from "../lib/http";
+import { createOrder, getOrder, listOrders, submitFeedback, transitionOrder } from "../services/orders";
+import { reportOfflineConflict } from "./lots";
 
 const router = Router();
 
-router.get("/orders", authMiddleware, async (req, res) => {
-  try {
-    const { buyerId, status } = req.query;
-    let orders = await db.select({
-      id: ordersTable.id, buyerId: ordersTable.buyerId,
-      batchId: ordersTable.batchId, quantityKg: ordersTable.quantityKg,
-      pricePerKg: ordersTable.pricePerKg, totalPrice: ordersTable.totalPrice,
-      status: ordersTable.status, transportId: ordersTable.transportId,
-      notes: ordersTable.notes, createdAt: ordersTable.createdAt,
-      buyerName: usersTable.name, batchCode: seedBatchesTable.batchCode,
-      variety: seedBatchesTable.variety,
-    }).from(ordersTable)
-      .leftJoin(usersTable, eq(ordersTable.buyerId, usersTable.id))
-      .leftJoin(seedBatchesTable, eq(ordersTable.batchId, seedBatchesTable.id));
-    if (buyerId) {
-      orders = orders.filter(o => o.buyerId === parseInt(buyerId as string));
-    }
-    if (status) {
-      orders = orders.filter(o => o.status === status);
-    }
-    res.json(orders);
-  } catch (err) {
-    req.log.error(err);
-    res.status(500).json({ error: "Server error" });
-  }
+router.get("/orders", requireAuth, async (req, res) => {
+  const q = parse(ListOrdersQueryParams, req.query);
+  res.json(await listOrders(req.user!, q.status));
 });
 
-router.post("/orders", authMiddleware, async (req, res) => {
-  try {
-    const buyerId = (req as any).user.id;
-    const { batchId, quantityKg, pricePerKg, notes } = req.body;
-    const totalPrice = (parseFloat(quantityKg) * parseFloat(pricePerKg)).toFixed(2);
-    const [order] = await db.insert(ordersTable).values({
-      buyerId, batchId, quantityKg, pricePerKg, totalPrice, notes
-    }).returning();
-    res.status(201).json(order);
-  } catch (err) {
-    req.log.error(err);
-    res.status(500).json({ error: "Server error" });
-  }
+router.post("/orders", requireRole(["customer"]), async (req, res) => {
+  const key = req.get("idempotency-key");
+  if (!key || key.length < 8 || key.length > 100) throw badRequest("Idempotency-Key header (8-100 chars) is required");
+  const body = parse(CreateOrderBody, req.body);
+  const r = await createOrder(actorOf(req), key, body);
+  res.status(r.duplicate ? 200 : 201).json(r.order);
 });
 
-router.get("/orders/:id", authMiddleware, async (req, res) => {
-  try {
-    const id = parseInt(String(req.params.id));
-    const [order] = await db.select({
-      id: ordersTable.id, buyerId: ordersTable.buyerId,
-      batchId: ordersTable.batchId, quantityKg: ordersTable.quantityKg,
-      pricePerKg: ordersTable.pricePerKg, totalPrice: ordersTable.totalPrice,
-      status: ordersTable.status, transportId: ordersTable.transportId,
-      notes: ordersTable.notes, createdAt: ordersTable.createdAt,
-      buyerName: usersTable.name, batchCode: seedBatchesTable.batchCode,
-      variety: seedBatchesTable.variety,
-    }).from(ordersTable)
-      .leftJoin(usersTable, eq(ordersTable.buyerId, usersTable.id))
-      .leftJoin(seedBatchesTable, eq(ordersTable.batchId, seedBatchesTable.id))
-      .where(eq(ordersTable.id, id)).limit(1);
-    if (!order) {
-      res.status(404).json({ error: "Order not found" });
-      return;
-    }
-    res.json(order);
-  } catch (err) {
-    req.log.error(err);
-    res.status(500).json({ error: "Server error" });
-  }
+router.get("/orders/:id", requireAuth, async (req, res) => {
+  const { id } = parse(GetOrderParams, req.params);
+  res.json(await getOrder(req.user!, id));
 });
 
-router.put("/orders/:id", authMiddleware, async (req, res) => {
-  try {
-    const id = parseInt(String(req.params.id));
-    const { status, transportId } = req.body;
-    const updateData: any = {};
-    if (status) updateData.status = status;
-    if (transportId) updateData.transportId = transportId;
-    const [order] = await db.update(ordersTable).set(updateData).where(eq(ordersTable.id, id)).returning();
-    if (!order) {
-      res.status(404).json({ error: "Order not found" });
-      return;
-    }
-    if (status === "delivered") {
-      await db.update(seedBatchesTable).set({ status: "sold" }).where(eq(seedBatchesTable.id, order.batchId));
-    }
-    res.json(order);
-  } catch (err) {
-    req.log.error(err);
-    res.status(500).json({ error: "Server error" });
-  }
+router.post("/orders/:id/feedback", requireRole(["customer"]), async (req, res) => {
+  const { id } = parse(GetOrderParams, req.params);
+  const body = parse(SubmitOrderFeedbackBody, req.body);
+  res.status(201).json(await submitFeedback(actorOf(req), id, body.rating, body.comment));
 });
 
-router.get("/marketplace", authMiddleware, async (req, res) => {
+router.post("/orders/:id/:action", requireRole(["farmer", "customer", "admin"]), async (req, res) => {
+  const { id, action } = parse(TransitionOrderParams, req.params);
+  const body = parse(TransitionOrderBody, req.body);
   try {
-    const batches = await db.select({
-      batchId: seedBatchesTable.id, batchCode: seedBatchesTable.batchCode,
-      variety: seedBatchesTable.variety, quantityKg: seedBatchesTable.quantityKg,
-      qualityGrade: seedBatchesTable.qualityGrade, farmerName: usersTable.name,
-      location: usersTable.location,
-    }).from(seedBatchesTable)
-      .leftJoin(usersTable, eq(seedBatchesTable.farmerId, usersTable.id))
-      .where(eq(seedBatchesTable.status, "harvested"));
-
-    const listings = batches.map(b => ({
-      ...b,
-      pricePerKg: b.qualityGrade === "A" ? 25 : b.qualityGrade === "B" ? 20 : 15,
-      harvestDate: new Date().toISOString().split("T")[0],
-    }));
-    res.json(listings);
+    const r = await withIdempotency(req, `POST /orders/${id}/${action}`, async () => {
+      const t = await transitionOrder(actorOf(req), id, action, body);
+      return { status: 200, body: t.order };
+    });
+    res.status(r.status).json(r.body);
   } catch (err) {
-    req.log.error(err);
-    res.status(500).json({ error: "Server error" });
+    await reportOfflineConflict(req, err, "order", id);
+    throw err;
   }
 });
 

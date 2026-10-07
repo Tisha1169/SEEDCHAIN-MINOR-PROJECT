@@ -358,9 +358,15 @@ export async function customFetch<T = unknown>(
     }
   }
 
+  // Session auth uses an httpOnly cookie. Non-safe methods carry a custom
+  // header that cross-site forms cannot send (CSRF defence, see SECURITY.md).
+  if (method !== "GET" && method !== "HEAD" && !headers.has("x-seedchain-csrf")) {
+    headers.set("x-seedchain-csrf", "1");
+  }
+
   const requestInfo = { method, url: resolveUrl(input) };
 
-  const response = await fetch(input, { ...init, method, headers });
+  const response = await fetch(input, { credentials: "include", ...init, method, headers });
 
   if (!response.ok) {
     const errorData = await parseErrorBody(response, method);

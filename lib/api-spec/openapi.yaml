@@ -1,1698 +1,1747 @@
 openapi: 3.1.0
 info:
   title: Api
-  version: 0.1.0
-  description: SeedChain - Potato Seed Supply Chain Tracking Platform API
+  version: 1.0.0
+  description: |
+    SeedChain: direct farmer-to-customer agricultural traceability.
+    Three roles only: admin, farmer, customer.
+    Authentication uses an httpOnly session cookie. Every non-GET request must
+    send the header `X-SeedChain-CSRF: 1`.
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
-    description: Health operations
   - name: auth
-    description: Authentication operations
-  - name: users
-    description: User management
+  - name: admin
   - name: farms
-    description: Farm management
-  - name: batches
-    description: Seed batch management
-  - name: harvests
-    description: Harvest records
-  - name: storage
-    description: Cold storage management
-  - name: transport
-    description: Transport/logistics management
+  - name: products
+  - name: lots
+  - name: qr
+  - name: trace
+  - name: marketplace
   - name: orders
-    description: Buyer orders
   - name: dashboard
-    description: Dashboard summary data
-  - name: tracking
-    description: Shipment tracking
+  - name: alerts
+  - name: external
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
-      summary: Health check
       responses:
         "200":
           description: Healthy
           content:
             application/json:
-              schema:
-                $ref: "#/components/schemas/HealthStatus"
+              schema: { $ref: "#/components/schemas/HealthStatus" }
 
+  # ------------------------------------------------------------------ auth
   /auth/register:
     post:
       operationId: registerUser
       tags: [auth]
-      summary: Register a new user
+      summary: Register a farmer (pending admin approval) or a customer (active immediately)
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              $ref: "#/components/schemas/RegisterUserBody"
+            schema: { $ref: "#/components/schemas/RegisterUserBody" }
       responses:
         "201":
-          description: User registered
+          description: Registered and signed in
           content:
             application/json:
-              schema:
-                $ref: "#/components/schemas/AuthResponse"
-        "400":
-          description: Bad request
-
+              schema: { $ref: "#/components/schemas/AuthResponse" }
+        "400": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
   /auth/login:
     post:
       operationId: loginUser
       tags: [auth]
-      summary: Login user
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              $ref: "#/components/schemas/LoginUserBody"
+            schema: { $ref: "#/components/schemas/LoginUserBody" }
       responses:
         "200":
-          description: Login successful
+          description: Signed in
           content:
             application/json:
-              schema:
-                $ref: "#/components/schemas/AuthResponse"
-        "401":
-          description: Invalid credentials
-
+              schema: { $ref: "#/components/schemas/AuthResponse" }
+        "401": { $ref: "#/components/responses/Error" }
+  /auth/logout:
+    post:
+      operationId: logoutUser
+      tags: [auth]
+      responses:
+        "204": { description: Session revoked }
   /auth/me:
     get:
       operationId: getCurrentUser
       tags: [auth]
-      summary: Get current user
       responses:
         "200":
           description: Current user
           content:
             application/json:
-              schema:
-                $ref: "#/components/schemas/User"
-        "401":
-          description: Unauthorized
-
-  /users:
-    get:
-      operationId: listUsers
-      tags: [users]
-      summary: List all users (admin)
-      parameters:
-        - name: role
-          in: query
-          schema:
-            type: string
-            enum: [farmer, storage, logistics, buyer, admin]
-      responses:
-        "200":
-          description: List of users
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/User"
-
-  /users/{id}:
-    get:
-      operationId: getUser
-      tags: [users]
-      summary: Get user by ID
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: User
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/User"
-    put:
-      operationId: updateUser
-      tags: [users]
-      summary: Update user
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
+              schema: { $ref: "#/components/schemas/CurrentUser" }
+        "401": { $ref: "#/components/responses/Error" }
+  /me/profile:
+    patch:
+      operationId: updateMyProfile
+      tags: [auth]
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              $ref: "#/components/schemas/UpdateUserBody"
+            schema: { $ref: "#/components/schemas/UpdateProfileBody" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CurrentUser" }
+
+  # ------------------------------------------------------------------ admin users
+  /admin/users:
+    get:
+      operationId: listUsers
+      tags: [admin]
+      parameters:
+        - { name: role, in: query, schema: { $ref: "#/components/schemas/UserRole" } }
+        - { name: status, in: query, schema: { $ref: "#/components/schemas/UserStatus" } }
+      responses:
+        "200":
+          description: Users
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/CurrentUser" }
+  /admin/users/{id}/{action}:
+    post:
+      operationId: reviewUser
+      tags: [admin]
+      summary: Approve / reject a farmer, suspend / reactivate any non-admin user
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+        - name: action
+          in: path
+          required: true
+          schema: { type: string, enum: [approve, reject, suspend, reactivate] }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ReviewUserBody" }
       responses:
         "200":
           description: Updated user
           content:
             application/json:
+              schema: { $ref: "#/components/schemas/CurrentUser" }
+        "409": { $ref: "#/components/responses/Error" }
+  /admin/audit-logs:
+    get:
+      operationId: listAuditLogs
+      tags: [admin]
+      parameters:
+        - { name: entityType, in: query, schema: { type: string } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 500 } }
+      responses:
+        "200":
+          description: Audit log entries (newest first)
+          content:
+            application/json:
               schema:
-                $ref: "#/components/schemas/User"
+                type: array
+                items: { $ref: "#/components/schemas/AuditLog" }
+  /admin/events:
+    get:
+      operationId: listAllTraceEvents
+      tags: [admin]
+      parameters:
+        - { name: eventType, in: query, schema: { type: string } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 500 } }
+      responses:
+        "200":
+          description: Traceability events across all lots (newest first)
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/TraceEvent" }
+  /admin/scans:
+    get:
+      operationId: listQrScans
+      tags: [admin]
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 500 } }
+      responses:
+        "200":
+          description: QR scans (newest first)
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/QrScan" }
 
+  # ------------------------------------------------------------------ farms / products
   /farms:
     get:
       operationId: listFarms
       tags: [farms]
-      summary: List farms
       responses:
         "200":
-          description: List of farms
+          description: Farms visible to the caller
           content:
             application/json:
               schema:
                 type: array
-                items:
-                  $ref: "#/components/schemas/Farm"
+                items: { $ref: "#/components/schemas/Farm" }
     post:
       operationId: createFarm
       tags: [farms]
-      summary: Create a farm
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              $ref: "#/components/schemas/CreateFarmBody"
+            schema: { $ref: "#/components/schemas/FarmBody" }
       responses:
         "201":
-          description: Created farm
+          description: Created
           content:
             application/json:
-              schema:
-                $ref: "#/components/schemas/Farm"
-
+              schema: { $ref: "#/components/schemas/Farm" }
   /farms/{id}:
-    get:
-      operationId: getFarm
+    patch:
+      operationId: updateFarm
       tags: [farms]
-      summary: Get farm by ID
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/FarmBody" }
       responses:
         "200":
-          description: Farm
+          description: Updated
           content:
             application/json:
-              schema:
-                $ref: "#/components/schemas/Farm"
-
-  /batches:
+              schema: { $ref: "#/components/schemas/Farm" }
+  /products:
     get:
-      operationId: listBatches
-      tags: [batches]
-      summary: List seed batches
-      parameters:
-        - name: farmerId
-          in: query
-          schema:
-            type: integer
-        - name: status
-          in: query
-          schema:
-            type: string
+      operationId: listProducts
+      tags: [products]
       responses:
         "200":
-          description: List of batches
+          description: Products visible to the caller
           content:
             application/json:
               schema:
                 type: array
-                items:
-                  $ref: "#/components/schemas/SeedBatch"
+                items: { $ref: "#/components/schemas/Product" }
     post:
-      operationId: createBatch
-      tags: [batches]
-      summary: Create a seed batch
+      operationId: createProduct
+      tags: [products]
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              $ref: "#/components/schemas/CreateBatchBody"
+            schema: { $ref: "#/components/schemas/ProductBody" }
       responses:
         "201":
-          description: Created batch
+          description: Created
           content:
             application/json:
-              schema:
-                $ref: "#/components/schemas/SeedBatch"
+              schema: { $ref: "#/components/schemas/Product" }
 
-  /batches/{id}:
+  # ------------------------------------------------------------------ lots
+  /lots:
     get:
-      operationId: getBatch
-      tags: [batches]
-      summary: Get batch by ID
+      operationId: listLots
+      tags: [lots]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
+        - { name: status, in: query, schema: { $ref: "#/components/schemas/LotStatus" } }
       responses:
         "200":
-          description: Seed batch
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/SeedBatch"
-    put:
-      operationId: updateBatch
-      tags: [batches]
-      summary: Update batch status
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UpdateBatchBody"
-      responses:
-        "200":
-          description: Updated batch
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/SeedBatch"
-
-  /harvests:
-    get:
-      operationId: listHarvests
-      tags: [harvests]
-      summary: List harvests
-      parameters:
-        - name: farmerId
-          in: query
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: List of harvests
+          description: Lots visible to the caller (farmer = own, admin = all)
           content:
             application/json:
               schema:
                 type: array
-                items:
-                  $ref: "#/components/schemas/Harvest"
+                items: { $ref: "#/components/schemas/LotSummary" }
     post:
-      operationId: createHarvest
-      tags: [harvests]
-      summary: Record a harvest
+      operationId: createLot
+      tags: [lots]
+      summary: Create a lot, its LOT_CREATED event and its first QR identity
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              $ref: "#/components/schemas/CreateHarvestBody"
+            schema: { $ref: "#/components/schemas/CreateLotBody" }
       responses:
         "201":
-          description: Created harvest
+          description: Created
           content:
             application/json:
-              schema:
-                $ref: "#/components/schemas/Harvest"
-
-  /harvests/{id}:
+              schema: { $ref: "#/components/schemas/LotDetail" }
+  /lots/{id}:
     get:
-      operationId: getHarvest
-      tags: [harvests]
-      summary: Get harvest by ID
+      operationId: getLot
+      tags: [lots]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
         "200":
-          description: Harvest
+          description: Lot
           content:
             application/json:
-              schema:
-                $ref: "#/components/schemas/Harvest"
-
-  /storage:
-    get:
-      operationId: listStorageRecords
-      tags: [storage]
-      summary: List storage records
+              schema: { $ref: "#/components/schemas/LotDetail" }
+        "404": { $ref: "#/components/responses/Error" }
+    patch:
+      operationId: updateLot
+      tags: [lots]
       parameters:
-        - name: operatorId
-          in: query
-          schema:
-            type: integer
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateLotBody" }
       responses:
         "200":
-          description: List of storage records
+          description: Updated (LOT_UPDATED event appended)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LotDetail" }
+  /inventory:
+    get:
+      operationId: getInventory
+      tags: [lots]
+      summary: Live inventory per lot with totals (farmer = own lots, admin = all)
+      responses:
+        "200":
+          description: Inventory
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InventoryReport" }
+  /lots/{id}/listing:
+    post:
+      operationId: setLotListing
+      tags: [lots]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LotListingBody" }
+      responses:
+        "200":
+          description: Listing updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LotDetail" }
+  /lots/{id}/events:
+    get:
+      operationId: listLotEvents
+      tags: [lots]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Full (private) event history of the lot, oldest first
           content:
             application/json:
               schema:
                 type: array
-                items:
-                  $ref: "#/components/schemas/StorageRecord"
+                items: { $ref: "#/components/schemas/TraceEvent" }
     post:
-      operationId: createStorageRecord
-      tags: [storage]
-      summary: Create storage record
+      operationId: recordLotEvent
+      tags: [lots]
+      summary: Farmer records a real-world event. Idempotent on clientEventId.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+        - name: X-Offline-Replay
+          in: header
+          required: false
+          schema: { type: string }
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              $ref: "#/components/schemas/CreateStorageRecordBody"
+            schema: { $ref: "#/components/schemas/RecordLotEventBody" }
       responses:
         "201":
-          description: Created storage record
+          description: Event appended
           content:
             application/json:
-              schema:
-                $ref: "#/components/schemas/StorageRecord"
-
-  /storage/{id}:
+              schema: { $ref: "#/components/schemas/TraceEvent" }
+        "200":
+          description: Duplicate clientEventId, original event returned
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TraceEvent" }
+        "409": { $ref: "#/components/responses/Error" }
+  /lots/{id}/storage:
     get:
-      operationId: getStorageRecord
-      tags: [storage]
-      summary: Get storage record by ID
+      operationId: listLotStorage
+      tags: [lots]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
         "200":
-          description: Storage record
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/StorageRecord"
-    put:
-      operationId: updateStorageRecord
-      tags: [storage]
-      summary: Update storage record
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UpdateStorageRecordBody"
-      responses:
-        "200":
-          description: Updated storage record
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/StorageRecord"
-
-  /transport:
-    get:
-      operationId: listTransportRecords
-      tags: [transport]
-      summary: List transport records
-      parameters:
-        - name: driverId
-          in: query
-          schema:
-            type: integer
-        - name: status
-          in: query
-          schema:
-            type: string
-      responses:
-        "200":
-          description: List of transport records
+          description: Farmer-managed storage records
           content:
             application/json:
               schema:
                 type: array
-                items:
-                  $ref: "#/components/schemas/TransportRecord"
+                items: { $ref: "#/components/schemas/StorageRecord" }
+  /lots/{id}/qr:
+    get:
+      operationId: listLotQrCodes
+      tags: [qr]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: QR history of the lot (newest first)
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/QrCode" }
+
+  # ------------------------------------------------------------------ qr
+  /qr/generate:
     post:
-      operationId: createTransportRecord
-      tags: [transport]
-      summary: Create transport record
+      operationId: generateQr
+      tags: [qr]
+      summary: Issue a replacement QR for a lot (old ACTIVE QR becomes REPLACED)
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              $ref: "#/components/schemas/CreateTransportRecordBody"
+            schema: { $ref: "#/components/schemas/GenerateQrBody" }
       responses:
         "201":
-          description: Created transport record
+          description: New active QR
           content:
             application/json:
-              schema:
-                $ref: "#/components/schemas/TransportRecord"
-
-  /transport/{id}:
-    get:
-      operationId: getTransportRecord
-      tags: [transport]
-      summary: Get transport record by ID
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: Transport record
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/TransportRecord"
-    put:
-      operationId: updateTransportRecord
-      tags: [transport]
-      summary: Update transport record status
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
+              schema: { $ref: "#/components/schemas/QrCode" }
+  /qr/revoke:
+    post:
+      operationId: revokeQr
+      tags: [qr]
+      summary: Admin revokes a QR (compromised label). The lot keeps its identity and history.
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              $ref: "#/components/schemas/UpdateTransportRecordBody"
+            schema: { $ref: "#/components/schemas/RevokeQrBody" }
       responses:
         "200":
-          description: Updated transport record
+          description: Revoked
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/QrCode" }
+
+  # ------------------------------------------------------------------ public trace
+  /trace/{publicToken}:
+    get:
+      operationId: getPublicTrace
+      tags: [trace]
+      summary: Public, unauthenticated, rate-limited lot verification
+      parameters:
+        - { name: publicToken, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Verified lot with public timeline
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PublicTrace" }
+        "404": { $ref: "#/components/responses/Error" }
+        "410":
+          description: QR revoked or replaced; no lot data disclosed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TraceUnavailable" }
+  /public/overview:
+    get:
+      operationId: getPublicOverview
+      tags: [trace]
+      summary: Public landing-page aggregates and one featured public lot (live database values, cached 30 s)
+      responses:
+        "200":
+          description: Overview
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PublicOverview" }
+  /scans:
+    post:
+      operationId: recordScan
+      tags: [trace]
+      summary: Record a QR scan (idempotent on clientEventId)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RecordScanBody" }
+      responses:
+        "200":
+          description: Scan result
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ScanResult" }
+  /me/scans:
+    get:
+      operationId: listMyScans
+      tags: [trace]
+      responses:
+        "200":
+          description: Lots recently scanned by the signed-in user
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/TransportRecord"
+                type: array
+                items: { $ref: "#/components/schemas/MyScan" }
 
+  # ------------------------------------------------------------------ marketplace
+  /marketplace/listings:
+    get:
+      operationId: listMarketplace
+      tags: [marketplace]
+      parameters:
+        - { name: q, in: query, schema: { type: string } }
+        - { name: state, in: query, schema: { type: string } }
+      responses:
+        "200":
+          description: Listed lots with available quantity
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Listing" }
+  /marketplace/listings/{lotId}:
+    get:
+      operationId: getListing
+      tags: [marketplace]
+      parameters:
+        - { name: lotId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Listing
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Listing" }
+        "404": { $ref: "#/components/responses/Error" }
+  /farmers/{id}:
+    get:
+      operationId: getPublicFarmer
+      tags: [marketplace]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Public farmer profile
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PublicFarmer" }
+        "404": { $ref: "#/components/responses/Error" }
+
+  # ------------------------------------------------------------------ orders
   /orders:
     get:
       operationId: listOrders
       tags: [orders]
-      summary: List orders
       parameters:
-        - name: buyerId
-          in: query
-          schema:
-            type: integer
-        - name: status
-          in: query
-          schema:
-            type: string
+        - { name: status, in: query, schema: { $ref: "#/components/schemas/OrderStatus" } }
       responses:
         "200":
-          description: List of orders
+          description: Orders visible to the caller
           content:
             application/json:
               schema:
                 type: array
-                items:
-                  $ref: "#/components/schemas/Order"
+                items: { $ref: "#/components/schemas/Order" }
     post:
       operationId: createOrder
       tags: [orders]
-      summary: Create an order
+      summary: Customer places an order; inventory is reserved in the same transaction
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: { type: string, minLength: 8, maxLength: 100 }
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              $ref: "#/components/schemas/CreateOrderBody"
+            schema: { $ref: "#/components/schemas/CreateOrderBody" }
       responses:
         "201":
-          description: Created order
+          description: Created
           content:
             application/json:
-              schema:
-                $ref: "#/components/schemas/Order"
-
+              schema: { $ref: "#/components/schemas/Order" }
+        "200":
+          description: Duplicate Idempotency-Key; existing order returned
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Order" }
+        "409": { $ref: "#/components/responses/Error" }
   /orders/{id}:
     get:
       operationId: getOrder
       tags: [orders]
-      summary: Get order by ID
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
         "200":
-          description: Order
+          description: Order with its event history
           content:
             application/json:
-              schema:
-                $ref: "#/components/schemas/Order"
-    put:
-      operationId: updateOrder
+              schema: { $ref: "#/components/schemas/Order" }
+        "404": { $ref: "#/components/responses/Error" }
+  /orders/{id}/{action}:
+    post:
+      operationId: transitionOrder
       tags: [orders]
-      summary: Update order status
+      summary: |
+        Order state transitions. Farmer: accept, reject, prepare, ready, dispatch, complete.
+        Customer: cancel (PENDING/ACCEPTED), confirm-receipt. Admin: cancel, confirm-receipt (with reason).
       parameters:
-        - name: id
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+        - name: action
           in: path
           required: true
-          schema:
-            type: integer
+          schema: { $ref: "#/components/schemas/OrderAction" }
+        - name: Idempotency-Key
+          in: header
+          required: false
+          schema: { type: string, maxLength: 100 }
+        - name: X-Offline-Replay
+          in: header
+          required: false
+          schema: { type: string }
       requestBody:
-        required: true
+        required: false
         content:
           application/json:
-            schema:
-              $ref: "#/components/schemas/UpdateOrderBody"
+            schema: { $ref: "#/components/schemas/OrderTransitionBody" }
       responses:
         "200":
           description: Updated order
           content:
             application/json:
-              schema:
-                $ref: "#/components/schemas/Order"
-
-  /dashboard/summary:
-    get:
-      operationId: getDashboardSummary
-      tags: [dashboard]
-      summary: Get platform-wide dashboard summary
-      responses:
-        "200":
-          description: Dashboard summary
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/DashboardSummary"
-
-  /dashboard/farmer/{userId}:
-    get:
-      operationId: getFarmerDashboard
-      tags: [dashboard]
-      summary: Get farmer-specific dashboard data
-      parameters:
-        - name: userId
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: Farmer dashboard data
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/FarmerDashboard"
-
-  /dashboard/storage/{userId}:
-    get:
-      operationId: getStorageDashboard
-      tags: [dashboard]
-      summary: Get storage operator dashboard data
-      parameters:
-        - name: userId
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: Storage dashboard data
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/StorageDashboard"
-
-  /dashboard/logistics/{userId}:
-    get:
-      operationId: getLogisticsDashboard
-      tags: [dashboard]
-      summary: Get logistics dashboard data
-      parameters:
-        - name: userId
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: Logistics dashboard data
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/LogisticsDashboard"
-
-  /dashboard/buyer/{userId}:
-    get:
-      operationId: getBuyerDashboard
-      tags: [dashboard]
-      summary: Get buyer dashboard data
-      parameters:
-        - name: userId
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: Buyer dashboard data
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/BuyerDashboard"
-
-  /marketplace:
-    get:
-      operationId: listMarketplace
+              schema: { $ref: "#/components/schemas/Order" }
+        "409": { $ref: "#/components/responses/Error" }
+  /orders/{id}/feedback:
+    post:
+      operationId: submitOrderFeedback
       tags: [orders]
-      summary: List available crop listings for buyers
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/FeedbackBody" }
+      responses:
+        "201":
+          description: Saved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Order" }
+
+  # ------------------------------------------------------------------ dashboards
+  /dashboard/overview:
+    get:
+      operationId: getAdminOverview
+      tags: [dashboard]
       responses:
         "200":
-          description: Marketplace listings
+          description: Admin command-center metrics (live database values)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminOverview" }
+  /dashboard/farmer:
+    get:
+      operationId: getFarmerOverview
+      tags: [dashboard]
+      responses:
+        "200":
+          description: Farmer metrics
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FarmerOverview" }
+  /dashboard/customer:
+    get:
+      operationId: getCustomerOverview
+      tags: [dashboard]
+      responses:
+        "200":
+          description: Customer metrics
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CustomerOverview" }
+
+  # ------------------------------------------------------------------ alerts
+  /alerts:
+    get:
+      operationId: listAlerts
+      tags: [alerts]
+      parameters:
+        - name: state
+          in: query
+          schema: { type: string, enum: [open, all] }
+      responses:
+        "200":
+          description: Alerts (admin = all, farmer = own)
           content:
             application/json:
               schema:
                 type: array
-                items:
-                  $ref: "#/components/schemas/MarketplaceListing"
-
-  /tracking/{trackingId}:
-    get:
-      operationId: getTracking
-      tags: [tracking]
-      summary: Get shipment tracking by tracking ID
+                items: { $ref: "#/components/schemas/Alert" }
+  /alerts/{id}/acknowledge:
+    post:
+      operationId: acknowledgeAlert
+      tags: [alerts]
       parameters:
-        - name: trackingId
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Acknowledged
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Alert" }
+  /alerts/{id}/resolve:
+    post:
+      operationId: resolveAlert
+      tags: [alerts]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Resolved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Alert" }
+
+  # ------------------------------------------------------------------ external data
+  /market-prices:
+    get:
+      operationId: getMarketPrices
+      tags: [external]
+      parameters:
+        - { name: state, in: query, schema: { type: string } }
+        - { name: days, in: query, schema: { type: integer, minimum: 1, maximum: 90 } }
+      responses:
+        "200":
+          description: Stored external mandi price observations (never fabricated)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MarketPrices" }
+  /weather:
+    get:
+      operationId: getWeather
+      tags: [external]
+      parameters:
+        - { name: farmId, in: query, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Latest stored weather observation for the farm location
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WeatherReport" }
+  /admin/integrations:
+    get:
+      operationId: listIntegrations
+      tags: [external]
+      responses:
+        "200":
+          description: External data source status and ingestion lineage
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/IntegrationStatus" }
+  /admin/integrations/{source}/run:
+    post:
+      operationId: runIntegration
+      tags: [external]
+      parameters:
+        - name: source
           in: path
           required: true
-          schema:
-            type: string
+          schema: { type: string, enum: [market_prices, weather] }
       responses:
         "200":
-          description: Tracking details
+          description: Run finished
           content:
             application/json:
-              schema:
-                $ref: "#/components/schemas/TrackingDetails"
-        "404":
-          description: Not found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
-
-  /tracking:
-    post:
-      operationId: createTrackingEvent
-      tags: [tracking]
-      summary: Create a tracking event
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CreateTrackingEvent"
-      responses:
-        "201":
-          description: Tracking event created
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ShipmentTrackingRecord"
-
-  /tracking/update-location:
-    post:
-      operationId: updateShipmentLocation
-      tags: [tracking]
-      summary: Update shipment location
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UpdateShipmentLocation"
-      responses:
-        "201":
-          description: Location updated
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ShipmentTrackingRecord"
-
-  /tracking/update-status:
-    post:
-      operationId: updateShipmentStatus
-      tags: [tracking]
-      summary: Update shipment status
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UpdateShipmentStatus"
-      responses:
-        "201":
-          description: Status updated
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ShipmentTrackingRecord"
-
-  /tracking/all/active:
-    get:
-      operationId: getActiveShipments
-      tags: [tracking]
-      summary: Get all active shipments
-      responses:
-        "200":
-          description: Active shipments
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ActiveShipment"
-
-  /shipments/user/{userId}:
-    get:
-      operationId: getUserShipments
-      tags: [tracking]
-      summary: Get shipments for a user
-      parameters:
-        - name: userId
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: User shipments
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ActiveShipment"
+              schema: { $ref: "#/components/schemas/IngestionRun" }
 
 components:
+  responses:
+    Error:
+      description: Error
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorBody" }
   schemas:
+    ErrorBody:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
+        code: { type: string }
+        details: {}
     HealthStatus:
       type: object
+      required: [status]
       properties:
-        status:
-          type: string
-      required:
-        - status
+        status: { type: string }
 
-    User:
+    UserRole: { type: string, enum: [admin, farmer, customer] }
+    UserStatus: { type: string, enum: [pending, active, rejected, suspended] }
+    FarmerProfile:
       type: object
+      required: [publicName]
       properties:
-        id:
-          type: integer
-        name:
-          type: string
-        email:
-          type: string
-        phone:
-          type: string
-        role:
-          type: string
-          enum: [farmer, storage, logistics, buyer, admin]
-        location:
-          type: string
-        createdAt:
-          type: string
-          format: date-time
-      required:
-        - id
-        - name
-        - email
-        - role
-
+        publicName: { type: string }
+        bio: { type: [string, "null"] }
+        village: { type: [string, "null"] }
+        district: { type: [string, "null"] }
+        state: { type: [string, "null"] }
+        verifiedAt: { type: [string, "null"], format: date-time }
+        reviewNote: { type: [string, "null"] }
+    CurrentUser:
+      type: object
+      required: [id, name, email, role, status, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        email: { type: string }
+        phone: { type: [string, "null"] }
+        role: { $ref: "#/components/schemas/UserRole" }
+        status: { $ref: "#/components/schemas/UserStatus" }
+        location: { type: [string, "null"] }
+        createdAt: { type: string, format: date-time }
+        farmerProfile:
+          oneOf:
+            - $ref: "#/components/schemas/FarmerProfile"
+            - type: "null"
+    FarmerProfileInput:
+      type: object
+      required: [publicName]
+      additionalProperties: false
+      properties:
+        publicName: { type: string, minLength: 2, maxLength: 120 }
+        bio: { type: string, maxLength: 1000 }
+        village: { type: string, maxLength: 120 }
+        district: { type: string, maxLength: 120 }
+        state: { type: string, maxLength: 120 }
     RegisterUserBody:
       type: object
+      required: [name, email, password, role]
+      additionalProperties: false
       properties:
-        name:
-          type: string
-        email:
-          type: string
-        phone:
-          type: string
-        password:
-          type: string
-        role:
-          type: string
-          enum: [farmer, storage, logistics, buyer]
-        location:
-          type: string
-      required:
-        - name
-        - email
-        - password
-        - role
-
+        name: { type: string, minLength: 2, maxLength: 120 }
+        email: { type: string, format: email, maxLength: 254 }
+        password: { type: string, minLength: 10, maxLength: 200 }
+        role: { type: string, enum: [farmer, customer] }
+        phone: { type: string, maxLength: 30 }
+        location: { type: string, maxLength: 200 }
+        farmerProfile: { $ref: "#/components/schemas/FarmerProfileInput" }
     LoginUserBody:
       type: object
+      required: [email, password]
+      additionalProperties: false
       properties:
-        email:
-          type: string
-        password:
-          type: string
-      required:
-        - email
-        - password
-
+        email: { type: string, maxLength: 254 }
+        password: { type: string, maxLength: 200 }
     AuthResponse:
       type: object
+      required: [user]
       properties:
-        token:
-          type: string
-        user:
-          $ref: "#/components/schemas/User"
-      required:
-        - token
-        - user
-
-    UpdateUserBody:
+        user: { $ref: "#/components/schemas/CurrentUser" }
+    UpdateProfileBody:
       type: object
+      additionalProperties: false
       properties:
-        name:
-          type: string
-        phone:
-          type: string
-        location:
-          type: string
+        name: { type: string, minLength: 2, maxLength: 120 }
+        phone: { type: string, maxLength: 30 }
+        location: { type: string, maxLength: 200 }
+        farmerProfile: { $ref: "#/components/schemas/FarmerProfileInput" }
+    ReviewUserBody:
+      type: object
+      additionalProperties: false
+      properties:
+        note: { type: string, maxLength: 1000 }
+    AuditLog:
+      type: object
+      required: [id, action, entityType, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        userId: { type: [string, "null"] }
+        userName: { type: [string, "null"] }
+        role: { type: [string, "null"] }
+        action: { type: string }
+        entityType: { type: string }
+        entityId: { type: [string, "null"] }
+        before: {}
+        after: {}
+        requestId: { type: [string, "null"] }
+        eventId: { type: [string, "null"] }
+        createdAt: { type: string, format: date-time }
 
     Farm:
       type: object
+      required: [id, farmerId, name, state, createdAt]
       properties:
-        id:
-          type: integer
-        farmerId:
-          type: integer
-        farmerName:
-          type: string
-        name:
-          type: string
-        location:
-          type: string
-        sizeHectares:
-          type: number
-        soilType:
-          type: string
-        createdAt:
-          type: string
-          format: date-time
-      required:
-        - id
-        - farmerId
-        - name
-        - location
-        - sizeHectares
-
-    CreateFarmBody:
+        id: { type: string, format: uuid }
+        farmerId: { type: string, format: uuid }
+        farmerName: { type: [string, "null"] }
+        name: { type: string }
+        village: { type: [string, "null"] }
+        district: { type: [string, "null"] }
+        state: { type: string }
+        latitude: { type: [number, "null"] }
+        longitude: { type: [number, "null"] }
+        sizeHectares: { type: [number, "null"] }
+        soilType: { type: [string, "null"] }
+        createdAt: { type: string, format: date-time }
+    FarmBody:
       type: object
+      required: [name, state]
+      additionalProperties: false
       properties:
-        farmerId:
-          type: integer
-        name:
-          type: string
-        location:
-          type: string
-        sizeHectares:
-          type: number
-        soilType:
-          type: string
-      required:
-        - farmerId
-        - name
-        - location
-        - sizeHectares
-
-    SeedBatch:
+        name: { type: string, minLength: 2, maxLength: 120 }
+        village: { type: string, maxLength: 120 }
+        district: { type: string, maxLength: 120 }
+        state: { type: string, minLength: 2, maxLength: 120 }
+        latitude: { type: number, minimum: -90, maximum: 90 }
+        longitude: { type: number, minimum: -180, maximum: 180 }
+        sizeHectares: { type: number, exclusiveMinimum: 0, maximum: 100000 }
+        soilType: { type: string, maxLength: 120 }
+    Product:
       type: object
+      required: [id, farmerId, name, variety, unit, createdAt]
       properties:
-        id:
-          type: integer
-        batchCode:
-          type: string
-        variety:
-          type: string
-        farmerId:
-          type: integer
-        farmerName:
-          type: string
-        farmId:
-          type: integer
-        farmName:
-          type: string
-        plantingDate:
-          type: string
-          format: date
-        expectedHarvestDate:
-          type: string
-          format: date
-        quantityKg:
-          type: number
-        status:
-          type: string
-          enum: [planted, growing, harvested, in_storage, in_transit, delivered, sold]
+        id: { type: string, format: uuid }
+        farmerId: { type: string, format: uuid }
+        name: { type: string }
+        variety: { type: string }
+        description: { type: [string, "null"] }
+        unit: { type: string }
+        createdAt: { type: string, format: date-time }
+    ProductBody:
+      type: object
+      required: [name, variety]
+      additionalProperties: false
+      properties:
+        name: { type: string, minLength: 2, maxLength: 80 }
+        variety: { type: string, minLength: 1, maxLength: 80 }
+        description: { type: string, maxLength: 1000 }
+        unit: { type: string, enum: [kg, quintal, tonne] }
+
+    LotStatus:
+      type: string
+      enum: [CREATED, GROWING, HARVESTED, AVAILABLE, RESERVED, PARTIALLY_SOLD, SOLD_OUT]
+    QualityGrade: { type: string, enum: [A, B, C] }
+    Inventory:
+      type: object
+      required: [harvested, reserved, sold, loss, available, unit]
+      properties:
+        harvested: { type: number }
+        reserved: { type: number }
+        sold: { type: number }
+        loss: { type: number }
+        available: { type: number }
+        unit: { type: string }
+    InventoryLine:
+      type: object
+      required: [lotId, lotCode, productName, variety, status, listed, inventory]
+      properties:
+        lotId: { type: string, format: uuid }
+        lotCode: { type: string }
+        productName: { type: string }
+        variety: { type: string }
+        farmerName: { type: [string, "null"] }
+        status: { $ref: "#/components/schemas/LotStatus" }
+        listed: { type: boolean }
+        inventory: { $ref: "#/components/schemas/Inventory" }
+    InventoryReport:
+      type: object
+      required: [totals, lots, generatedAt]
+      properties:
+        totals:
+          type: object
+          required: [harvested, reserved, sold, loss, available]
+          properties:
+            harvested: { type: number }
+            reserved: { type: number }
+            sold: { type: number }
+            loss: { type: number }
+            available: { type: number }
+        lots: { type: array, items: { $ref: "#/components/schemas/InventoryLine" } }
+        generatedAt: { type: string, format: date-time }
+        note: { type: string, description: "Totals mix units only if lots use different units; each line carries its own unit" }
+    RiskAssessment:
+      type: object
+      required: [level, score, reasons, evaluatedAt, engine]
+      properties:
+        level: { type: string, enum: [LOW, MEDIUM, HIGH, CRITICAL] }
+        score: { type: integer }
+        reasons: { type: array, items: { type: string } }
+        evaluatedAt: { type: string, format: date-time }
+        engine: { type: string, description: "Rule-based engine identifier and version (no ML model)" }
+    LotSummary:
+      type: object
+      required: [id, lotCode, productName, variety, farmId, farmName, farmerId, status, listed, inventory, origin, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        lotCode: { type: string }
+        productId: { type: string, format: uuid }
+        productName: { type: string }
+        variety: { type: string }
+        farmId: { type: string, format: uuid }
+        farmName: { type: string }
+        farmerId: { type: string, format: uuid }
+        farmerName: { type: [string, "null"] }
+        status: { $ref: "#/components/schemas/LotStatus" }
+        listed: { type: boolean }
+        pricePerUnit: { type: [number, "null"] }
         qualityGrade:
-          type: string
-          enum: [A, B, C]
-        notes:
-          type: string
-        createdAt:
-          type: string
-          format: date-time
-      required:
-        - id
-        - batchCode
-        - variety
-        - farmerId
-        - plantingDate
-        - quantityKg
-        - status
-
-    CreateBatchBody:
+          oneOf:
+            - $ref: "#/components/schemas/QualityGrade"
+            - type: "null"
+        harvestDate: { type: [string, "null"] }
+        inventory: { $ref: "#/components/schemas/Inventory" }
+        origin: { type: string }
+        activeQr:
+          oneOf:
+            - $ref: "#/components/schemas/QrCode"
+            - type: "null"
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    LotDetail:
+      allOf:
+        - $ref: "#/components/schemas/LotSummary"
+        - type: object
+          required: [risk]
+          properties:
+            plantingDate: { type: [string, "null"] }
+            expectedHarvestDate: { type: [string, "null"] }
+            qualityNotes: { type: [string, "null"] }
+            publicNotes: { type: [string, "null"] }
+            privateNotes: { type: [string, "null"] }
+            risk: { $ref: "#/components/schemas/RiskAssessment" }
+            latestStorage:
+              oneOf:
+                - $ref: "#/components/schemas/StorageRecord"
+                - type: "null"
+            estimatedMarketValue:
+              oneOf:
+                - $ref: "#/components/schemas/IndicativeValue"
+                - type: "null"
+    IndicativeValue:
       type: object
+      required: [amount, currency, basis, observationDate, market, label]
       properties:
-        variety:
-          type: string
-        farmerId:
-          type: integer
-        farmId:
-          type: integer
-        plantingDate:
-          type: string
-          format: date
-        expectedHarvestDate:
-          type: string
-          format: date
-        quantityKg:
-          type: number
-        notes:
-          type: string
-      required:
-        - variety
-        - farmerId
-        - plantingDate
-        - quantityKg
-
-    UpdateBatchBody:
+        amount: { type: number }
+        currency: { type: string }
+        basis: { type: string }
+        observationDate: { type: string }
+        market: { type: string }
+        label: { type: string }
+    CreateLotBody:
       type: object
+      required: [farmId, origin]
+      additionalProperties: false
       properties:
-        status:
-          type: string
-          enum: [planted, growing, harvested, in_storage, in_transit, delivered, sold]
-        qualityGrade:
-          type: string
-          enum: [A, B, C]
-        notes:
-          type: string
-
-    Harvest:
+        farmId: { type: string, format: uuid }
+        productId: { type: string, format: uuid, description: "Existing product; or pass productName + variety" }
+        productName: { type: string, minLength: 2, maxLength: 80 }
+        variety: { type: string, minLength: 1, maxLength: 80 }
+        unit: { type: string, enum: [kg, quintal, tonne] }
+        plantingDate: { type: string, pattern: "^\\d{4}-\\d{2}-\\d{2}$" }
+        expectedHarvestDate: { type: string, pattern: "^\\d{4}-\\d{2}-\\d{2}$" }
+        harvestDate: { type: string, pattern: "^\\d{4}-\\d{2}-\\d{2}$" }
+        harvestQuantity: { type: number, exclusiveMinimum: 0, maximum: 100000000 }
+        qualityGrade: { $ref: "#/components/schemas/QualityGrade" }
+        qualityNotes: { type: string, maxLength: 1000 }
+        origin: { type: string, minLength: 2, maxLength: 200 }
+        publicNotes: { type: string, maxLength: 1000 }
+        privateNotes: { type: string, maxLength: 2000 }
+        storage: { $ref: "#/components/schemas/StorageInput" }
+        clientEventId: { type: string, format: uuid }
+    UpdateLotBody:
       type: object
+      additionalProperties: false
       properties:
-        id:
-          type: integer
-        batchId:
-          type: integer
-        batchCode:
-          type: string
-        farmerId:
-          type: integer
-        farmerName:
-          type: string
-        quantityKg:
-          type: number
-        qualityGrade:
-          type: string
-          enum: [A, B, C]
-        harvestDate:
-          type: string
-          format: date
-        notes:
-          type: string
-        createdAt:
-          type: string
-          format: date-time
-      required:
-        - id
-        - batchId
-        - farmerId
-        - quantityKg
-        - qualityGrade
-        - harvestDate
-
-    CreateHarvestBody:
+        plantingDate: { type: string, pattern: "^\\d{4}-\\d{2}-\\d{2}$" }
+        expectedHarvestDate: { type: string, pattern: "^\\d{4}-\\d{2}-\\d{2}$" }
+        publicNotes: { type: string, maxLength: 1000 }
+        privateNotes: { type: string, maxLength: 2000 }
+        origin: { type: string, minLength: 2, maxLength: 200 }
+    LotListingBody:
       type: object
+      required: [listed]
+      additionalProperties: false
       properties:
-        batchId:
-          type: integer
-        farmerId:
-          type: integer
-        quantityKg:
-          type: number
-        qualityGrade:
-          type: string
-          enum: [A, B, C]
-        harvestDate:
-          type: string
-          format: date
-        notes:
-          type: string
-      required:
-        - batchId
-        - farmerId
-        - quantityKg
-        - qualityGrade
-        - harvestDate
-
+        listed: { type: boolean }
+        pricePerUnit: { type: number, minimum: 0, maximum: 10000000 }
+    StorageInput:
+      type: object
+      required: [storageType, storageLocation, storageStart]
+      additionalProperties: false
+      properties:
+        storageType: { type: string, enum: [on_farm_shed, cold_storage, warehouse, ambient, other] }
+        storageLocation: { type: string, minLength: 2, maxLength: 200 }
+        storageStart: { type: string, format: date-time }
+        storageEnd: { type: string, format: date-time }
+        temperatureC: { type: number, minimum: -30, maximum: 60 }
+        humidityPct: { type: number, minimum: 0, maximum: 100 }
+        storageCondition: { type: string, enum: [good, fair, poor] }
+        notes: { type: string, maxLength: 1000 }
     StorageRecord:
       type: object
+      required: [id, lotId, storageType, storageLocation, storageStart, createdAt]
       properties:
-        id:
-          type: integer
-        batchId:
-          type: integer
-        batchCode:
-          type: string
-        operatorId:
-          type: integer
-        operatorName:
-          type: string
-        facilityName:
-          type: string
-        location:
-          type: string
-        slotId:
-          type: string
-        temperatureCelsius:
-          type: number
-        quantityKg:
-          type: number
-        receivedAt:
-          type: string
-          format: date-time
-        releasedAt:
-          type: string
-          format: date-time
-        status:
-          type: string
-          enum: [incoming, stored, released]
-        notes:
-          type: string
-      required:
-        - id
-        - batchId
-        - operatorId
-        - facilityName
-        - quantityKg
-        - status
-
-    CreateStorageRecordBody:
+        id: { type: string, format: uuid }
+        lotId: { type: string, format: uuid }
+        storageType: { type: string }
+        storageLocation: { type: string }
+        storageStart: { type: string, format: date-time }
+        storageEnd: { type: [string, "null"], format: date-time }
+        temperatureC: { type: [number, "null"] }
+        humidityPct: { type: [number, "null"] }
+        storageCondition: { type: [string, "null"] }
+        notes: { type: [string, "null"] }
+        createdAt: { type: string, format: date-time }
+    FarmerEventType:
+      type: string
+      enum:
+        [GROWING_RECORDED, HARVEST_RECORDED, QUALITY_RECORDED, STORAGE_RECORDED, LOSS_RECORDED, SPOILAGE_RECORDED, CORRECTION_RECORDED]
+    RecordLotEventBody:
       type: object
+      required: [eventType, clientEventId]
+      additionalProperties: false
       properties:
-        batchId:
-          type: integer
-        operatorId:
-          type: integer
-        facilityName:
-          type: string
-        location:
-          type: string
-        slotId:
-          type: string
-        temperatureCelsius:
-          type: number
-        quantityKg:
-          type: number
-        notes:
-          type: string
-      required:
-        - batchId
-        - operatorId
-        - facilityName
-        - quantityKg
-
-    UpdateStorageRecordBody:
+        eventType: { $ref: "#/components/schemas/FarmerEventType" }
+        clientEventId: { type: string, format: uuid }
+        eventTime: { type: string, format: date-time, description: "When it happened in the real world (defaults to now)" }
+        quantity: { type: number, exclusiveMinimum: 0, maximum: 100000000 }
+        harvestAdjustment: { type: number, minimum: -100000000, maximum: 100000000, description: "CORRECTION_RECORDED only" }
+        qualityGrade: { $ref: "#/components/schemas/QualityGrade" }
+        reason: { type: string, maxLength: 1000 }
+        location: { type: string, maxLength: 200 }
+        latitude: { type: number, minimum: -90, maximum: 90 }
+        longitude: { type: number, minimum: -180, maximum: 180 }
+        correctsEventId: { type: string, format: uuid }
+        storage: { $ref: "#/components/schemas/StorageInput" }
+    TraceEvent:
       type: object
+      required: [id, lotId, eventType, eventTime, recordedAt, source, metadata]
       properties:
-        status:
-          type: string
-          enum: [incoming, stored, released]
-        slotId:
-          type: string
-        temperatureCelsius:
-          type: number
-        releasedAt:
-          type: string
-          format: date-time
-        notes:
-          type: string
+        id: { type: string, format: uuid }
+        lotId: { type: string, format: uuid }
+        lotCode: { type: string }
+        orderId: { type: [string, "null"] }
+        eventType: { type: string }
+        eventTime: { type: string, format: date-time }
+        recordedAt: { type: string, format: date-time }
+        actorUserId: { type: [string, "null"] }
+        actorName: { type: [string, "null"] }
+        actorRole: { type: [string, "null"] }
+        location: { type: [string, "null"] }
+        latitude: { type: [number, "null"] }
+        longitude: { type: [number, "null"] }
+        quantityBefore: { type: [number, "null"] }
+        quantityChange: { type: [number, "null"] }
+        quantityAfter: { type: [number, "null"] }
+        status: { type: [string, "null"] }
+        reason: { type: [string, "null"] }
+        source: { type: string }
+        clientEventId: { type: [string, "null"] }
+        previousEventId: { type: [string, "null"] }
+        correctsEventId: { type: [string, "null"] }
+        isPublic: { type: boolean }
+        metadata: { type: object, additionalProperties: true }
 
-    TransportRecord:
+    QrStatus: { type: string, enum: [ACTIVE, REVOKED, REPLACED] }
+    QrCode:
       type: object
+      required: [id, lotId, version, status, traceUrl, publicToken, createdAt]
       properties:
-        id:
-          type: integer
-        batchId:
-          type: integer
-        batchCode:
-          type: string
-        driverId:
-          type: integer
-        driverName:
-          type: string
-        vehicleNumber:
-          type: string
-        originLocation:
-          type: string
-        destinationLocation:
-          type: string
-        quantityKg:
-          type: number
-        scheduledPickup:
-          type: string
-          format: date-time
-        actualPickup:
-          type: string
-          format: date-time
-        deliveredAt:
-          type: string
-          format: date-time
-        status:
-          type: string
-          enum: [pending, accepted, picked_up, in_transit, delivered]
-        notes:
-          type: string
-        createdAt:
-          type: string
-          format: date-time
-      required:
-        - id
-        - batchId
-        - driverId
-        - originLocation
-        - destinationLocation
-        - quantityKg
-        - status
+        id: { type: string, format: uuid }
+        lotId: { type: string, format: uuid }
+        version: { type: integer }
+        status: { $ref: "#/components/schemas/QrStatus" }
+        publicToken: { type: string }
+        traceUrl: { type: string, description: "The only content encoded in the QR image" }
+        createdAt: { type: string, format: date-time }
+        revokedAt: { type: [string, "null"], format: date-time }
+        revokeReason: { type: [string, "null"] }
+        replacedById: { type: [string, "null"] }
+    GenerateQrBody:
+      type: object
+      required: [lotId, reason]
+      additionalProperties: false
+      properties:
+        lotId: { type: string, format: uuid }
+        reason: { type: string, minLength: 3, maxLength: 500 }
+    RevokeQrBody:
+      type: object
+      required: [qrId, reason]
+      additionalProperties: false
+      properties:
+        qrId: { type: string, format: uuid }
+        reason: { type: string, minLength: 3, maxLength: 500 }
+        issueReplacement: { type: boolean }
 
-    CreateTransportRecordBody:
+    PublicTimelineEntry:
       type: object
+      required: [eventType, label, eventTime]
       properties:
-        batchId:
-          type: integer
-        driverId:
-          type: integer
-        vehicleNumber:
-          type: string
-        originLocation:
-          type: string
-        destinationLocation:
-          type: string
-        quantityKg:
-          type: number
-        scheduledPickup:
-          type: string
-          format: date-time
-        notes:
-          type: string
-      required:
-        - batchId
-        - driverId
-        - originLocation
-        - destinationLocation
-        - quantityKg
-
-    UpdateTransportRecordBody:
+        eventType: { type: string }
+        label: { type: string }
+        eventTime: { type: string, format: date-time }
+        quantityChange: { type: [number, "null"] }
+        location: { type: [string, "null"] }
+        detail: { type: [string, "null"] }
+    PublicTraceFarmer:
       type: object
+      required: [id, publicName, verified]
       properties:
-        status:
-          type: string
-          enum: [pending, accepted, picked_up, in_transit, delivered]
-        actualPickup:
-          type: string
-          format: date-time
-        deliveredAt:
-          type: string
-          format: date-time
-        notes:
-          type: string
-
-    Order:
+        id: { type: string, format: uuid }
+        publicName: { type: string }
+        district: { type: [string, "null"] }
+        state: { type: [string, "null"] }
+        verified: { type: boolean }
+    PublicStorage:
       type: object
+      required: [storageType, storageStart]
       properties:
-        id:
-          type: integer
-        buyerId:
-          type: integer
-        buyerName:
-          type: string
-        batchId:
-          type: integer
-        batchCode:
-          type: string
-        variety:
-          type: string
-        quantityKg:
-          type: number
-        pricePerKg:
-          type: number
-        totalPrice:
-          type: number
-        status:
-          type: string
-          enum: [pending, confirmed, dispatched, delivered, cancelled]
-        transportId:
-          type: integer
-        createdAt:
-          type: string
-          format: date-time
-      required:
-        - id
-        - buyerId
-        - batchId
-        - quantityKg
-        - pricePerKg
-        - status
-
-    CreateOrderBody:
+        storageType: { type: string }
+        storageStart: { type: string, format: date-time }
+        storageEnd: { type: [string, "null"], format: date-time }
+        temperatureC: { type: [number, "null"] }
+        storageCondition: { type: [string, "null"] }
+    PublicTrace:
       type: object
+      required: [verification, lotCode, productName, variety, farmer, farmName, origin, status, listed, timeline, lastUpdatedAt, qrVersion, unit, retrievedAt]
       properties:
-        buyerId:
-          type: integer
-        batchId:
-          type: integer
-        quantityKg:
-          type: number
-        pricePerKg:
-          type: number
-        notes:
-          type: string
-      required:
-        - buyerId
-        - batchId
-        - quantityKg
-        - pricePerKg
-
-    UpdateOrderBody:
-      type: object
-      properties:
-        status:
-          type: string
-          enum: [pending, confirmed, dispatched, delivered, cancelled]
-        transportId:
-          type: integer
-
-    DashboardSummary:
-      type: object
-      properties:
-        totalUsers:
-          type: integer
-        totalBatches:
-          type: integer
-        totalHarvestKg:
-          type: number
-        activeStorageRecords:
-          type: integer
-        activeTransports:
-          type: integer
-        pendingOrders:
-          type: integer
-        monthlyVolumeTons:
-          type: number
-        batchesByStatus:
-          type: object
-          additionalProperties:
-            type: integer
-        recentActivity:
-          type: array
-          items:
-            $ref: "#/components/schemas/ActivityItem"
-      required:
-        - totalUsers
-        - totalBatches
-        - totalHarvestKg
-        - monthlyVolumeTons
-
-    FarmerDashboard:
-      type: object
-      properties:
-        activeCrops:
-          type: integer
-        totalHarvestKg:
-          type: number
-        inStorageKg:
-          type: number
-        soldKg:
-          type: number
-        recentBatches:
-          type: array
-          items:
-            $ref: "#/components/schemas/SeedBatch"
-        recentHarvests:
-          type: array
-          items:
-            $ref: "#/components/schemas/Harvest"
-      required:
-        - activeCrops
-        - totalHarvestKg
-
-    StorageDashboard:
-      type: object
-      properties:
-        totalInventoryKg:
-          type: number
-        incomingShipments:
-          type: integer
-        outgoingShipments:
-          type: integer
-        occupancyPercent:
-          type: number
-        recentRecords:
-          type: array
-          items:
-            $ref: "#/components/schemas/StorageRecord"
-      required:
-        - totalInventoryKg
-        - incomingShipments
-
-    LogisticsDashboard:
-      type: object
-      properties:
-        assignedDeliveries:
-          type: integer
-        inTransit:
-          type: integer
-        completedToday:
-          type: integer
-        pendingPickups:
-          type: integer
-        recentTransports:
-          type: array
-          items:
-            $ref: "#/components/schemas/TransportRecord"
-      required:
-        - assignedDeliveries
-        - inTransit
-
-    BuyerDashboard:
-      type: object
-      properties:
-        activeOrders:
-          type: integer
-        totalPurchasedKg:
-          type: number
-        inTransitOrders:
-          type: integer
-        recentOrders:
-          type: array
-          items:
-            $ref: "#/components/schemas/Order"
-      required:
-        - activeOrders
-        - totalPurchasedKg
-
-    MarketplaceListing:
-      type: object
-      properties:
-        batchId:
-          type: integer
-        batchCode:
-          type: string
-        variety:
-          type: string
-        farmerName:
-          type: string
-        location:
-          type: string
-        quantityKg:
-          type: number
-        qualityGrade:
-          type: string
-          enum: [A, B, C]
-        pricePerKg:
-          type: number
-        harvestDate:
-          type: string
-          format: date
-      required:
-        - batchId
-        - batchCode
-        - variety
-        - farmerName
-        - quantityKg
-        - qualityGrade
-        - pricePerKg
-
-    ActivityItem:
-      type: object
-      properties:
-        id:
-          type: integer
-        type:
-          type: string
-        description:
-          type: string
-        timestamp:
-          type: string
-          format: date-time
-      required:
-        - id
-        - type
-        - description
-        - timestamp
-
-    ShipmentTrackingRecord:
-      type: object
-      properties:
-        id:
-          type: integer
-        trackingId:
-          type: string
-        batchId:
-          type: integer
-        transportId:
-          type: integer
-          nullable: true
-        latitude:
-          type: string
-          nullable: true
-        longitude:
-          type: string
-          nullable: true
-        status:
-          type: string
-          enum: [order_created, accepted_by_logistics, picked_up_from_farm, arrived_at_cold_storage, stored, picked_up_for_delivery, in_transit, delivered_to_buyer]
-        location:
-          type: string
-          nullable: true
-        notes:
-          type: string
-          nullable: true
-        updatedBy:
-          type: integer
-          nullable: true
-        createdAt:
-          type: string
-          format: date-time
-      required:
-        - id
-        - trackingId
-        - batchId
-        - status
-        - createdAt
-
-    TrackingTimeline:
-      type: object
-      properties:
-        id:
-          type: integer
-        status:
-          type: string
-        location:
-          type: string
-          nullable: true
-        latitude:
-          type: string
-          nullable: true
-        longitude:
-          type: string
-          nullable: true
-        notes:
-          type: string
-          nullable: true
-        timestamp:
-          type: string
-          format: date-time
-      required:
-        - id
-        - status
-        - timestamp
-
-    TransportInfo:
-      type: object
-      properties:
-        vehicleNumber:
-          type: string
-        originLocation:
-          type: string
-        destinationLocation:
-          type: string
-        driverName:
-          type: string
-
-    TrackingDetails:
-      type: object
-      properties:
-        trackingId:
-          type: string
-        batchId:
-          type: integer
-        batchCode:
-          type: string
-        variety:
-          type: string
-        currentStatus:
-          type: string
-        currentLocation:
-          type: string
-          nullable: true
-        currentLatitude:
-          type: string
-          nullable: true
-        currentLongitude:
-          type: string
-          nullable: true
-        transportInfo:
-          $ref: "#/components/schemas/TransportInfo"
+        verification: { type: string, enum: [VERIFIED, UNVERIFIED_FARMER] }
+        lotCode: { type: string }
+        lotId: { type: string, format: uuid }
+        productName: { type: string }
+        variety: { type: string }
+        unit: { type: string }
+        farmer: { $ref: "#/components/schemas/PublicTraceFarmer" }
+        farmName: { type: string }
+        origin: { type: string }
+        harvestDate: { type: [string, "null"] }
+        harvestedQuantity: { type: [number, "null"] }
+        availableQuantity: { type: [number, "null"] }
+        qualityGrade: { type: [string, "null"] }
+        qualityNotes: { type: [string, "null"] }
+        storage:
+          oneOf:
+            - $ref: "#/components/schemas/PublicStorage"
+            - type: "null"
+        status: { $ref: "#/components/schemas/LotStatus" }
+        listed: { type: boolean }
+        publicNotes: { type: [string, "null"] }
         timeline:
           type: array
-          items:
-            $ref: "#/components/schemas/TrackingTimeline"
-      required:
-        - trackingId
-        - batchId
-        - currentStatus
-        - timeline
-
-    CreateTrackingEvent:
+          items: { $ref: "#/components/schemas/PublicTimelineEntry" }
+        lastUpdatedAt: { type: string, format: date-time }
+        qrVersion: { type: integer }
+        retrievedAt: { type: string, format: date-time }
+    PublicOverview:
       type: object
+      required: [verifiedFarmers, listedLots, availableKg, qrScans, traceEvents, completedOrders, ordersLast30Days, traceabilityCoverage, monitoredLots, elevatedRiskLots, generatedAt]
       properties:
-        batchId:
-          type: integer
-        transportId:
-          type: integer
-        status:
-          type: string
-          enum: [order_created, accepted_by_logistics, picked_up_from_farm, arrived_at_cold_storage, stored, picked_up_for_delivery, in_transit, delivered_to_buyer]
-        location:
-          type: string
-        latitude:
-          type: string
-        longitude:
-          type: string
-        notes:
-          type: string
-      required:
-        - batchId
-
-    UpdateShipmentLocation:
+        verifiedFarmers: { type: integer }
+        listedLots: { type: integer }
+        availableKg: { type: number }
+        qrScans: { type: integer }
+        traceEvents: { type: integer }
+        completedOrders: { type: integer }
+        ordersLast30Days: { type: integer }
+        traceabilityCoverage:
+          type: object
+          required: [percent, lotsCounted]
+          properties:
+            percent: { type: [integer, "null"] }
+            lotsCounted: { type: integer }
+        monitoredLots: { type: integer }
+        elevatedRiskLots: { type: integer }
+        market:
+          type: [object, "null"]
+          required: [modalPricePerQuintal, pricePerKg, market, state, observationDate, retrievedAt, source]
+          properties:
+            modalPricePerQuintal: { type: number }
+            pricePerKg: { type: number }
+            market: { type: string }
+            state: { type: string }
+            observationDate: { type: string }
+            retrievedAt: { type: string, format: date-time }
+            source: { type: string }
+        featured:
+          type: [object, "null"]
+          required: [farmerStats, publicToken, lotId, lotCode, productName, variety, farmerPublicName, verified, farmName, origin, status, unit, timeline, lastUpdatedAt]
+          properties:
+            farmerStats:
+              type: object
+              required: [activeLots, traceabilityPercent, rating]
+              properties:
+                activeLots: { type: integer }
+                traceabilityPercent: { type: [integer, "null"] }
+                rating:
+                  type: [object, "null"]
+                  required: [average, count]
+                  properties:
+                    average: { type: number }
+                    count: { type: integer }
+            publicToken: { type: string }
+            lotId: { type: string, format: uuid }
+            lotCode: { type: string }
+            productName: { type: string }
+            variety: { type: string }
+            farmerPublicName: { type: string }
+            verified: { type: boolean }
+            district: { type: [string, "null"] }
+            state: { type: [string, "null"] }
+            farmName: { type: string }
+            origin: { type: string }
+            harvestDate: { type: [string, "null"] }
+            status: { $ref: "#/components/schemas/LotStatus" }
+            qualityGrade: { type: [string, "null"] }
+            availableQuantity: { type: [number, "null"] }
+            unit: { type: string }
+            pricePerUnit: { type: [number, "null"] }
+            lastUpdatedAt: { type: string, format: date-time }
+            timeline:
+              type: array
+              items:
+                type: object
+                required: [eventType, label, eventTime]
+                properties:
+                  eventType: { type: string }
+                  label: { type: string }
+                  eventTime: { type: string, format: date-time }
+            weather:
+              type: [object, "null"]
+              required: [temperatureC, humidityPct, condition, observationTime]
+              properties:
+                temperatureC: { type: [number, "null"] }
+                humidityPct: { type: [number, "null"] }
+                condition: { type: [string, "null"] }
+                observationTime: { type: string, format: date-time }
+        generatedAt: { type: string, format: date-time }
+    TraceUnavailable:
       type: object
+      required: [status, message]
       properties:
-        trackingId:
-          type: string
-        latitude:
-          type: string
-        longitude:
-          type: string
-        location:
-          type: string
-        status:
-          type: string
-        notes:
-          type: string
-      required:
-        - trackingId
-
-    UpdateShipmentStatus:
+        status: { type: string, enum: [REVOKED, REPLACED] }
+        message: { type: string }
+    RecordScanBody:
       type: object
+      required: [publicToken, scanSource, clientEventId]
+      additionalProperties: false
       properties:
-        trackingId:
-          type: string
-        status:
-          type: string
-          enum: [order_created, accepted_by_logistics, picked_up_from_farm, arrived_at_cold_storage, stored, picked_up_for_delivery, in_transit, delivered_to_buyer]
-        location:
-          type: string
-        notes:
-          type: string
-      required:
-        - trackingId
-        - status
-
-    ActiveShipment:
+        publicToken: { type: string, maxLength: 200 }
+        scanSource: { type: string, enum: [in_app_scanner, camera_link, manual_entry] }
+        clientEventId: { type: string, format: uuid }
+        deviceType: { type: string, enum: [mobile, tablet, desktop, unknown] }
+    ScanResult:
       type: object
+      required: [result]
       properties:
-        id:
-          type: integer
-        trackingId:
-          type: string
-        batchId:
-          type: integer
-        transportId:
-          type: integer
-          nullable: true
-        status:
-          type: string
-        location:
-          type: string
-          nullable: true
-        latitude:
-          type: string
-          nullable: true
-        longitude:
-          type: string
-          nullable: true
-        createdAt:
-          type: string
-          format: date-time
-        batchCode:
-          type: string
-          nullable: true
-        variety:
-          type: string
-          nullable: true
+        result: { type: string, enum: [OK, UNKNOWN, REVOKED, REPLACED, INVALID] }
+        duplicate: { type: boolean }
+    QrScan:
+      type: object
+      required: [id, scannedAt, scanSource, result, signedIn]
+      properties:
+        id: { type: string, format: uuid }
+        lotId: { type: [string, "null"] }
+        lotCode: { type: [string, "null"] }
+        qrVersion: { type: [integer, "null"] }
+        scannedAt: { type: string, format: date-time }
+        scanSource: { type: string }
+        result: { type: string }
+        deviceType: { type: [string, "null"] }
+        signedIn: { type: boolean }
+    MyScan:
+      type: object
+      required: [lotCode, productName, variety, scannedAt, publicToken]
+      properties:
+        lotCode: { type: string }
+        productName: { type: string }
+        variety: { type: string }
+        scannedAt: { type: string, format: date-time }
+        publicToken: { type: string }
+
+    ListingFarmer:
+      type: object
+      required: [id, publicName, verified]
+      properties:
+        id: { type: string, format: uuid }
+        publicName: { type: string }
+        district: { type: [string, "null"] }
+        state: { type: [string, "null"] }
+        verified: { type: boolean }
+    Listing:
+      type: object
+      required: [lotId, lotCode, productName, variety, unit, available, farmer, origin, status]
+      properties:
+        lotId: { type: string, format: uuid }
+        lotCode: { type: string }
+        productName: { type: string }
+        variety: { type: string }
+        unit: { type: string }
+        pricePerUnit: { type: [number, "null"] }
+        available: { type: number }
+        qualityGrade: { type: [string, "null"] }
+        harvestDate: { type: [string, "null"] }
+        origin: { type: string }
+        status: { $ref: "#/components/schemas/LotStatus" }
+        farmer: { $ref: "#/components/schemas/ListingFarmer" }
+        farmName: { type: [string, "null"] }
+        publicToken: { type: [string, "null"] }
+        publicNotes: { type: [string, "null"] }
+    PublicFarm:
+      type: object
+      required: [name, state]
+      properties:
+        name: { type: string }
+        district: { type: [string, "null"] }
+        state: { type: string }
+    PublicFarmer:
+      type: object
+      required: [id, publicName, verified, listings, memberSince, farms]
+      properties:
+        id: { type: string, format: uuid }
+        publicName: { type: string }
+        bio: { type: [string, "null"] }
+        village: { type: [string, "null"] }
+        district: { type: [string, "null"] }
+        state: { type: [string, "null"] }
+        verified: { type: boolean }
+        memberSince: { type: string, format: date-time }
+        farms:
+          type: array
+          items: { $ref: "#/components/schemas/PublicFarm" }
+        listings:
+          type: array
+          items: { $ref: "#/components/schemas/Listing" }
+
+    OrderStatus:
+      type: string
+      enum: [PENDING, ACCEPTED, REJECTED, PREPARING, READY, DISPATCHED, DELIVERED, CUSTOMER_CONFIRMED, CANCELLED]
+    OrderAction:
+      type: string
+      enum: [accept, reject, prepare, ready, dispatch, complete, cancel, confirm-receipt]
+    FulfillmentMethod:
+      type: string
+      enum: [CUSTOMER_PICKUP, FARMER_DELIVERY, THIRD_PARTY_DELIVERY]
+    OrderItem:
+      type: object
+      required: [id, lotId, lotCode, productName, variety, quantity, unitPrice, lineTotal, unit]
+      properties:
+        id: { type: string, format: uuid }
+        lotId: { type: string, format: uuid }
+        lotCode: { type: string }
+        productName: { type: string }
+        variety: { type: string }
+        unit: { type: string }
+        quantity: { type: number }
+        unitPrice: { type: number }
+        lineTotal: { type: number }
+        publicToken: { type: [string, "null"] }
+    OrderParty:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        phone: { type: [string, "null"], description: "Visible to the order's farmer and admin only" }
+    OrderFarmer:
+      type: object
+      required: [id, publicName]
+      properties:
+        id: { type: string, format: uuid }
+        publicName: { type: string }
+    OrderFeedback:
+      type: object
+      required: [rating, createdAt]
+      properties:
+        rating: { type: integer }
+        comment: { type: [string, "null"] }
+        createdAt: { type: string, format: date-time }
+    Order:
+      type: object
+      required: [id, orderCode, status, fulfillmentMethod, totalAmount, items, customer, farmer, createdAt, updatedAt, allowedActions]
+      properties:
+        id: { type: string, format: uuid }
+        orderCode: { type: string }
+        status: { $ref: "#/components/schemas/OrderStatus" }
+        fulfillmentMethod: { $ref: "#/components/schemas/FulfillmentMethod" }
+        totalAmount: { type: number }
+        deliveryAddress: { type: [string, "null"] }
+        customerNotes: { type: [string, "null"] }
+        rejectionReason: { type: [string, "null"] }
+        cancelReason: { type: [string, "null"] }
+        deliveryLocation: { type: [string, "null"] }
+        deliveryNotes: { type: [string, "null"] }
+        thirdPartyName: { type: [string, "null"] }
+        thirdPartyReference: { type: [string, "null"] }
+        acceptedAt: { type: [string, "null"], format: date-time }
+        preparedAt: { type: [string, "null"], format: date-time }
+        readyAt: { type: [string, "null"], format: date-time }
+        dispatchedAt: { type: [string, "null"], format: date-time }
+        deliveredAt: { type: [string, "null"], format: date-time }
+        confirmedAt: { type: [string, "null"], format: date-time }
+        cancelledAt: { type: [string, "null"], format: date-time }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        customer: { $ref: "#/components/schemas/OrderParty" }
+        farmer: { $ref: "#/components/schemas/OrderFarmer" }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/OrderItem" }
+        allowedActions:
+          type: array
+          description: Actions the current caller may perform now (computed by the backend state machine)
+          items: { $ref: "#/components/schemas/OrderAction" }
+        events:
+          type: array
+          items: { $ref: "#/components/schemas/TraceEvent" }
+        feedback:
+          oneOf:
+            - $ref: "#/components/schemas/OrderFeedback"
+            - type: "null"
+    CreateOrderItem:
+      type: object
+      required: [lotId, quantity]
+      additionalProperties: false
+      properties:
+        lotId: { type: string, format: uuid }
+        quantity: { type: number, exclusiveMinimum: 0, maximum: 100000000 }
+    CreateOrderBody:
+      type: object
+      required: [items, fulfillmentMethod]
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          minItems: 1
+          maxItems: 20
+          items: { $ref: "#/components/schemas/CreateOrderItem" }
+        fulfillmentMethod: { $ref: "#/components/schemas/FulfillmentMethod" }
+        deliveryAddress: { type: string, maxLength: 500 }
+        customerNotes: { type: string, maxLength: 1000 }
+    OrderTransitionBody:
+      type: object
+      additionalProperties: false
+      properties:
+        reason: { type: string, maxLength: 1000 }
+        eventTime: { type: string, format: date-time }
+        deliveryLocation: { type: string, maxLength: 300 }
+        latitude: { type: number, minimum: -90, maximum: 90 }
+        longitude: { type: number, minimum: -180, maximum: 180 }
+        deliveryNotes: { type: string, maxLength: 1000 }
+        thirdPartyName: { type: string, maxLength: 200 }
+        thirdPartyReference: { type: string, maxLength: 200 }
+        clientEventId: { type: string, format: uuid }
+    FeedbackBody:
+      type: object
+      required: [rating]
+      additionalProperties: false
+      properties:
+        rating: { type: integer, minimum: 1, maximum: 5 }
+        comment: { type: string, maxLength: 1000 }
+
+    CountPoint:
+      type: object
+      required: [label, value]
+      properties:
+        label: { type: string }
+        value: { type: number }
+    FarmerInventoryPoint:
+      type: object
+      required: [farmer, available, reserved, sold]
+      properties:
+        farmer: { type: string }
+        available: { type: number }
+        reserved: { type: number }
+        sold: { type: number }
+    AdminOverview:
+      type: object
       required:
-        - id
-        - trackingId
-        - batchId
-        - status
+        [totalFarmers, verifiedFarmers, pendingFarmers, totalCustomers, activeLots, availableQuantity, reservedQuantity, soldQuantity,
+         lossQuantity, ordersToday, completedOrders, qrScansToday, traceEvents, openAlerts, highRiskLots, lotsByStatus, inventoryByFarmer,
+         ordersOverTime, scansOverTime, riskDistribution, lossRatePct, marketTrend, externalFreshness, generatedAt]
+      properties:
+        totalFarmers: { type: integer }
+        verifiedFarmers: { type: integer }
+        pendingFarmers: { type: integer }
+        totalCustomers: { type: integer }
+        activeLots: { type: integer }
+        availableQuantity: { type: number }
+        reservedQuantity: { type: number }
+        soldQuantity: { type: number }
+        lossQuantity: { type: number }
+        lossRatePct: { type: number }
+        ordersToday: { type: integer }
+        completedOrders: { type: integer }
+        qrScansToday: { type: integer }
+        traceEvents: { type: integer }
+        openAlerts: { type: integer }
+        highRiskLots: { type: integer }
+        lotsByStatus: { type: array, items: { $ref: "#/components/schemas/CountPoint" } }
+        inventoryByFarmer: { type: array, items: { $ref: "#/components/schemas/FarmerInventoryPoint" } }
+        ordersOverTime: { type: array, items: { $ref: "#/components/schemas/CountPoint" } }
+        scansOverTime: { type: array, items: { $ref: "#/components/schemas/CountPoint" } }
+        riskDistribution: { type: array, items: { $ref: "#/components/schemas/CountPoint" } }
+        marketTrend: { type: array, items: { $ref: "#/components/schemas/CountPoint" } }
+        externalFreshness: { type: array, items: { $ref: "#/components/schemas/IntegrationStatus" } }
+        generatedAt: { type: string, format: date-time }
+    FarmerOverview:
+      type: object
+      required: [farms, products, activeLots, available, reserved, sold, loss, pendingOrders, activeOrders, completedOrders, activeQrCodes, recentEvents, openAlerts, generatedAt]
+      properties:
+        farms: { type: integer }
+        products: { type: integer }
+        activeLots: { type: integer }
+        available: { type: number }
+        reserved: { type: number }
+        sold: { type: number }
+        loss: { type: number }
+        pendingOrders: { type: integer }
+        activeOrders: { type: integer }
+        completedOrders: { type: integer }
+        activeQrCodes: { type: integer }
+        openAlerts: { type: integer }
+        recentEvents: { type: array, items: { $ref: "#/components/schemas/TraceEvent" } }
+        generatedAt: { type: string, format: date-time }
+    CustomerOverview:
+      type: object
+      required: [activeOrders, completedOrders, totalSpent, recentOrders, recentScans, generatedAt]
+      properties:
+        activeOrders: { type: integer }
+        completedOrders: { type: integer }
+        totalSpent: { type: number }
+        recentOrders: { type: array, items: { $ref: "#/components/schemas/Order" } }
+        recentScans: { type: array, items: { $ref: "#/components/schemas/MyScan" } }
+        generatedAt: { type: string, format: date-time }
+
+    Alert:
+      type: object
+      required: [id, type, severity, message, createdAt, metadata]
+      properties:
+        id: { type: string, format: uuid }
+        type: { type: string }
+        severity: { type: string, enum: [LOW, MEDIUM, HIGH, CRITICAL] }
+        entityType: { type: [string, "null"] }
+        entityId: { type: [string, "null"] }
+        message: { type: string }
+        metadata: { type: object, additionalProperties: true }
+        createdAt: { type: string, format: date-time }
+        acknowledgedAt: { type: [string, "null"], format: date-time }
+        acknowledgedBy: { type: [string, "null"] }
+        resolvedAt: { type: [string, "null"], format: date-time }
+
+    IngestionRun:
+      type: object
+      required: [id, source, sourceEndpoint, status, recordCount, processingVersion, startedAt, requestParams]
+      properties:
+        id: { type: string, format: uuid }
+        source: { type: string }
+        sourceEndpoint: { type: string }
+        requestParams: { type: object, additionalProperties: true }
+        processingVersion: { type: string }
+        status: { type: string, enum: [RUNNING, SUCCESS, PARTIAL, FAILED, SKIPPED] }
+        recordCount: { type: integer }
+        error: { type: [string, "null"] }
+        startedAt: { type: string, format: date-time }
+        finishedAt: { type: [string, "null"], format: date-time }
+    IntegrationStatus:
+      type: object
+      required: [source, label, configured, recentRuns]
+      properties:
+        source: { type: string }
+        label: { type: string }
+        configured: { type: boolean }
+        configurationHint: { type: [string, "null"] }
+        lastRun:
+          oneOf:
+            - $ref: "#/components/schemas/IngestionRun"
+            - type: "null"
+        lastSuccess:
+          oneOf:
+            - $ref: "#/components/schemas/IngestionRun"
+            - type: "null"
+        recentRuns: { type: array, items: { $ref: "#/components/schemas/IngestionRun" } }
+    MarketPriceObservation:
+      type: object
+      required: [id, source, sourceEndpoint, observationDate, retrievedAt, state, market, commodity, priceUnit]
+      properties:
+        id: { type: string, format: uuid }
+        source: { type: string }
+        sourceEndpoint: { type: string }
+        observationDate: { type: string }
+        retrievedAt: { type: string, format: date-time }
+        state: { type: string }
+        district: { type: [string, "null"] }
+        market: { type: string }
+        commodity: { type: string }
+        variety: { type: [string, "null"] }
+        grade: { type: [string, "null"] }
+        arrivalQuantityTonnes: { type: [number, "null"] }
+        minPrice: { type: [number, "null"] }
+        maxPrice: { type: [number, "null"] }
+        modalPrice: { type: [number, "null"] }
+        priceUnit: { type: string }
+    MarketPrices:
+      type: object
+      required: [label, observations, status]
+      properties:
+        label: { type: string }
+        observations: { type: array, items: { $ref: "#/components/schemas/MarketPriceObservation" } }
+        status: { $ref: "#/components/schemas/IntegrationStatus" }
+    WeatherObservation:
+      type: object
+      required: [source, sourceEndpoint, observationTime, retrievedAt, latitude, longitude]
+      properties:
+        source: { type: string }
+        sourceEndpoint: { type: string }
+        observationTime: { type: string, format: date-time }
+        retrievedAt: { type: string, format: date-time }
+        latitude: { type: number }
+        longitude: { type: number }
+        temperatureC: { type: [number, "null"] }
+        precipitationMm: { type: [number, "null"] }
+        humidityPct: { type: [number, "null"] }
+        weatherCode: { type: [integer, "null"] }
+        condition: { type: [string, "null"] }
+    WeatherReport:
+      type: object
+      required: [farmId, hasCoordinates, status]
+      properties:
+        farmId: { type: string, format: uuid }
+        hasCoordinates: { type: boolean }
+        observation:
+          oneOf:
+            - $ref: "#/components/schemas/WeatherObservation"
+            - type: "null"
+        status: { $ref: "#/components/schemas/IntegrationStatus" }

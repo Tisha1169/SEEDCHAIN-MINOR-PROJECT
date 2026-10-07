@@ -1,58 +1,131 @@
 import { Router } from "express";
-import { db } from "@workspace/db";
-import { usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
-import { hashPassword, generateToken, authMiddleware } from "../lib/auth";
+import { db, farmerProfilesTable, usersTable, type User } from "@workspace/db";
+import { LoginUserBody, RegisterUserBody, UpdateMyProfileBody } from "@workspace/api-zod";
+import { createSession, hashPassword, requireAuth, revokeSession, verifyPassword } from "../lib/auth";
+import { conflict, unauthorized } from "../lib/errors";
+import { actorOf, parse } from "../lib/http";
+import { authLimiter } from "../lib/rate-limit";
+import { audit } from "../services/records";
+import { notifyChange } from "../services/realtime";
 
 const router = Router();
 
-router.post("/auth/register", async (req, res) => {
-  try {
-    const { name, email, phone, password, role, location } = req.body;
-    if (!name || !email || !password || !role) {
-      res.status(400).json({ error: "Missing required fields" });
-      return;
+export async function serializeUser(u: User) {
+  const [p] = await db.select().from(farmerProfilesTable).where(eq(farmerProfilesTable.userId, u.id));
+  return {
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    phone: u.phone,
+    role: u.role,
+    status: u.status,
+    location: u.location,
+    createdAt: u.createdAt.toISOString(),
+    farmerProfile: p
+      ? {
+          publicName: p.publicName,
+          bio: p.bio,
+          village: p.village,
+          district: p.district,
+          state: p.state,
+          verifiedAt: p.verifiedAt?.toISOString() ?? null,
+          reviewNote: p.reviewNote,
+        }
+      : null,
+  };
+}
+
+// A real scrypt hash of a random string: verifying against it equalises
+// timing between "unknown email" and "wrong password".
+let timingEqualiserHash: Promise<string> | null = null;
+
+router.post("/auth/register", authLimiter, async (req, res) => {
+  const body = parse(RegisterUserBody, req.body);
+  const email = body.email.trim().toLowerCase();
+  const [exists] = await db.select({ id: usersTable.id }).from(usersTable).where(eq(usersTable.email, email));
+  if (exists) throw conflict("An account with this email already exists", "EMAIL_TAKEN");
+  const passwordHash = await hashPassword(body.password);
+  // Role is limited to farmer|customer by the schema. Admins are created only by the bootstrap script.
+  const user = await db.transaction(async (tx) => {
+    const [u] = await tx
+      .insert(usersTable)
+      .values({
+        name: body.name.trim(),
+        email,
+        passwordHash,
+        phone: body.phone ?? null,
+        role: body.role,
+        status: body.role === "farmer" ? "pending" : "active",
+        location: body.location ?? null,
+      })
+      .returning();
+    if (u.role === "farmer") {
+      await tx.insert(farmerProfilesTable).values({
+        userId: u.id,
+        publicName: body.farmerProfile?.publicName ?? u.name,
+        bio: body.farmerProfile?.bio ?? null,
+        village: body.farmerProfile?.village ?? null,
+        district: body.farmerProfile?.district ?? null,
+        state: body.farmerProfile?.state ?? null,
+      });
     }
-    const existing = await db.select().from(usersTable).where(eq(usersTable.email, email)).limit(1);
-    if (existing[0]) {
-      res.status(400).json({ error: "Email already registered" });
-      return;
-    }
-    const passwordHash = hashPassword(password);
-    const [user] = await db.insert(usersTable).values({ name, email, phone, passwordHash, role, location }).returning();
-    const token = generateToken(user.id, user.role);
-    res.status(201).json({
-      token,
-      user: { id: user.id, name: user.name, email: user.email, phone: user.phone, role: user.role, location: user.location, createdAt: user.createdAt },
-    });
-  } catch (err) {
-    req.log.error(err);
-    res.status(500).json({ error: "Server error" });
-  }
+    await audit(tx, { user: { id: u.id, role: u.role }, requestId: String(req.id) }, "USER_REGISTERED", "user", u.id, null, { role: u.role, status: u.status });
+    await notifyChange(tx, { topic: "users", adminOnly: true });
+    return u;
+  });
+  await createSession(res, user.id, req.get("user-agent"));
+  res.status(201).json({ user: await serializeUser(user) });
 });
 
-router.post("/auth/login", async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    const [user] = await db.select().from(usersTable).where(eq(usersTable.email, email)).limit(1);
-    if (!user || user.passwordHash !== hashPassword(password)) {
-      res.status(401).json({ error: "Invalid credentials" });
-      return;
-    }
-    const token = generateToken(user.id, user.role);
-    res.json({
-      token,
-      user: { id: user.id, name: user.name, email: user.email, phone: user.phone, role: user.role, location: user.location, createdAt: user.createdAt },
-    });
-  } catch (err) {
-    req.log.error(err);
-    res.status(500).json({ error: "Server error" });
+router.post("/auth/login", authLimiter, async (req, res) => {
+  const body = parse(LoginUserBody, req.body);
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.email, body.email.trim().toLowerCase()));
+  if (!user) {
+    timingEqualiserHash ??= hashPassword("timing-equaliser-" + Math.random());
+    await verifyPassword(body.password, await timingEqualiserHash);
+    throw unauthorized("Invalid email or password");
   }
+  const v = await verifyPassword(body.password, user.passwordHash);
+  if (!v.ok) throw unauthorized("Invalid email or password");
+  if (user.status === "suspended" || user.status === "rejected") {
+    throw unauthorized(user.status === "rejected" ? "This farmer application was rejected" : "This account is suspended");
+  }
+  if (v.needsRehash) {
+    await db.update(usersTable).set({ passwordHash: await hashPassword(body.password), updatedAt: new Date() }).where(eq(usersTable.id, user.id));
+  }
+  await createSession(res, user.id, req.get("user-agent"));
+  res.json({ user: await serializeUser(user) });
 });
 
-router.get("/auth/me", authMiddleware, async (req, res) => {
-  const user = (req as any).user;
-  res.json({ id: user.id, name: user.name, email: user.email, phone: user.phone, role: user.role, location: user.location, createdAt: user.createdAt });
+router.post("/auth/logout", async (req, res) => {
+  await revokeSession(req, res);
+  res.status(204).end();
+});
+
+router.get("/auth/me", requireAuth, async (req, res) => {
+  res.json(await serializeUser(req.user!));
+});
+
+router.patch("/me/profile", requireAuth, async (req, res) => {
+  const body = parse(UpdateMyProfileBody, req.body);
+  const user = req.user!;
+  await db.transaction(async (tx) => {
+    const patch = Object.fromEntries(
+      Object.entries({ name: body.name, phone: body.phone, location: body.location }).filter(([, v]) => v !== undefined),
+    );
+    if (Object.keys(patch).length) await tx.update(usersTable).set({ ...patch, updatedAt: new Date() }).where(eq(usersTable.id, user.id));
+    if (body.farmerProfile && user.role === "farmer") {
+      // verifiedAt / reviewNote are admin-only fields and are not accepted here.
+      await tx
+        .update(farmerProfilesTable)
+        .set({ ...body.farmerProfile, updatedAt: new Date() })
+        .where(eq(farmerProfilesTable.userId, user.id));
+    }
+    await audit(tx, actorOf(req), "PROFILE_UPDATED", "user", user.id, null, { fields: Object.keys(body) });
+  });
+  const [fresh] = await db.select().from(usersTable).where(eq(usersTable.id, user.id));
+  res.json(await serializeUser(fresh));
 });
 
 export default router;

@@ -1,28 +1,24 @@
 import { Router, type IRouter } from "express";
-import healthRouter from "./health";
 import authRouter from "./auth";
-import usersRouter from "./users";
+import adminRouter from "./admin";
 import farmsRouter from "./farms";
-import batchesRouter from "./batches";
-import harvestsRouter from "./harvests";
-import storageRouter from "./storage";
-import transportRouter from "./transport";
+import lotsRouter from "./lots";
+import publicRouter from "./public";
 import ordersRouter from "./orders";
-import dashboardRouter from "./dashboard";
-import trackingRouter from "./tracking";
+import miscRouter from "./misc";
 
 const router: IRouter = Router();
 
-router.use(healthRouter);
+router.get("/healthz", (_req, res) => {
+  res.json({ status: "ok" });
+});
+
 router.use(authRouter);
-router.use(usersRouter);
+router.use(publicRouter);
+router.use(adminRouter);
 router.use(farmsRouter);
-router.use(batchesRouter);
-router.use(harvestsRouter);
-router.use(storageRouter);
-router.use(transportRouter);
+router.use(lotsRouter);
 router.use(ordersRouter);
-router.use(dashboardRouter);
-router.use(trackingRouter);
+router.use(miscRouter);
 
 export default router;
