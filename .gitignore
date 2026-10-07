@@ -44,9 +44,6 @@ Thumbs.db
 .cursor/rules/nx-rules.mdc
 .github/instructions/nx.instructions.md
 
-# Replit
-.cache/
-.local/
 # Environment variables
 .env
 .env.*
@@ -55,6 +52,9 @@ Thumbs.db
 # Frontend env files
 artifacts/seedchain/.env
 artifacts/seedchain/.env.*
+!.env.example
+*.log
+.claude/
 
 # Local backups
 .env.local.backup
