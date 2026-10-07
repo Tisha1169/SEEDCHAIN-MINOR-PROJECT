@@ -49,6 +49,7 @@ export const config = {
     dataGovResourceId: env.DATA_GOV_IN_RESOURCE_ID ?? "9ef84268-d588-465a-a308-a864a43d0070",
     dataGovBaseUrl: (env.DATA_GOV_IN_BASE_URL ?? "https://api.data.gov.in").replace(/\/+$/, ""),
     marketCommodity: env.MARKET_COMMODITY ?? "Potato",
+    marketState: env.MARKET_STATE ?? "Punjab",
     openMeteoBaseUrl: (env.OPEN_METEO_BASE_URL ?? "https://api.open-meteo.com").replace(/\/+$/, ""),
     httpTimeoutMs: num(env.EXTERNAL_HTTP_TIMEOUT_MS, 20000),
   },

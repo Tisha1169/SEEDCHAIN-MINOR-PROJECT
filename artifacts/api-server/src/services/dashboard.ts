@@ -13,7 +13,7 @@ import {
 } from "@workspace/db";
 import { config } from "../config";
 import { computeRisk, serializeEvent } from "./lots";
-import { integrationStatus } from "./external/ingestion";
+import { allSourceStatuses } from "./external/ingestion";
 import { listOrders } from "./orders";
 import { listMyScans } from "./trace";
 
@@ -103,7 +103,7 @@ export async function adminOverview() {
     scansOverTime: (await series("qr_scan_events", "scanned_at")).map((r) => ({ label: r.label, value: n(r.value) })),
     riskDistribution: Object.entries(risk).map(([label, value]) => ({ label, value })),
     marketTrend: marketTrend.map((r) => ({ label: r.label, value: n(r.value) })),
-    externalFreshness: [await integrationStatus("market_prices"), await integrationStatus("weather")],
+    externalFreshness: (await allSourceStatuses()).filter((x) => x.integration === "automated"),
     generatedAt: new Date().toISOString(),
   };
 }

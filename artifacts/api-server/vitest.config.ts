@@ -21,6 +21,7 @@ export default defineConfig({
       RATE_LIMIT_API_PER_MINUTE: "100000",
       LOG_LEVEL: "silent",
       LEGACY_SESSION_SECRET: "legacy-secret",
+      DATA_GOV_IN_API_KEY: "test-key-not-a-real-key",
     },
   },
 });

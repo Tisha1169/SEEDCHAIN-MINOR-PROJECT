@@ -12,6 +12,8 @@ import { notFound } from "../lib/errors";
 import { actorOf, parse } from "../lib/http";
 import { adminOverview, customerOverview, farmerOverview } from "../services/dashboard";
 import { integrationStatus } from "../services/external/ingestion";
+import { faostatIndia, marketReference, punjabPotato } from "../services/reference";
+import { allSourceStatuses } from "../services/external/ingestion";
 import { audit } from "../services/records";
 import { attachSseClient } from "../services/realtime";
 import { config } from "../config";
@@ -114,7 +116,7 @@ router.get("/market-prices", requireRole(["admin", "farmer"], { active: false })
       modalPrice: r.modalPrice == null ? null : Number(r.modalPrice),
       priceUnit: r.priceUnit,
     })),
-    status: await integrationStatus("market_prices"),
+    status: await integrationStatus("datagov_mandi_daily"),
   });
 });
 
@@ -146,8 +148,25 @@ router.get("/weather", requireRole(["admin", "farmer"], { active: false }), asyn
           condition: obs.condition,
         }
       : null,
-    status: await integrationStatus("weather"),
+    status: await integrationStatus("open_meteo_current"),
   });
+});
+
+// ------------------------------------------------------------------ cited reference data + market intelligence
+router.get("/reference/punjab-potato", async (_req, res) => {
+  res.setHeader("Cache-Control", "public, max-age=300");
+  res.json(await punjabPotato());
+});
+router.get("/reference/faostat-potato-india", async (_req, res) => {
+  res.setHeader("Cache-Control", "public, max-age=300");
+  res.json(await faostatIndia());
+});
+router.get("/market/reference", requireRole(["admin", "farmer"], { active: false }), async (req, res) => {
+  const d = typeof req.query.district === "string" ? req.query.district.slice(0, 80) : undefined;
+  res.json(await marketReference(d));
+});
+router.get("/data/sources", requireRole(["admin", "farmer"], { active: false }), async (_req, res) => {
+  res.json(await allSourceStatuses());
 });
 
 // ------------------------------------------------------------------ real-time (Server-Sent Events)

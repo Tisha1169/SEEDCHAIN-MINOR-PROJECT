@@ -1,0 +1,16 @@
+{
+  "id": "agmarknet_portal",
+  "name": "AGMARKNET (Agricultural Marketing Information Network)",
+  "organization": "Government of India: Directorate of Marketing & Inspection, Ministry of Agriculture & Farmers Welfare",
+  "url": "https://agmarknet.gov.in/",
+  "dataset": "Market arrivals and prices portal",
+  "geography": "India: market level",
+  "frequency": "Daily",
+  "units": "INR per quintal; tonnes",
+  "licence": "See portal terms",
+  "usageNotes": "The portal is a JavaScript application with no documented public API; it is not scraped. The OGD daily-price resource above is the machine-readable route to the same market data.",
+  "dataClass": "reference",
+  "integration": "reference_only",
+  "staleAfterHours": null,
+  "integrationNote": "Reachable (HTTP 200, 1 kB JavaScript shell). Not integrated."
+}

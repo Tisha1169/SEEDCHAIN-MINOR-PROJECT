@@ -1,8 +1,8 @@
-import { and, inArray, sql } from "drizzle-orm";
-import { db, lotsTable, ordersTable, pool } from "@workspace/db";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { db, externalIngestionRunsTable, lotsTable, ordersTable, pool } from "@workspace/db";
 import { config } from "../config";
 import { logger } from "../lib/logger";
-import { ingestMarketPrices, ingestWeather } from "./external/ingestion";
+import { runSource, type SourceKey } from "./external/ingestion";
 import { computeRisk, syncRiskAlert } from "./lots";
 import { raiseAlert, resolveAlertsByKey } from "./records";
 
@@ -101,13 +101,40 @@ function every(minutes: number, lockId: number, name: string, fn: () => Promise<
   timers.push(setInterval(run, minutes * 60_000));
 }
 
+/** How often each automated source should be fetched (ms). Annual sources are only *checked* this often. */
+export function sourceIntervals(): Record<SourceKey, number> {
+  const ing = config.ingestion;
+  return {
+    datagov_mandi_daily: ing.marketIntervalMinutes * 60_000,
+    open_meteo_current: ing.weatherIntervalMinutes * 60_000,
+    pau_potato_punjab: 7 * 86_400_000,
+    faostat_potato_india: 30 * 86_400_000,
+  };
+}
+
+/** Runs every source whose last attempt is older than its interval. Unconfigured sources are not attempted. */
+export async function runDueSources(now = Date.now()): Promise<SourceKey[]> {
+  const ran: SourceKey[] = [];
+  for (const [id, interval] of Object.entries(sourceIntervals()) as [SourceKey, number][]) {
+    if (id === "datagov_mandi_daily" && !config.ingestion.dataGovApiKey) continue;
+    const [last] = await db.select({ at: externalIngestionRunsTable.startedAt }).from(externalIngestionRunsTable).where(eq(externalIngestionRunsTable.sourceId, id)).orderBy(desc(externalIngestionRunsTable.startedAt)).limit(1);
+    if (last && now - last.at.getTime() < interval) continue;
+    try {
+      await runSource(id);
+      ran.push(id);
+    } catch (err) {
+      logger.error({ err, source: id }, "Scheduled source run crashed");
+    }
+  }
+  return ran;
+}
+
 export function startScheduler(): void {
   if (!config.ingestion.enabled) {
     logger.info("Scheduler disabled (INGESTION_ENABLED=false)");
     return;
   }
-  every(config.ingestion.marketIntervalMinutes, 91001, "market_prices", ingestMarketPrices, 15_000);
-  every(config.ingestion.weatherIntervalMinutes, 91002, "weather", () => ingestWeather(), 20_000);
+  every(15, 91001, "external-data", runDueSources, 15_000);
   every(30, 91003, "integrity", async () => {
     await checkInventoryIntegrity();
     await checkOrderDelays();
@@ -120,4 +147,3 @@ export function stopScheduler(): void {
   for (const t of timers) clearTimeout(t);
   timers.length = 0;
 }
-

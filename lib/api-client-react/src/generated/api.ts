@@ -35,6 +35,7 @@ import type {
   CurrentUser,
   CustomerOverview,
   ErrorResponse,
+  FaostatIndia,
   Farm,
   FarmBody,
   FarmerOverview,
@@ -42,6 +43,7 @@ import type {
   FeedbackBody,
   GenerateQrBody,
   GetMarketPricesParams,
+  GetMarketReferenceParams,
   GetQrAnalyticsParams,
   GetWeatherParams,
   HealthStatus,
@@ -64,6 +66,7 @@ import type {
   LotSummary,
   MarkReadBody,
   MarketPrices,
+  MarketReference,
   ModerateReviewBody,
   ModerationReview,
   MyScan,
@@ -76,6 +79,7 @@ import type {
   PublicFarmer,
   PublicOverview,
   PublicTrace,
+  PunjabPotato,
   QrAnalytics,
   QrAnomaly,
   QrCode,
@@ -3623,7 +3627,7 @@ export function useListIntegrations<TData = Awaited<ReturnType<typeof listIntegr
 
 
 
-export const getRunIntegrationUrl = (source: 'market_prices' | 'weather',) => {
+export const getRunIntegrationUrl = (source: 'datagov_mandi_daily' | 'open_meteo_current' | 'pau_potato_punjab' | 'faostat_potato_india',) => {
 
 
 
@@ -3631,7 +3635,7 @@ export const getRunIntegrationUrl = (source: 'market_prices' | 'weather',) => {
   return `/api/admin/integrations/${source}/run`
 }
 
-export const runIntegration = async (source: 'market_prices' | 'weather', options?: RequestInit): Promise<IngestionRun> => {
+export const runIntegration = async (source: 'datagov_mandi_daily' | 'open_meteo_current' | 'pau_potato_punjab' | 'faostat_potato_india', options?: RequestInit): Promise<IngestionRun> => {
 
   return customFetch<IngestionRun>(getRunIntegrationUrl(source),
   {
@@ -3646,8 +3650,8 @@ export const runIntegration = async (source: 'market_prices' | 'weather', option
 
 
 export const getRunIntegrationMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runIntegration>>, TError,{source: 'market_prices' | 'weather'}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof runIntegration>>, TError,{source: 'market_prices' | 'weather'}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runIntegration>>, TError,{source: 'datagov_mandi_daily' | 'open_meteo_current' | 'pau_potato_punjab' | 'faostat_potato_india'}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof runIntegration>>, TError,{source: 'datagov_mandi_daily' | 'open_meteo_current' | 'pau_potato_punjab' | 'faostat_potato_india'}, TContext> => {
 
 const mutationKey = ['runIntegration'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -3659,7 +3663,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof runIntegration>>, {source: 'market_prices' | 'weather'}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof runIntegration>>, {source: 'datagov_mandi_daily' | 'open_meteo_current' | 'pau_potato_punjab' | 'faostat_potato_india'}> = (props) => {
           const {source} = props ?? {};
 
           return  runIntegration(source,requestOptions)
@@ -3677,11 +3681,11 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type RunIntegrationMutationError = ErrorType<unknown>
 
     export const useRunIntegration = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runIntegration>>, TError,{source: 'market_prices' | 'weather'}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runIntegration>>, TError,{source: 'datagov_mandi_daily' | 'open_meteo_current' | 'pau_potato_punjab' | 'faostat_potato_india'}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof runIntegration>>,
         TError,
-        {source: 'market_prices' | 'weather'},
+        {source: 'datagov_mandi_daily' | 'open_meteo_current' | 'pau_potato_punjab' | 'faostat_potato_india'},
         TContext
       > => {
       return useMutation(getRunIntegrationMutationOptions(options));
@@ -4744,4 +4748,319 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getModerateReviewMutationOptions(options));
     }
+
+/**
+ * @summary Punjab potato area, production and yield by district (PAU page citing the Punjab Department of Horticulture)
+ */
+export const getGetPunjabPotatoUrl = () => {
+
+
+
+
+  return `/api/reference/punjab-potato`
+}
+
+export const getPunjabPotato = async ( options?: RequestInit): Promise<PunjabPotato> => {
+
+  return customFetch<PunjabPotato>(getGetPunjabPotatoUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPunjabPotatoQueryKey = () => {
+    return [
+    `/api/reference/punjab-potato`
+    ] as const;
+    }
+
+
+export const getGetPunjabPotatoQueryOptions = <TData = Awaited<ReturnType<typeof getPunjabPotato>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPunjabPotato>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPunjabPotatoQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPunjabPotato>>> = ({ signal }) => getPunjabPotato({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPunjabPotato>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPunjabPotatoQueryResult = NonNullable<Awaited<ReturnType<typeof getPunjabPotato>>>
+export type GetPunjabPotatoQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Punjab potato area, production and yield by district (PAU page citing the Punjab Department of Horticulture)
+ */
+
+export function useGetPunjabPotato<TData = Awaited<ReturnType<typeof getPunjabPotato>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPunjabPotato>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPunjabPotatoQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+/**
+ * @summary Historical India potato series from FAOSTAT (national level only)
+ */
+export const getGetFaostatIndiaUrl = () => {
+
+
+
+
+  return `/api/reference/faostat-potato-india`
+}
+
+export const getFaostatIndia = async ( options?: RequestInit): Promise<FaostatIndia> => {
+
+  return customFetch<FaostatIndia>(getGetFaostatIndiaUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFaostatIndiaQueryKey = () => {
+    return [
+    `/api/reference/faostat-potato-india`
+    ] as const;
+    }
+
+
+export const getGetFaostatIndiaQueryOptions = <TData = Awaited<ReturnType<typeof getFaostatIndia>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFaostatIndia>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFaostatIndiaQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFaostatIndia>>> = ({ signal }) => getFaostatIndia({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFaostatIndia>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetFaostatIndiaQueryResult = NonNullable<Awaited<ReturnType<typeof getFaostatIndia>>>
+export type GetFaostatIndiaQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Historical India potato series from FAOSTAT (national level only)
+ */
+
+export function useGetFaostatIndia<TData = Awaited<ReturnType<typeof getFaostatIndia>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFaostatIndia>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetFaostatIndiaQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+/**
+ * @summary Latest available mandi observation for a district and Punjab (daily data, not real-time)
+ */
+export const getGetMarketReferenceUrl = (params?: GetMarketReferenceParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/market/reference?${stringifiedParams}` : `/api/market/reference`
+}
+
+export const getMarketReference = async (params?: GetMarketReferenceParams, options?: RequestInit): Promise<MarketReference> => {
+
+  return customFetch<MarketReference>(getGetMarketReferenceUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMarketReferenceQueryKey = (params?: GetMarketReferenceParams,) => {
+    return [
+    `/api/market/reference`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetMarketReferenceQueryOptions = <TData = Awaited<ReturnType<typeof getMarketReference>>, TError = ErrorType<unknown>>(params?: GetMarketReferenceParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMarketReference>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMarketReferenceQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMarketReference>>> = ({ signal }) => getMarketReference(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMarketReference>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMarketReferenceQueryResult = NonNullable<Awaited<ReturnType<typeof getMarketReference>>>
+export type GetMarketReferenceQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Latest available mandi observation for a district and Punjab (daily data, not real-time)
+ */
+
+export function useGetMarketReference<TData = Awaited<ReturnType<typeof getMarketReference>>, TError = ErrorType<unknown>>(
+ params?: GetMarketReferenceParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMarketReference>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMarketReferenceQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+/**
+ * @summary Registry and health of every external source
+ */
+export const getListDataSourcesUrl = () => {
+
+
+
+
+  return `/api/data/sources`
+}
+
+export const listDataSources = async ( options?: RequestInit): Promise<IntegrationStatus[]> => {
+
+  return customFetch<IntegrationStatus[]>(getListDataSourcesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListDataSourcesQueryKey = () => {
+    return [
+    `/api/data/sources`
+    ] as const;
+    }
+
+
+export const getListDataSourcesQueryOptions = <TData = Awaited<ReturnType<typeof listDataSources>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listDataSources>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListDataSourcesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listDataSources>>> = ({ signal }) => listDataSources({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listDataSources>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListDataSourcesQueryResult = NonNullable<Awaited<ReturnType<typeof listDataSources>>>
+export type ListDataSourcesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Registry and health of every external source
+ */
+
+export function useListDataSources<TData = Awaited<ReturnType<typeof listDataSources>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listDataSources>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListDataSourcesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 

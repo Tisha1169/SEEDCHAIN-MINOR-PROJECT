@@ -1,0 +1,16 @@
+{
+  "id": "faostat_potato_india",
+  "name": "FAOSTAT: Crops and livestock products (QCL), potatoes, India",
+  "organization": "Food and Agriculture Organization of the United Nations (FAO)",
+  "url": "https://www.fao.org/faostat/en/#data/QCL",
+  "dataset": "Bulk file Production_Crops_Livestock_E_All_Data_(Normalized).zip: Area harvested (5312), Yield (5412), Production (5510) for Potatoes (item 116), India (area code 100), 1961 to latest year",
+  "geography": "India: national level only (no state or district granularity)",
+  "frequency": "Annual; checked monthly",
+  "units": "Area: ha; yield: kg/ha; production: tonnes",
+  "licence": "CC BY 4.0 with FAO additional terms of use (https://www.fao.org/contact-us/terms/db-terms-of-use/en/)",
+  "usageNotes": "Historical benchmark only, never real-time. The FAOSTAT JSON API needs an authorisation token, so the public bulk file is used instead; the 34 MB zip is streamed and only the India potato rows are kept (the zip's SHA-256 is recorded).",
+  "dataClass": "historical",
+  "integration": "automated",
+  "staleAfterHours": 9600,
+  "integrationNote": "Verified live on 2026-10-07: bulk file reachable (HTTP 200, 33.9 MB); India potato rows found for 1961 to 2024."
+}

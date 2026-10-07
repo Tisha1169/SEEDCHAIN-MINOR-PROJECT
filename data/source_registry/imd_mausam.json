@@ -1,0 +1,16 @@
+{
+  "id": "imd_mausam",
+  "name": "India Meteorological Department (IMD) weather and rainfall",
+  "organization": "India Meteorological Department, Ministry of Earth Sciences",
+  "url": "https://mausam.imd.gov.in/",
+  "dataset": "Rainfall, temperature and weather observations/forecasts",
+  "geography": "India: station / district / subdivision",
+  "frequency": "Daily and sub-daily",
+  "units": "mm; °C",
+  "licence": "See IMD data policy",
+  "usageNotes": "The portal is reachable but no documented public machine-readable district-level API was found, so nothing is ingested and no value is shown as IMD data.",
+  "dataClass": "reference",
+  "integration": "reference_only",
+  "staleAfterHours": null,
+  "integrationNote": "Reachable (HTTP 200 HTML). Not integrated."
+}

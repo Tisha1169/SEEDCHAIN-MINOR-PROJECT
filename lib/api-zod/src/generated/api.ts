@@ -1999,10 +1999,26 @@ export const GetAdminOverviewResponse = zod.object({
   "externalFreshness": zod.array(zod.object({
   "source": zod.string(),
   "label": zod.string(),
+  "organization": zod.string(),
+  "url": zod.string(),
+  "dataset": zod.string(),
+  "geography": zod.string(),
+  "frequency": zod.string(),
+  "units": zod.string().nullish(),
+  "licence": zod.string().nullish(),
+  "usageNotes": zod.string().nullish(),
+  "dataClass": zod.enum(['operational_external', 'historical', 'reference']),
+  "integration": zod.enum(['automated', 'file_import', 'reference_only']),
+  "integrationNote": zod.string().nullish(),
+  "freshness": zod.enum(['CURRENT', 'CACHED', 'STALE', 'NO_DATA', 'NOT_INTEGRATED']),
+  "observationDate": zod.string().nullish(),
+  "lastSyncAt": zod.coerce.date().nullish(),
   "configured": zod.boolean(),
   "configurationHint": zod.string().nullish(),
   "lastRun": zod.union([zod.object({
   "id": zod.string().uuid(),
+  "fetchedCount": zod.number(),
+  "rejectedCount": zod.number(),
   "source": zod.string(),
   "sourceEndpoint": zod.string(),
   "requestParams": zod.record(zod.string(), zod.unknown()),
@@ -2015,6 +2031,8 @@ export const GetAdminOverviewResponse = zod.object({
 }),zod.null()]).optional(),
   "lastSuccess": zod.union([zod.object({
   "id": zod.string().uuid(),
+  "fetchedCount": zod.number(),
+  "rejectedCount": zod.number(),
   "source": zod.string(),
   "sourceEndpoint": zod.string(),
   "requestParams": zod.record(zod.string(), zod.unknown()),
@@ -2027,6 +2045,8 @@ export const GetAdminOverviewResponse = zod.object({
 }),zod.null()]).optional(),
   "recentRuns": zod.array(zod.object({
   "id": zod.string().uuid(),
+  "fetchedCount": zod.number(),
+  "rejectedCount": zod.number(),
   "source": zod.string(),
   "sourceEndpoint": zod.string(),
   "requestParams": zod.record(zod.string(), zod.unknown()),
@@ -2269,10 +2289,26 @@ export const GetMarketPricesResponse = zod.object({
   "status": zod.object({
   "source": zod.string(),
   "label": zod.string(),
+  "organization": zod.string(),
+  "url": zod.string(),
+  "dataset": zod.string(),
+  "geography": zod.string(),
+  "frequency": zod.string(),
+  "units": zod.string().nullish(),
+  "licence": zod.string().nullish(),
+  "usageNotes": zod.string().nullish(),
+  "dataClass": zod.enum(['operational_external', 'historical', 'reference']),
+  "integration": zod.enum(['automated', 'file_import', 'reference_only']),
+  "integrationNote": zod.string().nullish(),
+  "freshness": zod.enum(['CURRENT', 'CACHED', 'STALE', 'NO_DATA', 'NOT_INTEGRATED']),
+  "observationDate": zod.string().nullish(),
+  "lastSyncAt": zod.coerce.date().nullish(),
   "configured": zod.boolean(),
   "configurationHint": zod.string().nullish(),
   "lastRun": zod.union([zod.object({
   "id": zod.string().uuid(),
+  "fetchedCount": zod.number(),
+  "rejectedCount": zod.number(),
   "source": zod.string(),
   "sourceEndpoint": zod.string(),
   "requestParams": zod.record(zod.string(), zod.unknown()),
@@ -2285,6 +2321,8 @@ export const GetMarketPricesResponse = zod.object({
 }),zod.null()]).optional(),
   "lastSuccess": zod.union([zod.object({
   "id": zod.string().uuid(),
+  "fetchedCount": zod.number(),
+  "rejectedCount": zod.number(),
   "source": zod.string(),
   "sourceEndpoint": zod.string(),
   "requestParams": zod.record(zod.string(), zod.unknown()),
@@ -2297,6 +2335,8 @@ export const GetMarketPricesResponse = zod.object({
 }),zod.null()]).optional(),
   "recentRuns": zod.array(zod.object({
   "id": zod.string().uuid(),
+  "fetchedCount": zod.number(),
+  "rejectedCount": zod.number(),
   "source": zod.string(),
   "sourceEndpoint": zod.string(),
   "requestParams": zod.record(zod.string(), zod.unknown()),
@@ -2334,10 +2374,26 @@ export const GetWeatherResponse = zod.object({
   "status": zod.object({
   "source": zod.string(),
   "label": zod.string(),
+  "organization": zod.string(),
+  "url": zod.string(),
+  "dataset": zod.string(),
+  "geography": zod.string(),
+  "frequency": zod.string(),
+  "units": zod.string().nullish(),
+  "licence": zod.string().nullish(),
+  "usageNotes": zod.string().nullish(),
+  "dataClass": zod.enum(['operational_external', 'historical', 'reference']),
+  "integration": zod.enum(['automated', 'file_import', 'reference_only']),
+  "integrationNote": zod.string().nullish(),
+  "freshness": zod.enum(['CURRENT', 'CACHED', 'STALE', 'NO_DATA', 'NOT_INTEGRATED']),
+  "observationDate": zod.string().nullish(),
+  "lastSyncAt": zod.coerce.date().nullish(),
   "configured": zod.boolean(),
   "configurationHint": zod.string().nullish(),
   "lastRun": zod.union([zod.object({
   "id": zod.string().uuid(),
+  "fetchedCount": zod.number(),
+  "rejectedCount": zod.number(),
   "source": zod.string(),
   "sourceEndpoint": zod.string(),
   "requestParams": zod.record(zod.string(), zod.unknown()),
@@ -2350,6 +2406,8 @@ export const GetWeatherResponse = zod.object({
 }),zod.null()]).optional(),
   "lastSuccess": zod.union([zod.object({
   "id": zod.string().uuid(),
+  "fetchedCount": zod.number(),
+  "rejectedCount": zod.number(),
   "source": zod.string(),
   "sourceEndpoint": zod.string(),
   "requestParams": zod.record(zod.string(), zod.unknown()),
@@ -2362,6 +2420,8 @@ export const GetWeatherResponse = zod.object({
 }),zod.null()]).optional(),
   "recentRuns": zod.array(zod.object({
   "id": zod.string().uuid(),
+  "fetchedCount": zod.number(),
+  "rejectedCount": zod.number(),
   "source": zod.string(),
   "sourceEndpoint": zod.string(),
   "requestParams": zod.record(zod.string(), zod.unknown()),
@@ -2379,10 +2439,26 @@ export const GetWeatherResponse = zod.object({
 export const ListIntegrationsResponseItem = zod.object({
   "source": zod.string(),
   "label": zod.string(),
+  "organization": zod.string(),
+  "url": zod.string(),
+  "dataset": zod.string(),
+  "geography": zod.string(),
+  "frequency": zod.string(),
+  "units": zod.string().nullish(),
+  "licence": zod.string().nullish(),
+  "usageNotes": zod.string().nullish(),
+  "dataClass": zod.enum(['operational_external', 'historical', 'reference']),
+  "integration": zod.enum(['automated', 'file_import', 'reference_only']),
+  "integrationNote": zod.string().nullish(),
+  "freshness": zod.enum(['CURRENT', 'CACHED', 'STALE', 'NO_DATA', 'NOT_INTEGRATED']),
+  "observationDate": zod.string().nullish(),
+  "lastSyncAt": zod.coerce.date().nullish(),
   "configured": zod.boolean(),
   "configurationHint": zod.string().nullish(),
   "lastRun": zod.union([zod.object({
   "id": zod.string().uuid(),
+  "fetchedCount": zod.number(),
+  "rejectedCount": zod.number(),
   "source": zod.string(),
   "sourceEndpoint": zod.string(),
   "requestParams": zod.record(zod.string(), zod.unknown()),
@@ -2395,6 +2471,8 @@ export const ListIntegrationsResponseItem = zod.object({
 }),zod.null()]).optional(),
   "lastSuccess": zod.union([zod.object({
   "id": zod.string().uuid(),
+  "fetchedCount": zod.number(),
+  "rejectedCount": zod.number(),
   "source": zod.string(),
   "sourceEndpoint": zod.string(),
   "requestParams": zod.record(zod.string(), zod.unknown()),
@@ -2407,6 +2485,8 @@ export const ListIntegrationsResponseItem = zod.object({
 }),zod.null()]).optional(),
   "recentRuns": zod.array(zod.object({
   "id": zod.string().uuid(),
+  "fetchedCount": zod.number(),
+  "rejectedCount": zod.number(),
   "source": zod.string(),
   "sourceEndpoint": zod.string(),
   "requestParams": zod.record(zod.string(), zod.unknown()),
@@ -2422,11 +2502,13 @@ export const ListIntegrationsResponse = zod.array(ListIntegrationsResponseItem)
 
 
 export const RunIntegrationParams = zod.object({
-  "source": zod.enum(['market_prices', 'weather'])
+  "source": zod.enum(['datagov_mandi_daily', 'open_meteo_current', 'pau_potato_punjab', 'faostat_potato_india'])
 })
 
 export const RunIntegrationResponse = zod.object({
   "id": zod.string().uuid(),
+  "fetchedCount": zod.number(),
+  "rejectedCount": zod.number(),
   "source": zod.string(),
   "sourceEndpoint": zod.string(),
   "requestParams": zod.record(zod.string(), zod.unknown()),
@@ -2824,5 +2906,208 @@ export const moderateReviewBodyReasonMax = 500;
 export const ModerateReviewBody = zod.object({
   "reason": zod.string().max(moderateReviewBodyReasonMax).optional()
 })
+
+
+/**
+ * @summary Punjab potato area, production and yield by district (PAU page citing the Punjab Department of Horticulture)
+ */
+export const GetPunjabPotatoResponse = zod.object({
+  "source": zod.object({
+  "source": zod.string(),
+  "label": zod.string(),
+  "organization": zod.string(),
+  "url": zod.string(),
+  "frequency": zod.string(),
+  "licence": zod.string().nullish(),
+  "dataClass": zod.enum(['operational_external', 'historical', 'reference']),
+  "freshness": zod.enum(['CURRENT', 'CACHED', 'STALE', 'NO_DATA', 'NOT_INTEGRATED']),
+  "observationDate": zod.string().nullish().describe('Latest observation \/ period the data refers to'),
+  "lastSyncAt": zod.coerce.date().nullish()
+}),
+  "available": zod.boolean(),
+  "period": zod.string().nullish().describe('Financial year the table refers to, e.g. 2023-24'),
+  "attribution": zod.string().nullish(),
+  "citation": zod.string().nullish(),
+  "state": zod.object({
+  "areaHa": zod.number(),
+  "productionT": zod.number(),
+  "yieldQPerHa": zod.number()
+}).nullish(),
+  "districts": zod.array(zod.object({
+  "name": zod.string(),
+  "rank": zod.number(),
+  "areaHa": zod.number(),
+  "productionT": zod.number(),
+  "yieldQPerHa": zod.number(),
+  "sharePct": zod.number()
+})),
+  "majorDistrictsNote": zod.union([zod.object({
+  "text": zod.string(),
+  "retrievedAt": zod.coerce.date()
+}),zod.null()]).optional(),
+  "varietiesNote": zod.union([zod.object({
+  "text": zod.string(),
+  "retrievedAt": zod.coerce.date()
+}),zod.null()]).optional()
+})
+
+
+/**
+ * @summary Historical India potato series from FAOSTAT (national level only)
+ */
+export const GetFaostatIndiaResponse = zod.object({
+  "source": zod.object({
+  "source": zod.string(),
+  "label": zod.string(),
+  "organization": zod.string(),
+  "url": zod.string(),
+  "frequency": zod.string(),
+  "licence": zod.string().nullish(),
+  "dataClass": zod.enum(['operational_external', 'historical', 'reference']),
+  "freshness": zod.enum(['CURRENT', 'CACHED', 'STALE', 'NO_DATA', 'NOT_INTEGRATED']),
+  "observationDate": zod.string().nullish().describe('Latest observation \/ period the data refers to'),
+  "lastSyncAt": zod.coerce.date().nullish()
+}),
+  "available": zod.boolean(),
+  "geography": zod.string(),
+  "label": zod.string(),
+  "citation": zod.string().nullish(),
+  "series": zod.array(zod.object({
+  "year": zod.number(),
+  "productionT": zod.number().nullable(),
+  "areaHa": zod.number().nullable(),
+  "yieldKgPerHa": zod.number().nullable()
+}))
+})
+
+
+/**
+ * @summary Latest available mandi observation for a district and Punjab (daily data, not real-time)
+ */
+export const getMarketReferenceQueryDistrictMax = 80;
+
+
+
+export const GetMarketReferenceQueryParams = zod.object({
+  "district": zod.coerce.string().max(getMarketReferenceQueryDistrictMax).optional()
+})
+
+export const GetMarketReferenceResponse = zod.object({
+  "source": zod.object({
+  "source": zod.string(),
+  "label": zod.string(),
+  "organization": zod.string(),
+  "url": zod.string(),
+  "frequency": zod.string(),
+  "licence": zod.string().nullish(),
+  "dataClass": zod.enum(['operational_external', 'historical', 'reference']),
+  "freshness": zod.enum(['CURRENT', 'CACHED', 'STALE', 'NO_DATA', 'NOT_INTEGRATED']),
+  "observationDate": zod.string().nullish().describe('Latest observation \/ period the data refers to'),
+  "lastSyncAt": zod.coerce.date().nullish()
+}),
+  "state": zod.string(),
+  "commodity": zod.string(),
+  "unit": zod.string(),
+  "note": zod.string(),
+  "latestObservationDate": zod.string().nullable(),
+  "district": zod.object({
+  "name": zod.string(),
+  "observation": zod.union([zod.object({
+  "market": zod.string(),
+  "district": zod.string().nullish(),
+  "observationDate": zod.string(),
+  "minPrice": zod.number().nullish(),
+  "maxPrice": zod.number().nullish(),
+  "modalPrice": zod.number().nullish(),
+  "modalPricePerKg": zod.number().nullish(),
+  "arrivalQuantityTonnes": zod.number().nullish()
+}),zod.null()]).optional()
+}).nullish(),
+  "markets": zod.array(zod.object({
+  "market": zod.string(),
+  "district": zod.string().nullish(),
+  "observationDate": zod.string(),
+  "minPrice": zod.number().nullish(),
+  "maxPrice": zod.number().nullish(),
+  "modalPrice": zod.number().nullish(),
+  "modalPricePerKg": zod.number().nullish(),
+  "arrivalQuantityTonnes": zod.number().nullish()
+})),
+  "stateSummary": zod.object({
+  "markets": zod.number().optional(),
+  "modalMin": zod.number().optional(),
+  "modalMedian": zod.number().optional(),
+  "modalMax": zod.number().optional(),
+  "pricePerKgMedian": zod.number().optional()
+}).nullish()
+})
+
+
+/**
+ * @summary Registry and health of every external source
+ */
+export const ListDataSourcesResponseItem = zod.object({
+  "source": zod.string(),
+  "label": zod.string(),
+  "organization": zod.string(),
+  "url": zod.string(),
+  "dataset": zod.string(),
+  "geography": zod.string(),
+  "frequency": zod.string(),
+  "units": zod.string().nullish(),
+  "licence": zod.string().nullish(),
+  "usageNotes": zod.string().nullish(),
+  "dataClass": zod.enum(['operational_external', 'historical', 'reference']),
+  "integration": zod.enum(['automated', 'file_import', 'reference_only']),
+  "integrationNote": zod.string().nullish(),
+  "freshness": zod.enum(['CURRENT', 'CACHED', 'STALE', 'NO_DATA', 'NOT_INTEGRATED']),
+  "observationDate": zod.string().nullish(),
+  "lastSyncAt": zod.coerce.date().nullish(),
+  "configured": zod.boolean(),
+  "configurationHint": zod.string().nullish(),
+  "lastRun": zod.union([zod.object({
+  "id": zod.string().uuid(),
+  "fetchedCount": zod.number(),
+  "rejectedCount": zod.number(),
+  "source": zod.string(),
+  "sourceEndpoint": zod.string(),
+  "requestParams": zod.record(zod.string(), zod.unknown()),
+  "processingVersion": zod.string(),
+  "status": zod.enum(['RUNNING', 'SUCCESS', 'PARTIAL', 'FAILED', 'SKIPPED']),
+  "recordCount": zod.number(),
+  "error": zod.string().nullish(),
+  "startedAt": zod.coerce.date(),
+  "finishedAt": zod.coerce.date().nullish()
+}),zod.null()]).optional(),
+  "lastSuccess": zod.union([zod.object({
+  "id": zod.string().uuid(),
+  "fetchedCount": zod.number(),
+  "rejectedCount": zod.number(),
+  "source": zod.string(),
+  "sourceEndpoint": zod.string(),
+  "requestParams": zod.record(zod.string(), zod.unknown()),
+  "processingVersion": zod.string(),
+  "status": zod.enum(['RUNNING', 'SUCCESS', 'PARTIAL', 'FAILED', 'SKIPPED']),
+  "recordCount": zod.number(),
+  "error": zod.string().nullish(),
+  "startedAt": zod.coerce.date(),
+  "finishedAt": zod.coerce.date().nullish()
+}),zod.null()]).optional(),
+  "recentRuns": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "fetchedCount": zod.number(),
+  "rejectedCount": zod.number(),
+  "source": zod.string(),
+  "sourceEndpoint": zod.string(),
+  "requestParams": zod.record(zod.string(), zod.unknown()),
+  "processingVersion": zod.string(),
+  "status": zod.enum(['RUNNING', 'SUCCESS', 'PARTIAL', 'FAILED', 'SKIPPED']),
+  "recordCount": zod.number(),
+  "error": zod.string().nullish(),
+  "startedAt": zod.coerce.date(),
+  "finishedAt": zod.coerce.date().nullish()
+}))
+})
+export const ListDataSourcesResponse = zod.array(ListDataSourcesResponseItem)
 
 

@@ -778,7 +778,7 @@ paths:
         - name: source
           in: path
           required: true
-          schema: { type: string, enum: [market_prices, weather] }
+          schema: { type: string, enum: [datagov_mandi_daily, open_meteo_current, pau_potato_punjab, faostat_potato_india] }
       responses:
         "200":
           description: Run finished
@@ -1009,6 +1009,55 @@ paths:
       responses:
         "204": { description: Done }
         "409": { $ref: "#/components/responses/Error" }
+
+  /reference/punjab-potato:
+    get:
+      operationId: getPunjabPotato
+      tags: [external]
+      summary: Punjab potato area, production and yield by district (PAU page citing the Punjab Department of Horticulture)
+      responses:
+        "200":
+          description: Cited statistics with source, period and freshness
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PunjabPotato" }
+  /reference/faostat-potato-india:
+    get:
+      operationId: getFaostatIndia
+      tags: [external]
+      summary: Historical India potato series from FAOSTAT (national level only)
+      responses:
+        "200":
+          description: Historical series
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FaostatIndia" }
+  /market/reference:
+    get:
+      operationId: getMarketReference
+      tags: [external]
+      summary: Latest available mandi observation for a district and Punjab (daily data, not real-time)
+      parameters:
+        - { name: district, in: query, schema: { type: string, maxLength: 80 } }
+      responses:
+        "200":
+          description: Market reference
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MarketReference" }
+  /data/sources:
+    get:
+      operationId: listDataSources
+      tags: [external]
+      summary: Registry and health of every external source
+      responses:
+        "200":
+          description: Sources
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/IntegrationStatus" }
 
 components:
   responses:
@@ -1856,6 +1905,106 @@ components:
       additionalProperties: false
       properties:
         reason: { type: string, maxLength: 500 }
+    PunjabDistrictStat:
+      type: object
+      required: [name, rank, areaHa, productionT, yieldQPerHa, sharePct]
+      properties:
+        name: { type: string }
+        rank: { type: integer }
+        areaHa: { type: number }
+        productionT: { type: number }
+        yieldQPerHa: { type: number }
+        sharePct: { type: number }
+    CitedNote:
+      type: object
+      required: [text, retrievedAt]
+      properties:
+        text: { type: string }
+        retrievedAt: { type: string, format: date-time }
+    PunjabPotato:
+      type: object
+      required: [source, available, districts]
+      properties:
+        source: { $ref: "#/components/schemas/SourceInfo" }
+        available: { type: boolean }
+        period: { type: [string, "null"], description: "Financial year the table refers to, e.g. 2023-24" }
+        attribution: { type: [string, "null"] }
+        citation: { type: [string, "null"] }
+        state:
+          type: [object, "null"]
+          required: [areaHa, productionT, yieldQPerHa]
+          properties:
+            areaHa: { type: number }
+            productionT: { type: number }
+            yieldQPerHa: { type: number }
+        districts: { type: array, items: { $ref: "#/components/schemas/PunjabDistrictStat" } }
+        majorDistrictsNote:
+          oneOf:
+            - $ref: "#/components/schemas/CitedNote"
+            - type: "null"
+        varietiesNote:
+          oneOf:
+            - $ref: "#/components/schemas/CitedNote"
+            - type: "null"
+    FaostatIndia:
+      type: object
+      required: [source, available, geography, label, series]
+      properties:
+        source: { $ref: "#/components/schemas/SourceInfo" }
+        available: { type: boolean }
+        geography: { type: string }
+        label: { type: string }
+        citation: { type: [string, "null"] }
+        series:
+          type: array
+          items:
+            type: object
+            required: [year, productionT, areaHa, yieldKgPerHa]
+            properties:
+              year: { type: integer }
+              productionT: { type: [number, "null"] }
+              areaHa: { type: [number, "null"] }
+              yieldKgPerHa: { type: [number, "null"] }
+    MandiObservation:
+      type: object
+      required: [market, observationDate]
+      properties:
+        market: { type: string }
+        district: { type: [string, "null"] }
+        observationDate: { type: string }
+        minPrice: { type: [number, "null"] }
+        maxPrice: { type: [number, "null"] }
+        modalPrice: { type: [number, "null"] }
+        modalPricePerKg: { type: [number, "null"] }
+        arrivalQuantityTonnes: { type: [number, "null"] }
+    MarketReference:
+      type: object
+      required: [source, state, commodity, unit, note, latestObservationDate, markets]
+      properties:
+        source: { $ref: "#/components/schemas/SourceInfo" }
+        state: { type: string }
+        commodity: { type: string }
+        unit: { type: string }
+        note: { type: string }
+        latestObservationDate: { type: [string, "null"] }
+        district:
+          type: [object, "null"]
+          required: [name]
+          properties:
+            name: { type: string }
+            observation:
+              oneOf:
+                - $ref: "#/components/schemas/MandiObservation"
+                - type: "null"
+        markets: { type: array, items: { $ref: "#/components/schemas/MandiObservation" } }
+        stateSummary:
+          type: [object, "null"]
+          properties:
+            markets: { type: integer }
+            modalMin: { type: number }
+            modalMedian: { type: number }
+            modalMax: { type: number }
+            pricePerKgMedian: { type: number }
     TraceUnavailable:
       type: object
       required: [status, message]
@@ -2214,9 +2363,11 @@ components:
 
     IngestionRun:
       type: object
-      required: [id, source, sourceEndpoint, status, recordCount, processingVersion, startedAt, requestParams]
+      required: [id, source, sourceEndpoint, status, recordCount, fetchedCount, rejectedCount, processingVersion, startedAt, requestParams]
       properties:
         id: { type: string, format: uuid }
+        fetchedCount: { type: integer }
+        rejectedCount: { type: integer }
         source: { type: string }
         sourceEndpoint: { type: string }
         requestParams: { type: object, additionalProperties: true }
@@ -2226,12 +2377,40 @@ components:
         error: { type: [string, "null"] }
         startedAt: { type: string, format: date-time }
         finishedAt: { type: [string, "null"], format: date-time }
-    IntegrationStatus:
+    SourceInfo:
       type: object
-      required: [source, label, configured, recentRuns]
+      required: [source, label, organization, url, frequency, dataClass, freshness]
       properties:
         source: { type: string }
         label: { type: string }
+        organization: { type: string }
+        url: { type: string }
+        frequency: { type: string }
+        licence: { type: [string, "null"] }
+        dataClass: { type: string, enum: [operational_external, historical, reference] }
+        freshness: { type: string, enum: [CURRENT, CACHED, STALE, NO_DATA, NOT_INTEGRATED] }
+        observationDate: { type: [string, "null"], description: "Latest observation / period the data refers to" }
+        lastSyncAt: { type: [string, "null"], format: date-time }
+    IntegrationStatus:
+      type: object
+      required: [source, label, organization, url, dataset, geography, frequency, dataClass, integration, freshness, configured, recentRuns]
+      properties:
+        source: { type: string }
+        label: { type: string }
+        organization: { type: string }
+        url: { type: string }
+        dataset: { type: string }
+        geography: { type: string }
+        frequency: { type: string }
+        units: { type: [string, "null"] }
+        licence: { type: [string, "null"] }
+        usageNotes: { type: [string, "null"] }
+        dataClass: { type: string, enum: [operational_external, historical, reference] }
+        integration: { type: string, enum: [automated, file_import, reference_only] }
+        integrationNote: { type: [string, "null"] }
+        freshness: { type: string, enum: [CURRENT, CACHED, STALE, NO_DATA, NOT_INTEGRATED] }
+        observationDate: { type: [string, "null"] }
+        lastSyncAt: { type: [string, "null"], format: date-time }
         configured: { type: boolean }
         configurationHint: { type: [string, "null"] }
         lastRun:

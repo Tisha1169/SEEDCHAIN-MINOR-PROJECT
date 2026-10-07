@@ -26,7 +26,7 @@ import { audit } from "../services/records";
 import { notify, type NotificationType } from "../services/notifications";
 import { notifyChange } from "../services/realtime";
 import { serializeEvent } from "../services/lots";
-import { integrationStatus, runSource, serializeRun, SOURCES, type SourceKey } from "../services/external/ingestion";
+import { allSourceStatuses, runSource, serializeRun, AUTOMATED_SOURCES, type SourceKey } from "../services/external/ingestion";
 import { serializeUser } from "./auth";
 
 const router = Router();
@@ -161,12 +161,13 @@ router.get("/admin/scans", async (req, res) => {
 });
 
 router.get("/admin/integrations", async (_req, res) => {
-  res.json(await Promise.all((Object.keys(SOURCES) as SourceKey[]).map(integrationStatus)));
+  res.json(await allSourceStatuses());
 });
 
 router.post("/admin/integrations/:source/run", async (req, res) => {
   const { source } = parse(RunIntegrationParams, req.params);
-  const run = await runSource(source);
+  if (!AUTOMATED_SOURCES.includes(source as SourceKey)) throw badRequest("This source is reference-only and has no automated run");
+  const run = await runSource(source as SourceKey);
   await audit(db, actorOf(req), "INTEGRATION_RUN", "integration", null, null, { source, status: run.status, runId: run.id });
   res.json(serializeRun(run));
 });

@@ -6,6 +6,7 @@ import app from "./app";
 import { assertProductionConfig, config } from "./config";
 import { logger } from "./lib/logger";
 import { startRealtime, stopRealtime } from "./services/realtime";
+import { syncRegistry } from "./services/external/registry";
 import { startScheduler, stopScheduler } from "./services/scheduler";
 
 async function main() {
@@ -13,6 +14,7 @@ async function main() {
   if (config.runMigrationsOnStart) {
     await runMigrations(pool, (m) => logger.info(m));
   }
+  await syncRegistry();
   const server = app.listen(config.port, () => {
     logger.info({ port: config.port, traceBase: config.publicTraceBaseUrl }, "Server listening");
   });

@@ -1198,6 +1198,158 @@ export interface ModerateReviewBody {
   reason?: string;
 }
 
+export interface PunjabDistrictStat {
+  name: string;
+  rank: number;
+  areaHa: number;
+  productionT: number;
+  yieldQPerHa: number;
+  sharePct: number;
+}
+
+export interface CitedNote {
+  text: string;
+  retrievedAt: string;
+}
+
+/**
+ * @nullable
+ */
+export type PunjabPotatoState = {
+  areaHa: number;
+  productionT: number;
+  yieldQPerHa: number;
+} | null;
+
+export type SourceInfoDataClass = typeof SourceInfoDataClass[keyof typeof SourceInfoDataClass];
+
+
+export const SourceInfoDataClass = {
+  operational_external: 'operational_external',
+  historical: 'historical',
+  reference: 'reference',
+} as const;
+
+export type SourceInfoFreshness = typeof SourceInfoFreshness[keyof typeof SourceInfoFreshness];
+
+
+export const SourceInfoFreshness = {
+  CURRENT: 'CURRENT',
+  CACHED: 'CACHED',
+  STALE: 'STALE',
+  NO_DATA: 'NO_DATA',
+  NOT_INTEGRATED: 'NOT_INTEGRATED',
+} as const;
+
+export interface SourceInfo {
+  source: string;
+  label: string;
+  organization: string;
+  url: string;
+  frequency: string;
+  /** @nullable */
+  licence?: string | null;
+  dataClass: SourceInfoDataClass;
+  freshness: SourceInfoFreshness;
+  /**
+     * Latest observation / period the data refers to
+     * @nullable
+     */
+  observationDate?: string | null;
+  /** @nullable */
+  lastSyncAt?: string | null;
+}
+
+export interface PunjabPotato {
+  source: SourceInfo;
+  available: boolean;
+  /**
+     * Financial year the table refers to, e.g. 2023-24
+     * @nullable
+     */
+  period?: string | null;
+  /** @nullable */
+  attribution?: string | null;
+  /** @nullable */
+  citation?: string | null;
+  /** @nullable */
+  state?: PunjabPotatoState;
+  districts: PunjabDistrictStat[];
+  majorDistrictsNote?: CitedNote | null;
+  varietiesNote?: CitedNote | null;
+}
+
+export type FaostatIndiaSeriesItem = {
+  year: number;
+  /** @nullable */
+  productionT: number | null;
+  /** @nullable */
+  areaHa: number | null;
+  /** @nullable */
+  yieldKgPerHa: number | null;
+};
+
+export interface FaostatIndia {
+  source: SourceInfo;
+  available: boolean;
+  geography: string;
+  label: string;
+  /** @nullable */
+  citation?: string | null;
+  series: FaostatIndiaSeriesItem[];
+}
+
+export interface MandiObservation {
+  market: string;
+  /** @nullable */
+  district?: string | null;
+  observationDate: string;
+  /** @nullable */
+  minPrice?: number | null;
+  /** @nullable */
+  maxPrice?: number | null;
+  /** @nullable */
+  modalPrice?: number | null;
+  /** @nullable */
+  modalPricePerKg?: number | null;
+  /** @nullable */
+  arrivalQuantityTonnes?: number | null;
+}
+
+/**
+ * @nullable
+ */
+export type MarketReferenceDistrict = {
+  name: string;
+  observation?: MandiObservation | null;
+} | null;
+
+/**
+ * @nullable
+ */
+export type MarketReferenceStateSummary = {
+  markets?: number;
+  modalMin?: number;
+  modalMedian?: number;
+  modalMax?: number;
+  pricePerKgMedian?: number;
+} | null;
+
+export interface MarketReference {
+  source: SourceInfo;
+  state: string;
+  commodity: string;
+  unit: string;
+  note: string;
+  /** @nullable */
+  latestObservationDate: string | null;
+  /** @nullable */
+  district?: MarketReferenceDistrict;
+  markets: MandiObservation[];
+  /** @nullable */
+  stateSummary?: MarketReferenceStateSummary;
+}
+
 export type TraceUnavailableStatus = typeof TraceUnavailableStatus[keyof typeof TraceUnavailableStatus];
 
 
@@ -1603,6 +1755,35 @@ export interface FarmerInventoryPoint {
   sold: number;
 }
 
+export type IntegrationStatusDataClass = typeof IntegrationStatusDataClass[keyof typeof IntegrationStatusDataClass];
+
+
+export const IntegrationStatusDataClass = {
+  operational_external: 'operational_external',
+  historical: 'historical',
+  reference: 'reference',
+} as const;
+
+export type IntegrationStatusIntegration = typeof IntegrationStatusIntegration[keyof typeof IntegrationStatusIntegration];
+
+
+export const IntegrationStatusIntegration = {
+  automated: 'automated',
+  file_import: 'file_import',
+  reference_only: 'reference_only',
+} as const;
+
+export type IntegrationStatusFreshness = typeof IntegrationStatusFreshness[keyof typeof IntegrationStatusFreshness];
+
+
+export const IntegrationStatusFreshness = {
+  CURRENT: 'CURRENT',
+  CACHED: 'CACHED',
+  STALE: 'STALE',
+  NO_DATA: 'NO_DATA',
+  NOT_INTEGRATED: 'NOT_INTEGRATED',
+} as const;
+
 export type IngestionRunStatus = typeof IngestionRunStatus[keyof typeof IngestionRunStatus];
 
 
@@ -1618,6 +1799,8 @@ export type IngestionRunRequestParams = { [key: string]: unknown };
 
 export interface IngestionRun {
   id: string;
+  fetchedCount: number;
+  rejectedCount: number;
   source: string;
   sourceEndpoint: string;
   requestParams: IngestionRunRequestParams;
@@ -1634,6 +1817,26 @@ export interface IngestionRun {
 export interface IntegrationStatus {
   source: string;
   label: string;
+  organization: string;
+  url: string;
+  dataset: string;
+  geography: string;
+  frequency: string;
+  /** @nullable */
+  units?: string | null;
+  /** @nullable */
+  licence?: string | null;
+  /** @nullable */
+  usageNotes?: string | null;
+  dataClass: IntegrationStatusDataClass;
+  integration: IntegrationStatusIntegration;
+  /** @nullable */
+  integrationNote?: string | null;
+  freshness: IntegrationStatusFreshness;
+  /** @nullable */
+  observationDate?: string | null;
+  /** @nullable */
+  lastSyncAt?: string | null;
   configured: boolean;
   /** @nullable */
   configurationHint?: string | null;
@@ -1879,4 +2082,11 @@ export const ListQrAnomaliesStatus = {
   DISMISSED: 'DISMISSED',
   CONFIRMED: 'CONFIRMED',
 } as const;
+
+export type GetMarketReferenceParams = {
+/**
+ * @maxLength 80
+ */
+district?: string;
+};
 
