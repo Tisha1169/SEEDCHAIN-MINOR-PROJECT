@@ -8,6 +8,7 @@ import {
   productsTable,
   qrCodesTable,
   qrScanEventsTable,
+  ordersTable,
   traceabilityEventsTable,
   usersTable,
   type User,
@@ -15,6 +16,7 @@ import {
 import { HttpError, notFound } from "../lib/errors";
 import { buildJourney } from "../domain/journey";
 import { loadCompleteness, loadFarmerRatings, noRating } from "./lot-insights";
+import { publicReviews } from "./reviews";
 import { detectAnomalies } from "./qr-ops";
 import { lotRecallsTable, lotQualityRecordsTable } from "@workspace/db";
 import { isWellFormedToken } from "../domain/qr";
@@ -297,7 +299,19 @@ function listingQuery() {
 
 type ListingRow = Awaited<ReturnType<ReturnType<typeof listingQuery>["execute"]>>[number];
 
-function serializeListing(r: ListingRow) {
+interface ListingExtras {
+  completeness: Map<string, { percent: number }>;
+  ratings: Map<string, { average: number | null; count: number }>;
+}
+
+async function listingExtras(rows: ListingRow[]): Promise<ListingExtras> {
+  const completeness = await loadCompleteness(rows.map((r) => r.lot.id));
+  const ratings = await loadFarmerRatings([...new Set(rows.map((r) => r.lot.farmerId))]);
+  return { completeness, ratings };
+}
+
+function serializeListing(r: ListingRow, x: ListingExtras) {
+  const rating = x.ratings.get(r.lot.farmerId);
   return {
     lotId: r.lot.id,
     lotCode: r.lot.lotCode,
@@ -308,6 +322,9 @@ function serializeListing(r: ListingRow) {
     available: availableOf(counters(r.lot)),
     qualityGrade: r.lot.qualityGrade,
     harvestDate: r.lot.harvestDate,
+    harvestAgeDays: r.lot.harvestDate ? Math.max(0, Math.floor((Date.now() - new Date(`${r.lot.harvestDate}T00:00:00Z`).getTime()) / 86_400_000)) : null,
+    completenessPercent: x.completeness.get(r.lot.id)?.percent ?? null,
+    farmerRating: rating ? { average: rating.average, count: rating.count } : { average: null, count: 0 },
     origin: r.lot.origin,
     status: r.lot.status,
     farmer: {
@@ -334,14 +351,17 @@ export async function listMarketplace(q?: string, state?: string) {
   }
   if (state?.trim()) conds.push(ilike(farmsTable.state, state.trim()));
   const rows = await listingQuery().where(and(...conds)).orderBy(desc(lotsTable.updatedAt)).limit(200);
-  return rows.map(serializeListing);
+  const x = await listingExtras(rows);
+  return rows.map((r) => serializeListing(r, x));
 }
 
 export async function getListing(lotId: string) {
   const [row] = await listingQuery().where(and(eq(lotsTable.id, lotId), eq(lotsTable.listed, true), eq(lotsTable.recalled, false), eq(usersTable.status, "active")));
   if (!row) throw notFound("Listing not found");
-  return serializeListing(row);
+  return serializeListing(row, await listingExtras([row]));
 }
+
+const TO_KG: Record<string, number> = { kg: 1, quintal: 100, tonne: 1000 };
 
 export async function getPublicFarmer(farmerId: string) {
   const [u] = await db
@@ -352,6 +372,12 @@ export async function getPublicFarmer(farmerId: string) {
   if (!u) throw notFound("Farmer not found");
   const farms = await db.select({ name: farmsTable.name, district: farmsTable.district, state: farmsTable.state }).from(farmsTable).where(eq(farmsTable.farmerId, farmerId));
   const listings = await listingQuery().where(and(sellable(), eq(lotsTable.farmerId, farmerId)));
+  const x = await listingExtras(listings);
+  const allLots = await db.select().from(lotsTable).where(and(eq(lotsTable.farmerId, farmerId), sql`${lotsTable.harvestedQty} > 0`));
+  const comp = await loadCompleteness(allLots.map((l) => l.id));
+  const percents = [...comp.values()].map((c) => c.percent);
+  const [{ n: successful }] = await db.select({ n: sql<number>`count(*)::int` }).from(ordersTable).where(and(eq(ordersTable.farmerId, farmerId), eq(ordersTable.status, "CUSTOMER_CONFIRMED")));
+  const rating = (await loadFarmerRatings([farmerId])).get(farmerId) ?? noRating;
   return {
     id: farmerId,
     publicName: u.profile?.publicName ?? "Registered farmer",
@@ -361,7 +387,15 @@ export async function getPublicFarmer(farmerId: string) {
     state: u.profile?.state ?? null,
     verified: !!u.profile?.verifiedAt,
     memberSince: u.user.createdAt.toISOString(),
+    stats: {
+      activeLots: listings.length,
+      traceableQuantityKg: Math.round(allLots.reduce((t, l) => t + Number(l.harvestedQty) * (TO_KG[l.unit] ?? 1), 0)),
+      successfulOrders: successful,
+      averageCompleteness: percents.length ? Math.round(percents.reduce((a, b) => a + b, 0) / percents.length) : null,
+      rating: { average: rating.average, count: rating.count, freshness: rating.freshness, quality: rating.quality },
+    },
+    reviews: await publicReviews(farmerId),
     farms,
-    listings: listings.map(serializeListing),
+    listings: listings.map((r) => serializeListing(r, x)),
   };
 }

@@ -33,6 +33,7 @@ export type UserStatus = typeof UserStatus[keyof typeof UserStatus];
 
 export const UserStatus = {
   pending: 'pending',
+  correction_required: 'correction_required',
   active: 'active',
   rejected: 'rejected',
   suspended: 'suspended',
@@ -340,6 +341,7 @@ export const QrStatus = {
   ACTIVE: 'ACTIVE',
   REVOKED: 'REVOKED',
   REPLACED: 'REPLACED',
+  DISABLED: 'DISABLED',
 } as const;
 
 export interface QrCode {
@@ -372,6 +374,7 @@ export interface LotSummary {
   farmerName?: string | null;
   status: LotStatus;
   listed: boolean;
+  recalled: boolean;
   /** @nullable */
   pricePerUnit?: number | null;
   qualityGrade?: QualityGrade | null;
@@ -382,6 +385,44 @@ export interface LotSummary {
   activeQr?: QrCode | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export type LotDetailScanStats = {
+  verifiedScans: number;
+  uniqueScanners: number;
+};
+
+export type CompletenessComponentsItem = {
+  key: string;
+  weight: number;
+  applicable: boolean;
+  done: boolean;
+};
+
+export interface Completeness {
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  percent: number;
+  missing: string[];
+  components: CompletenessComponentsItem[];
+  note?: string;
+}
+
+export interface QualityRecord {
+  grade: QualityGrade;
+  /** @nullable */
+  appearance?: string | null;
+  /** @nullable */
+  sizeCategory?: string | null;
+  /** @nullable */
+  defects?: string | null;
+  inspectionDate: string;
+  /** @nullable */
+  notes?: string | null;
+  /** FARMER until an independent verifier exists */
+  recordedBy: string;
 }
 
 export interface StorageRecord {
@@ -413,6 +454,9 @@ export interface IndicativeValue {
 }
 
 export type LotDetail = LotSummary & ({
+  completeness: Completeness;
+  latestQuality?: QualityRecord | null;
+  scanStats: LotDetailScanStats;
   /** @nullable */
   plantingDate?: string | null;
   /** @nullable */
@@ -561,6 +605,16 @@ export const FarmerEventType = {
   CORRECTION_RECORDED: 'CORRECTION_RECORDED',
 } as const;
 
+export type RecordLotEventBodySizeCategory = typeof RecordLotEventBodySizeCategory[keyof typeof RecordLotEventBodySizeCategory];
+
+
+export const RecordLotEventBodySizeCategory = {
+  small: 'small',
+  medium: 'medium',
+  large: 'large',
+  mixed: 'mixed',
+} as const;
+
 export interface RecordLotEventBody {
   eventType: FarmerEventType;
   clientEventId: string;
@@ -578,6 +632,13 @@ export interface RecordLotEventBody {
      */
   harvestAdjustment?: number;
   qualityGrade?: QualityGrade;
+  /** @maxLength 300 */
+  appearance?: string;
+  sizeCategory?: RecordLotEventBodySizeCategory;
+  /** @maxLength 500 */
+  defects?: string;
+  /** @pattern ^\d{4}-\d{2}-\d{2}$ */
+  inspectionDate?: string;
   /** @maxLength 1000 */
   reason?: string;
   /** @maxLength 200 */
@@ -700,6 +761,49 @@ export const PublicTraceVerification = {
   UNVERIFIED_FARMER: 'UNVERIFIED_FARMER',
 } as const;
 
+/**
+ * @nullable
+ */
+export type PublicTraceRecall = {
+  message: string;
+  since: string;
+} | null;
+
+export type PublicTraceFarmerRating = {
+  /** @nullable */
+  average: number | null;
+  count: number;
+};
+
+export type JourneyStepKey = typeof JourneyStepKey[keyof typeof JourneyStepKey];
+
+
+export const JourneyStepKey = {
+  FARM: 'FARM',
+  HARVEST: 'HARVEST',
+  QUALITY: 'QUALITY',
+  QR: 'QR',
+  LISTING: 'LISTING',
+  ORDER: 'ORDER',
+  DISPATCH: 'DISPATCH',
+  CONFIRMATION: 'CONFIRMATION',
+} as const;
+
+export type JourneyStepState = typeof JourneyStepState[keyof typeof JourneyStepState];
+
+
+export const JourneyStepState = {
+  DONE: 'DONE',
+  PENDING: 'PENDING',
+} as const;
+
+export interface JourneyStep {
+  key: JourneyStepKey;
+  state: JourneyStepState;
+  /** @nullable */
+  at: string | null;
+}
+
 export interface PublicTrace {
   verification: PublicTraceVerification;
   lotCode: string;
@@ -725,6 +829,13 @@ export interface PublicTrace {
   listed: boolean;
   /** @nullable */
   publicNotes?: string | null;
+  recalled: boolean;
+  /** @nullable */
+  recall?: PublicTraceRecall;
+  journey: JourneyStep[];
+  completeness: Completeness;
+  farmerRating: PublicTraceFarmerRating;
+  qualityRecord?: QualityRecord | null;
   timeline: PublicTimelineEntry[];
   lastUpdatedAt: string;
   qrVersion: number;
@@ -823,12 +934,277 @@ export interface PublicOverview {
   generatedAt: string;
 }
 
+export type NotificationParams = { [key: string]: unknown };
+
+export interface Notification {
+  id: string;
+  type: string;
+  params: NotificationParams;
+  /** @nullable */
+  entityType?: string | null;
+  /** @nullable */
+  entityId?: string | null;
+  createdAt: string;
+  /** @nullable */
+  readAt?: string | null;
+}
+
+export interface NotificationList {
+  unread: number;
+  items: Notification[];
+}
+
+export interface MarkReadBody {
+  /** @maxItems 100 */
+  ids?: string[];
+}
+
+export type QrAnalyticsPerLotItem = {
+  lotId: string;
+  lotCode: string;
+  scans: number;
+  uniqueScanners: number;
+  lastScanAt: string;
+};
+
+export type QrAnalyticsOverTimeItem = {
+  label: string;
+  ok: number;
+  failed: number;
+};
+
+export type QrAnalyticsRecentItem = {
+  id: string;
+  scannedAt: string;
+  result: string;
+  scanSource: string;
+  /** @nullable */
+  deviceType?: string | null;
+  signedIn: boolean;
+  sharedLocation: boolean;
+  /** @nullable */
+  lotCode?: string | null;
+};
+
+export interface CountPoint {
+  label: string;
+  value: number;
+}
+
+export interface QrAnalytics {
+  days: number;
+  totalVerifiedScans: number;
+  uniqueScanners: number;
+  repeatScans: number;
+  failedScans: number;
+  /** @nullable */
+  verificationRatePct: number | null;
+  openAnomalies: number;
+  perLot: QrAnalyticsPerLotItem[];
+  overTime: QrAnalyticsOverTimeItem[];
+  failedByResult: CountPoint[];
+  recent: QrAnalyticsRecentItem[];
+  generatedAt: string;
+}
+
+export type QrAnomalyKind = typeof QrAnomalyKind[keyof typeof QrAnomalyKind];
+
+
+export const QrAnomalyKind = {
+  IMPOSSIBLE_TRAVEL: 'IMPOSSIBLE_TRAVEL',
+  DISTANT_SCANS: 'DISTANT_SCANS',
+  SCAN_BURST: 'SCAN_BURST',
+} as const;
+
+export type QrAnomalyStatus = typeof QrAnomalyStatus[keyof typeof QrAnomalyStatus];
+
+
+export const QrAnomalyStatus = {
+  OPEN: 'OPEN',
+  INVESTIGATING: 'INVESTIGATING',
+  DISMISSED: 'DISMISSED',
+  CONFIRMED: 'CONFIRMED',
+} as const;
+
+export type QrAnomalyDetail = { [key: string]: unknown };
+
+export interface QrAnomaly {
+  id: string;
+  qrId: string;
+  lotId: string;
+  lotCode: string;
+  qrVersion: number;
+  qrStatus: QrStatus;
+  kind: QrAnomalyKind;
+  status: QrAnomalyStatus;
+  detail: QrAnomalyDetail;
+  detectedAt: string;
+  /** @nullable */
+  handledBy?: string | null;
+  /** @nullable */
+  handledAt?: string | null;
+  /** @nullable */
+  note?: string | null;
+}
+
+export interface AnomalyNoteBody {
+  /** @maxLength 1000 */
+  note?: string;
+}
+
+export interface QrReasonBody {
+  /**
+     * @minLength 3
+     * @maxLength 500
+     */
+  reason: string;
+  anomalyId?: string;
+}
+
+export type RecallImpactInventory = {
+  harvested: number;
+  available: number;
+  reserved: number;
+  sold: number;
+  loss: number;
+  unit: string;
+};
+
+export type RecallImpactOpenOrdersItem = {
+  orderId: string;
+  orderCode: string;
+  status: string;
+  quantity: number;
+};
+
+export interface RecallImpact {
+  lotCode: string;
+  farmerId: string;
+  /** @nullable */
+  farmerName?: string | null;
+  qrActive: boolean;
+  inventory: RecallImpactInventory;
+  openOrders: RecallImpactOpenOrdersItem[];
+  ordersTotal: number;
+  customersAffected: number;
+}
+
+export type RecallStatus = typeof RecallStatus[keyof typeof RecallStatus];
+
+
+export const RecallStatus = {
+  ACTIVE: 'ACTIVE',
+  CLEARED: 'CLEARED',
+} as const;
+
+export type RecallImpactProperty = { [key: string]: unknown };
+
+export interface Recall {
+  id: string;
+  lotId: string;
+  status: RecallStatus;
+  reason: string;
+  publicMessage: string;
+  initiatedAt: string;
+  /** @nullable */
+  clearedAt?: string | null;
+  /** @nullable */
+  clearNote?: string | null;
+  impact?: RecallImpactProperty;
+}
+
+export interface RecallBody {
+  /**
+     * Internal; admins only
+     * @minLength 5
+     * @maxLength 1000
+     */
+  reason: string;
+  /**
+     * Shown on the public QR page; no personal data
+     * @minLength 5
+     * @maxLength 300
+     */
+  publicMessage: string;
+}
+
+export interface ClearRecallBody {
+  /**
+     * @minLength 3
+     * @maxLength 1000
+     */
+  note: string;
+}
+
+export type FarmerReviewFarmsItem = {
+  id: string;
+  name: string;
+  /** @nullable */
+  village?: string | null;
+  /** @nullable */
+  district?: string | null;
+  state: string;
+  /** @nullable */
+  sizeHectares?: number | null;
+  hasGps?: boolean;
+};
+
+export type FarmerReviewProductsItem = {
+  name: string;
+  variety: string;
+};
+
+export type FarmerReviewHistoryItem = {
+  action: string;
+  at: string;
+  /** @nullable */
+  by?: string | null;
+  /** @nullable */
+  note?: string | null;
+};
+
+export interface FarmerReview {
+  user: CurrentUser;
+  /** @nullable */
+  submittedAt?: string | null;
+  farms: FarmerReviewFarmsItem[];
+  products: FarmerReviewProductsItem[];
+  lotsCount: number;
+  ordersCount: number;
+  history: FarmerReviewHistoryItem[];
+}
+
+export interface ModerationReview {
+  orderId: string;
+  orderCode: string;
+  customerName: string;
+  /** @nullable */
+  farmerName?: string | null;
+  rating: number;
+  /** @nullable */
+  freshnessRating?: number | null;
+  /** @nullable */
+  qualityRating?: number | null;
+  /** @nullable */
+  comment?: string | null;
+  createdAt: string;
+  hidden: boolean;
+  /** @nullable */
+  hiddenReason?: string | null;
+}
+
+export interface ModerateReviewBody {
+  /** @maxLength 500 */
+  reason?: string;
+}
+
 export type TraceUnavailableStatus = typeof TraceUnavailableStatus[keyof typeof TraceUnavailableStatus];
 
 
 export const TraceUnavailableStatus = {
   REVOKED: 'REVOKED',
   REPLACED: 'REPLACED',
+  DISABLED: 'DISABLED',
 } as const;
 
 export interface TraceUnavailable {
@@ -861,6 +1237,23 @@ export interface RecordScanBody {
   scanSource: RecordScanBodyScanSource;
   clientEventId: string;
   deviceType?: RecordScanBodyDeviceType;
+  /**
+     * Random per-browser id; not a fingerprint
+     * @minLength 8
+     * @maxLength 64
+     */
+  sessionId?: string;
+  /**
+     * Optional, shared with consent; stored rounded to 0.1 degree
+     * @minimum -90
+     * @maximum 90
+     */
+  approxLat?: number;
+  /**
+     * @minimum -180
+     * @maximum 180
+     */
+  approxLon?: number;
 }
 
 export type ScanResultResult = typeof ScanResultResult[keyof typeof ScanResultResult];
@@ -871,6 +1264,7 @@ export const ScanResultResult = {
   UNKNOWN: 'UNKNOWN',
   REVOKED: 'REVOKED',
   REPLACED: 'REPLACED',
+  DISABLED: 'DISABLED',
   INVALID: 'INVALID',
 } as const;
 
@@ -913,6 +1307,15 @@ export interface ListingFarmer {
   verified: boolean;
 }
 
+/**
+ * @nullable
+ */
+export type ListingFarmerRating = {
+  /** @nullable */
+  average?: number | null;
+  count?: number;
+} | null;
+
 export interface Listing {
   lotId: string;
   lotCode: string;
@@ -935,6 +1338,12 @@ export interface Listing {
   publicToken?: string | null;
   /** @nullable */
   publicNotes?: string | null;
+  /** @nullable */
+  harvestAgeDays?: number | null;
+  /** @nullable */
+  completenessPercent?: number | null;
+  /** @nullable */
+  farmerRating?: ListingFarmerRating;
 }
 
 export interface PublicFarm {
@@ -943,6 +1352,37 @@ export interface PublicFarm {
   district?: string | null;
   state: string;
 }
+
+export type PublicFarmerStatsRating = {
+  /** @nullable */
+  average: number | null;
+  count: number;
+  /** @nullable */
+  freshness: number | null;
+  /** @nullable */
+  quality: number | null;
+};
+
+export type PublicFarmerStats = {
+  activeLots: number;
+  traceableQuantityKg: number;
+  successfulOrders: number;
+  /** @nullable */
+  averageCompleteness: number | null;
+  rating: PublicFarmerStatsRating;
+};
+
+export type PublicFarmerReviewsItem = {
+  rating: number;
+  /** @nullable */
+  freshnessRating?: number | null;
+  /** @nullable */
+  qualityRating?: number | null;
+  /** @nullable */
+  comment?: string | null;
+  createdAt: string;
+  verifiedPurchase: boolean;
+};
 
 export interface PublicFarmer {
   id: string;
@@ -957,6 +1397,8 @@ export interface PublicFarmer {
   state?: string | null;
   verified: boolean;
   memberSince: string;
+  stats: PublicFarmerStats;
+  reviews: PublicFarmerReviewsItem[];
   farms: PublicFarm[];
   listings: Listing[];
 }
@@ -1030,6 +1472,10 @@ export interface OrderFarmer {
 
 export interface OrderFeedback {
   rating: number;
+  /** @nullable */
+  freshnessRating?: number | null;
+  /** @nullable */
+  qualityRating?: number | null;
   /** @nullable */
   comment?: string | null;
   createdAt: string;
@@ -1131,17 +1577,23 @@ export interface OrderTransitionBody {
 
 export interface FeedbackBody {
   /**
+     * Overall
      * @minimum 1
      * @maximum 5
      */
   rating: number;
+  /**
+     * @minimum 1
+     * @maximum 5
+     */
+  freshnessRating?: number;
+  /**
+     * @minimum 1
+     * @maximum 5
+     */
+  qualityRating?: number;
   /** @maxLength 1000 */
   comment?: string;
-}
-
-export interface CountPoint {
-  label: string;
-  value: number;
 }
 
 export interface FarmerInventoryPoint {
@@ -1405,4 +1857,26 @@ days?: number;
 export type GetWeatherParams = {
 farmId: string;
 };
+
+export type GetQrAnalyticsParams = {
+/**
+ * @minimum 1
+ * @maximum 90
+ */
+days?: number;
+};
+
+export type ListQrAnomaliesParams = {
+status?: ListQrAnomaliesStatus;
+};
+
+export type ListQrAnomaliesStatus = typeof ListQrAnomaliesStatus[keyof typeof ListQrAnomaliesStatus];
+
+
+export const ListQrAnomaliesStatus = {
+  OPEN: 'OPEN',
+  INVESTIGATING: 'INVESTIGATING',
+  DISMISSED: 'DISMISSED',
+  CONFIRMED: 'CONFIRMED',
+} as const;
 

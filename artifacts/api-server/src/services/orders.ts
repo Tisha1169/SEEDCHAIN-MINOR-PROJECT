@@ -136,7 +136,7 @@ async function serializeOrders(user: User, orders: Order[], withEvents: boolean)
       events: withEvents
         ? events.filter((e) => e.e.orderId === o.id).map((e) => serializeEvent({ ...e.e, lotCode: e.lotCode, actorName: e.actorName }))
         : undefined,
-      feedback: f ? { rating: f.rating, comment: f.comment, createdAt: f.createdAt.toISOString() } : null,
+      feedback: f && !f.hiddenAt ? { rating: f.rating, freshnessRating: f.freshnessRating, qualityRating: f.qualityRating, comment: f.comment, createdAt: f.createdAt.toISOString() } : null,
     };
   });
 }

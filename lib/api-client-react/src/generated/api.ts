@@ -26,8 +26,10 @@ import type {
 import type {
   AdminOverview,
   Alert,
+  AnomalyNoteBody,
   AuditLog,
   AuthResponse,
+  ClearRecallBody,
   CreateLotBody,
   CreateOrderBody,
   CurrentUser,
@@ -36,9 +38,11 @@ import type {
   Farm,
   FarmBody,
   FarmerOverview,
+  FarmerReview,
   FeedbackBody,
   GenerateQrBody,
   GetMarketPricesParams,
+  GetQrAnalyticsParams,
   GetWeatherParams,
   HealthStatus,
   IngestionRun,
@@ -50,6 +54,7 @@ import type {
   ListLotsParams,
   ListMarketplaceParams,
   ListOrdersParams,
+  ListQrAnomaliesParams,
   ListQrScansParams,
   ListUsersParams,
   Listing,
@@ -57,8 +62,12 @@ import type {
   LotDetail,
   LotListingBody,
   LotSummary,
+  MarkReadBody,
   MarketPrices,
+  ModerateReviewBody,
+  ModerationReview,
   MyScan,
+  NotificationList,
   Order,
   OrderAction,
   OrderTransitionBody,
@@ -67,8 +76,14 @@ import type {
   PublicFarmer,
   PublicOverview,
   PublicTrace,
+  QrAnalytics,
+  QrAnomaly,
   QrCode,
+  QrReasonBody,
   QrScan,
+  Recall,
+  RecallBody,
+  RecallImpact,
   RecordLotEventBody,
   RecordScanBody,
   RegisterUserBody,
@@ -584,7 +599,7 @@ export function useListUsers<TData = Awaited<ReturnType<typeof listUsers>>, TErr
  * @summary Approve / reject a farmer, suspend / reactivate any non-admin user
  */
 export const getReviewUserUrl = (id: string,
-    action: 'approve' | 'reject' | 'suspend' | 'reactivate',) => {
+    action: 'approve' | 'request-correction' | 'reject' | 'suspend' | 'reactivate',) => {
 
 
 
@@ -593,7 +608,7 @@ export const getReviewUserUrl = (id: string,
 }
 
 export const reviewUser = async (id: string,
-    action: 'approve' | 'reject' | 'suspend' | 'reactivate',
+    action: 'approve' | 'request-correction' | 'reject' | 'suspend' | 'reactivate',
     reviewUserBody?: ReviewUserBody, options?: RequestInit): Promise<CurrentUser> => {
 
   return customFetch<CurrentUser>(getReviewUserUrl(id,action),
@@ -610,8 +625,8 @@ export const reviewUser = async (id: string,
 
 
 export const getReviewUserMutationOptions = <TError = ErrorType<ErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewUser>>, TError,{id: string;action: 'approve' | 'reject' | 'suspend' | 'reactivate';data: BodyType<ReviewUserBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof reviewUser>>, TError,{id: string;action: 'approve' | 'reject' | 'suspend' | 'reactivate';data: BodyType<ReviewUserBody>}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewUser>>, TError,{id: string;action: 'approve' | 'request-correction' | 'reject' | 'suspend' | 'reactivate';data: BodyType<ReviewUserBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reviewUser>>, TError,{id: string;action: 'approve' | 'request-correction' | 'reject' | 'suspend' | 'reactivate';data: BodyType<ReviewUserBody>}, TContext> => {
 
 const mutationKey = ['reviewUser'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -623,7 +638,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reviewUser>>, {id: string;action: 'approve' | 'reject' | 'suspend' | 'reactivate';data: BodyType<ReviewUserBody>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reviewUser>>, {id: string;action: 'approve' | 'request-correction' | 'reject' | 'suspend' | 'reactivate';data: BodyType<ReviewUserBody>}> = (props) => {
           const {id,action,data} = props ?? {};
 
           return  reviewUser(id,action,data,requestOptions)
@@ -644,11 +659,11 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Approve / reject a farmer, suspend / reactivate any non-admin user
  */
 export const useReviewUser = <TError = ErrorType<ErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewUser>>, TError,{id: string;action: 'approve' | 'reject' | 'suspend' | 'reactivate';data: BodyType<ReviewUserBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewUser>>, TError,{id: string;action: 'approve' | 'request-correction' | 'reject' | 'suspend' | 'reactivate';data: BodyType<ReviewUserBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof reviewUser>>,
         TError,
-        {id: string;action: 'approve' | 'reject' | 'suspend' | 'reactivate';data: BodyType<ReviewUserBody>},
+        {id: string;action: 'approve' | 'request-correction' | 'reject' | 'suspend' | 'reactivate';data: BodyType<ReviewUserBody>},
         TContext
       > => {
       return useMutation(getReviewUserMutationOptions(options));
@@ -3670,5 +3685,1063 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getRunIntegrationMutationOptions(options));
+    }
+
+export const getListNotificationsUrl = () => {
+
+
+
+
+  return `/api/me/notifications`
+}
+
+export const listNotifications = async ( options?: RequestInit): Promise<NotificationList> => {
+
+  return customFetch<NotificationList>(getListNotificationsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListNotificationsQueryKey = () => {
+    return [
+    `/api/me/notifications`
+    ] as const;
+    }
+
+
+export const getListNotificationsQueryOptions = <TData = Awaited<ReturnType<typeof listNotifications>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listNotifications>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListNotificationsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listNotifications>>> = ({ signal }) => listNotifications({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listNotifications>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListNotificationsQueryResult = NonNullable<Awaited<ReturnType<typeof listNotifications>>>
+export type ListNotificationsQueryError = ErrorType<unknown>
+
+
+
+export function useListNotifications<TData = Awaited<ReturnType<typeof listNotifications>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listNotifications>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListNotificationsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getMarkNotificationsReadUrl = () => {
+
+
+
+
+  return `/api/me/notifications/read`
+}
+
+export const markNotificationsRead = async (markReadBody?: MarkReadBody, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getMarkNotificationsReadUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      markReadBody,)
+  }
+);}
+
+
+
+
+export const getMarkNotificationsReadMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markNotificationsRead>>, TError,{data: BodyType<MarkReadBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof markNotificationsRead>>, TError,{data: BodyType<MarkReadBody>}, TContext> => {
+
+const mutationKey = ['markNotificationsRead'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof markNotificationsRead>>, {data: BodyType<MarkReadBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  markNotificationsRead(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MarkNotificationsReadMutationResult = NonNullable<Awaited<ReturnType<typeof markNotificationsRead>>>
+    export type MarkNotificationsReadMutationBody = BodyType<MarkReadBody>
+    export type MarkNotificationsReadMutationError = ErrorType<unknown>
+
+    export const useMarkNotificationsRead = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markNotificationsRead>>, TError,{data: BodyType<MarkReadBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof markNotificationsRead>>,
+        TError,
+        {data: BodyType<MarkReadBody>},
+        TContext
+      > => {
+      return useMutation(getMarkNotificationsReadMutationOptions(options));
+    }
+
+/**
+ * @summary Farmer resubmits the application after a correction request
+ */
+export const getResubmitApplicationUrl = () => {
+
+
+
+
+  return `/api/me/resubmit`
+}
+
+export const resubmitApplication = async ( options?: RequestInit): Promise<CurrentUser> => {
+
+  return customFetch<CurrentUser>(getResubmitApplicationUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getResubmitApplicationMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resubmitApplication>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof resubmitApplication>>, TError,void, TContext> => {
+
+const mutationKey = ['resubmitApplication'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof resubmitApplication>>, void> = () => {
+
+
+          return  resubmitApplication(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ResubmitApplicationMutationResult = NonNullable<Awaited<ReturnType<typeof resubmitApplication>>>
+
+    export type ResubmitApplicationMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Farmer resubmits the application after a correction request
+ */
+export const useResubmitApplication = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resubmitApplication>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof resubmitApplication>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getResubmitApplicationMutationOptions(options));
+    }
+
+export const getGetFarmerReviewUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/farmers/${id}/review`
+}
+
+export const getFarmerReview = async (id: string, options?: RequestInit): Promise<FarmerReview> => {
+
+  return customFetch<FarmerReview>(getGetFarmerReviewUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFarmerReviewQueryKey = (id: string,) => {
+    return [
+    `/api/admin/farmers/${id}/review`
+    ] as const;
+    }
+
+
+export const getGetFarmerReviewQueryOptions = <TData = Awaited<ReturnType<typeof getFarmerReview>>, TError = ErrorType<unknown>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFarmerReview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFarmerReviewQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFarmerReview>>> = ({ signal }) => getFarmerReview(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFarmerReview>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetFarmerReviewQueryResult = NonNullable<Awaited<ReturnType<typeof getFarmerReview>>>
+export type GetFarmerReviewQueryError = ErrorType<unknown>
+
+
+
+export function useGetFarmerReview<TData = Awaited<ReturnType<typeof getFarmerReview>>, TError = ErrorType<unknown>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFarmerReview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetFarmerReviewQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+/**
+ * @summary QR scan analytics (admin = all lots, farmer = own lots)
+ */
+export const getGetQrAnalyticsUrl = (params?: GetQrAnalyticsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/analytics/qr?${stringifiedParams}` : `/api/analytics/qr`
+}
+
+export const getQrAnalytics = async (params?: GetQrAnalyticsParams, options?: RequestInit): Promise<QrAnalytics> => {
+
+  return customFetch<QrAnalytics>(getGetQrAnalyticsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetQrAnalyticsQueryKey = (params?: GetQrAnalyticsParams,) => {
+    return [
+    `/api/analytics/qr`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetQrAnalyticsQueryOptions = <TData = Awaited<ReturnType<typeof getQrAnalytics>>, TError = ErrorType<unknown>>(params?: GetQrAnalyticsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getQrAnalytics>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetQrAnalyticsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getQrAnalytics>>> = ({ signal }) => getQrAnalytics(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getQrAnalytics>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetQrAnalyticsQueryResult = NonNullable<Awaited<ReturnType<typeof getQrAnalytics>>>
+export type GetQrAnalyticsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary QR scan analytics (admin = all lots, farmer = own lots)
+ */
+
+export function useGetQrAnalytics<TData = Awaited<ReturnType<typeof getQrAnalytics>>, TError = ErrorType<unknown>>(
+ params?: GetQrAnalyticsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getQrAnalytics>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetQrAnalyticsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListQrAnomaliesUrl = (params?: ListQrAnomaliesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/anomalies?${stringifiedParams}` : `/api/admin/anomalies`
+}
+
+export const listQrAnomalies = async (params?: ListQrAnomaliesParams, options?: RequestInit): Promise<QrAnomaly[]> => {
+
+  return customFetch<QrAnomaly[]>(getListQrAnomaliesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListQrAnomaliesQueryKey = (params?: ListQrAnomaliesParams,) => {
+    return [
+    `/api/admin/anomalies`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListQrAnomaliesQueryOptions = <TData = Awaited<ReturnType<typeof listQrAnomalies>>, TError = ErrorType<unknown>>(params?: ListQrAnomaliesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listQrAnomalies>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListQrAnomaliesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listQrAnomalies>>> = ({ signal }) => listQrAnomalies(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listQrAnomalies>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListQrAnomaliesQueryResult = NonNullable<Awaited<ReturnType<typeof listQrAnomalies>>>
+export type ListQrAnomaliesQueryError = ErrorType<unknown>
+
+
+
+export function useListQrAnomalies<TData = Awaited<ReturnType<typeof listQrAnomalies>>, TError = ErrorType<unknown>>(
+ params?: ListQrAnomaliesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listQrAnomalies>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListQrAnomaliesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getHandleQrAnomalyUrl = (id: string,
+    action: 'investigate' | 'dismiss' | 'confirm',) => {
+
+
+
+
+  return `/api/admin/anomalies/${id}/${action}`
+}
+
+export const handleQrAnomaly = async (id: string,
+    action: 'investigate' | 'dismiss' | 'confirm',
+    anomalyNoteBody?: AnomalyNoteBody, options?: RequestInit): Promise<QrAnomaly> => {
+
+  return customFetch<QrAnomaly>(getHandleQrAnomalyUrl(id,action),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      anomalyNoteBody,)
+  }
+);}
+
+
+
+
+export const getHandleQrAnomalyMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof handleQrAnomaly>>, TError,{id: string;action: 'investigate' | 'dismiss' | 'confirm';data: BodyType<AnomalyNoteBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof handleQrAnomaly>>, TError,{id: string;action: 'investigate' | 'dismiss' | 'confirm';data: BodyType<AnomalyNoteBody>}, TContext> => {
+
+const mutationKey = ['handleQrAnomaly'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof handleQrAnomaly>>, {id: string;action: 'investigate' | 'dismiss' | 'confirm';data: BodyType<AnomalyNoteBody>}> = (props) => {
+          const {id,action,data} = props ?? {};
+
+          return  handleQrAnomaly(id,action,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type HandleQrAnomalyMutationResult = NonNullable<Awaited<ReturnType<typeof handleQrAnomaly>>>
+    export type HandleQrAnomalyMutationBody = BodyType<AnomalyNoteBody>
+    export type HandleQrAnomalyMutationError = ErrorType<ErrorResponse>
+
+    export const useHandleQrAnomaly = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof handleQrAnomaly>>, TError,{id: string;action: 'investigate' | 'dismiss' | 'confirm';data: BodyType<AnomalyNoteBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof handleQrAnomaly>>,
+        TError,
+        {id: string;action: 'investigate' | 'dismiss' | 'confirm';data: BodyType<AnomalyNoteBody>},
+        TContext
+      > => {
+      return useMutation(getHandleQrAnomalyMutationOptions(options));
+    }
+
+/**
+ * @summary Temporarily disable an ACTIVE QR (reversible)
+ */
+export const getDisableQrUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/qr/${id}/disable`
+}
+
+export const disableQr = async (id: string,
+    qrReasonBody: QrReasonBody, options?: RequestInit): Promise<QrCode> => {
+
+  return customFetch<QrCode>(getDisableQrUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      qrReasonBody,)
+  }
+);}
+
+
+
+
+export const getDisableQrMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof disableQr>>, TError,{id: string;data: BodyType<QrReasonBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof disableQr>>, TError,{id: string;data: BodyType<QrReasonBody>}, TContext> => {
+
+const mutationKey = ['disableQr'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof disableQr>>, {id: string;data: BodyType<QrReasonBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  disableQr(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DisableQrMutationResult = NonNullable<Awaited<ReturnType<typeof disableQr>>>
+    export type DisableQrMutationBody = BodyType<QrReasonBody>
+    export type DisableQrMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Temporarily disable an ACTIVE QR (reversible)
+ */
+export const useDisableQr = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof disableQr>>, TError,{id: string;data: BodyType<QrReasonBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof disableQr>>,
+        TError,
+        {id: string;data: BodyType<QrReasonBody>},
+        TContext
+      > => {
+      return useMutation(getDisableQrMutationOptions(options));
+    }
+
+export const getEnableQrUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/qr/${id}/enable`
+}
+
+export const enableQr = async (id: string,
+    qrReasonBody: QrReasonBody, options?: RequestInit): Promise<QrCode> => {
+
+  return customFetch<QrCode>(getEnableQrUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      qrReasonBody,)
+  }
+);}
+
+
+
+
+export const getEnableQrMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof enableQr>>, TError,{id: string;data: BodyType<QrReasonBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof enableQr>>, TError,{id: string;data: BodyType<QrReasonBody>}, TContext> => {
+
+const mutationKey = ['enableQr'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof enableQr>>, {id: string;data: BodyType<QrReasonBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  enableQr(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type EnableQrMutationResult = NonNullable<Awaited<ReturnType<typeof enableQr>>>
+    export type EnableQrMutationBody = BodyType<QrReasonBody>
+    export type EnableQrMutationError = ErrorType<unknown>
+
+    export const useEnableQr = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof enableQr>>, TError,{id: string;data: BodyType<QrReasonBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof enableQr>>,
+        TError,
+        {id: string;data: BodyType<QrReasonBody>},
+        TContext
+      > => {
+      return useMutation(getEnableQrMutationOptions(options));
+    }
+
+export const getPreviewLotRecallUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/lots/${id}/recall-impact`
+}
+
+export const previewLotRecall = async (id: string, options?: RequestInit): Promise<RecallImpact> => {
+
+  return customFetch<RecallImpact>(getPreviewLotRecallUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getPreviewLotRecallQueryKey = (id: string,) => {
+    return [
+    `/api/admin/lots/${id}/recall-impact`
+    ] as const;
+    }
+
+
+export const getPreviewLotRecallQueryOptions = <TData = Awaited<ReturnType<typeof previewLotRecall>>, TError = ErrorType<unknown>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof previewLotRecall>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPreviewLotRecallQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof previewLotRecall>>> = ({ signal }) => previewLotRecall(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof previewLotRecall>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type PreviewLotRecallQueryResult = NonNullable<Awaited<ReturnType<typeof previewLotRecall>>>
+export type PreviewLotRecallQueryError = ErrorType<unknown>
+
+
+
+export function usePreviewLotRecall<TData = Awaited<ReturnType<typeof previewLotRecall>>, TError = ErrorType<unknown>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof previewLotRecall>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getPreviewLotRecallQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getRecallLotUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/lots/${id}/recall`
+}
+
+export const recallLot = async (id: string,
+    recallBody: RecallBody, options?: RequestInit): Promise<Recall> => {
+
+  return customFetch<Recall>(getRecallLotUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      recallBody,)
+  }
+);}
+
+
+
+
+export const getRecallLotMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recallLot>>, TError,{id: string;data: BodyType<RecallBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof recallLot>>, TError,{id: string;data: BodyType<RecallBody>}, TContext> => {
+
+const mutationKey = ['recallLot'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof recallLot>>, {id: string;data: BodyType<RecallBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  recallLot(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RecallLotMutationResult = NonNullable<Awaited<ReturnType<typeof recallLot>>>
+    export type RecallLotMutationBody = BodyType<RecallBody>
+    export type RecallLotMutationError = ErrorType<ErrorResponse>
+
+    export const useRecallLot = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recallLot>>, TError,{id: string;data: BodyType<RecallBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof recallLot>>,
+        TError,
+        {id: string;data: BodyType<RecallBody>},
+        TContext
+      > => {
+      return useMutation(getRecallLotMutationOptions(options));
+    }
+
+export const getClearLotRecallUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/lots/${id}/recall/clear`
+}
+
+export const clearLotRecall = async (id: string,
+    clearRecallBody: ClearRecallBody, options?: RequestInit): Promise<Recall> => {
+
+  return customFetch<Recall>(getClearLotRecallUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      clearRecallBody,)
+  }
+);}
+
+
+
+
+export const getClearLotRecallMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof clearLotRecall>>, TError,{id: string;data: BodyType<ClearRecallBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof clearLotRecall>>, TError,{id: string;data: BodyType<ClearRecallBody>}, TContext> => {
+
+const mutationKey = ['clearLotRecall'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof clearLotRecall>>, {id: string;data: BodyType<ClearRecallBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  clearLotRecall(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ClearLotRecallMutationResult = NonNullable<Awaited<ReturnType<typeof clearLotRecall>>>
+    export type ClearLotRecallMutationBody = BodyType<ClearRecallBody>
+    export type ClearLotRecallMutationError = ErrorType<unknown>
+
+    export const useClearLotRecall = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof clearLotRecall>>, TError,{id: string;data: BodyType<ClearRecallBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof clearLotRecall>>,
+        TError,
+        {id: string;data: BodyType<ClearRecallBody>},
+        TContext
+      > => {
+      return useMutation(getClearLotRecallMutationOptions(options));
+    }
+
+export const getGetLotRecallUrl = (id: string,) => {
+
+
+
+
+  return `/api/lots/${id}/recall`
+}
+
+export const getLotRecall = async (id: string, options?: RequestInit): Promise<Recall | null> => {
+
+  return customFetch<Recall | null>(getGetLotRecallUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetLotRecallQueryKey = (id: string,) => {
+    return [
+    `/api/lots/${id}/recall`
+    ] as const;
+    }
+
+
+export const getGetLotRecallQueryOptions = <TData = Awaited<ReturnType<typeof getLotRecall>>, TError = ErrorType<unknown>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getLotRecall>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetLotRecallQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getLotRecall>>> = ({ signal }) => getLotRecall(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getLotRecall>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetLotRecallQueryResult = NonNullable<Awaited<ReturnType<typeof getLotRecall>>>
+export type GetLotRecallQueryError = ErrorType<unknown>
+
+
+
+export function useGetLotRecall<TData = Awaited<ReturnType<typeof getLotRecall>>, TError = ErrorType<unknown>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getLotRecall>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetLotRecallQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListReviewsUrl = () => {
+
+
+
+
+  return `/api/admin/reviews`
+}
+
+export const listReviews = async ( options?: RequestInit): Promise<ModerationReview[]> => {
+
+  return customFetch<ModerationReview[]>(getListReviewsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListReviewsQueryKey = () => {
+    return [
+    `/api/admin/reviews`
+    ] as const;
+    }
+
+
+export const getListReviewsQueryOptions = <TData = Awaited<ReturnType<typeof listReviews>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listReviews>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListReviewsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listReviews>>> = ({ signal }) => listReviews({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listReviews>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListReviewsQueryResult = NonNullable<Awaited<ReturnType<typeof listReviews>>>
+export type ListReviewsQueryError = ErrorType<unknown>
+
+
+
+export function useListReviews<TData = Awaited<ReturnType<typeof listReviews>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listReviews>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListReviewsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getModerateReviewUrl = (orderId: string,
+    action: 'hide' | 'restore',) => {
+
+
+
+
+  return `/api/admin/reviews/${orderId}/${action}`
+}
+
+export const moderateReview = async (orderId: string,
+    action: 'hide' | 'restore',
+    moderateReviewBody?: ModerateReviewBody, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getModerateReviewUrl(orderId,action),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      moderateReviewBody,)
+  }
+);}
+
+
+
+
+export const getModerateReviewMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof moderateReview>>, TError,{orderId: string;action: 'hide' | 'restore';data: BodyType<ModerateReviewBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof moderateReview>>, TError,{orderId: string;action: 'hide' | 'restore';data: BodyType<ModerateReviewBody>}, TContext> => {
+
+const mutationKey = ['moderateReview'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof moderateReview>>, {orderId: string;action: 'hide' | 'restore';data: BodyType<ModerateReviewBody>}> = (props) => {
+          const {orderId,action,data} = props ?? {};
+
+          return  moderateReview(orderId,action,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ModerateReviewMutationResult = NonNullable<Awaited<ReturnType<typeof moderateReview>>>
+    export type ModerateReviewMutationBody = BodyType<ModerateReviewBody>
+    export type ModerateReviewMutationError = ErrorType<ErrorResponse>
+
+    export const useModerateReview = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof moderateReview>>, TError,{orderId: string;action: 'hide' | 'restore';data: BodyType<ModerateReviewBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof moderateReview>>,
+        TError,
+        {orderId: string;action: 'hide' | 'restore';data: BodyType<ModerateReviewBody>},
+        TContext
+      > => {
+      return useMutation(getModerateReviewMutationOptions(options));
     }
 

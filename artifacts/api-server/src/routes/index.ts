@@ -6,6 +6,7 @@ import lotsRouter from "./lots";
 import publicRouter from "./public";
 import ordersRouter from "./orders";
 import miscRouter from "./misc";
+import opsRouter from "./ops";
 
 const router: IRouter = Router();
 
@@ -20,5 +21,6 @@ router.use(farmsRouter);
 router.use(lotsRouter);
 router.use(ordersRouter);
 router.use(miscRouter);
+router.use(opsRouter);
 
 export default router;

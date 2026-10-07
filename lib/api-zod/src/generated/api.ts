@@ -80,7 +80,7 @@ export const LoginUserResponse = zod.object({
   "email": zod.string(),
   "phone": zod.string().nullish(),
   "role": zod.enum(['admin', 'farmer', 'customer']),
-  "status": zod.enum(['pending', 'active', 'rejected', 'suspended']),
+  "status": zod.enum(['pending', 'correction_required', 'active', 'rejected', 'suspended']),
   "location": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "farmerProfile": zod.union([zod.object({
@@ -102,7 +102,7 @@ export const GetCurrentUserResponse = zod.object({
   "email": zod.string(),
   "phone": zod.string().nullish(),
   "role": zod.enum(['admin', 'farmer', 'customer']),
-  "status": zod.enum(['pending', 'active', 'rejected', 'suspended']),
+  "status": zod.enum(['pending', 'correction_required', 'active', 'rejected', 'suspended']),
   "location": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "farmerProfile": zod.union([zod.object({
@@ -156,7 +156,7 @@ export const UpdateMyProfileResponse = zod.object({
   "email": zod.string(),
   "phone": zod.string().nullish(),
   "role": zod.enum(['admin', 'farmer', 'customer']),
-  "status": zod.enum(['pending', 'active', 'rejected', 'suspended']),
+  "status": zod.enum(['pending', 'correction_required', 'active', 'rejected', 'suspended']),
   "location": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "farmerProfile": zod.union([zod.object({
@@ -173,7 +173,7 @@ export const UpdateMyProfileResponse = zod.object({
 
 export const ListUsersQueryParams = zod.object({
   "role": zod.enum(['admin', 'farmer', 'customer']).optional(),
-  "status": zod.enum(['pending', 'active', 'rejected', 'suspended']).optional()
+  "status": zod.enum(['pending', 'correction_required', 'active', 'rejected', 'suspended']).optional()
 })
 
 export const ListUsersResponseItem = zod.object({
@@ -182,7 +182,7 @@ export const ListUsersResponseItem = zod.object({
   "email": zod.string(),
   "phone": zod.string().nullish(),
   "role": zod.enum(['admin', 'farmer', 'customer']),
-  "status": zod.enum(['pending', 'active', 'rejected', 'suspended']),
+  "status": zod.enum(['pending', 'correction_required', 'active', 'rejected', 'suspended']),
   "location": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "farmerProfile": zod.union([zod.object({
@@ -203,7 +203,7 @@ export const ListUsersResponse = zod.array(ListUsersResponseItem)
  */
 export const ReviewUserParams = zod.object({
   "id": zod.coerce.string().uuid(),
-  "action": zod.enum(['approve', 'reject', 'suspend', 'reactivate'])
+  "action": zod.enum(['approve', 'request-correction', 'reject', 'suspend', 'reactivate'])
 })
 
 export const reviewUserBodyNoteMax = 1000;
@@ -220,7 +220,7 @@ export const ReviewUserResponse = zod.object({
   "email": zod.string(),
   "phone": zod.string().nullish(),
   "role": zod.enum(['admin', 'farmer', 'customer']),
-  "status": zod.enum(['pending', 'active', 'rejected', 'suspended']),
+  "status": zod.enum(['pending', 'correction_required', 'active', 'rejected', 'suspended']),
   "location": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "farmerProfile": zod.union([zod.object({
@@ -472,6 +472,7 @@ export const ListLotsResponseItem = zod.object({
   "farmerName": zod.string().nullish(),
   "status": zod.enum(['CREATED', 'GROWING', 'HARVESTED', 'AVAILABLE', 'RESERVED', 'PARTIALLY_SOLD', 'SOLD_OUT']),
   "listed": zod.boolean(),
+  "recalled": zod.boolean(),
   "pricePerUnit": zod.number().nullish(),
   "qualityGrade": zod.union([zod.enum(['A', 'B', 'C']),zod.null()]).optional(),
   "harvestDate": zod.string().nullish(),
@@ -488,7 +489,7 @@ export const ListLotsResponseItem = zod.object({
   "id": zod.string().uuid(),
   "lotId": zod.string().uuid(),
   "version": zod.number(),
-  "status": zod.enum(['ACTIVE', 'REVOKED', 'REPLACED']),
+  "status": zod.enum(['ACTIVE', 'REVOKED', 'REPLACED', 'DISABLED']),
   "publicToken": zod.string(),
   "traceUrl": zod.string().describe('The only content encoded in the QR image'),
   "createdAt": zod.coerce.date(),
@@ -571,6 +572,11 @@ export const GetLotParams = zod.object({
   "id": zod.coerce.string().uuid()
 })
 
+export const getLotResponseTwoCompletenessPercentMin = 0;
+export const getLotResponseTwoCompletenessPercentMax = 100;
+
+
+
 export const GetLotResponse = zod.object({
   "id": zod.string().uuid(),
   "lotCode": zod.string(),
@@ -583,6 +589,7 @@ export const GetLotResponse = zod.object({
   "farmerName": zod.string().nullish(),
   "status": zod.enum(['CREATED', 'GROWING', 'HARVESTED', 'AVAILABLE', 'RESERVED', 'PARTIALLY_SOLD', 'SOLD_OUT']),
   "listed": zod.boolean(),
+  "recalled": zod.boolean(),
   "pricePerUnit": zod.number().nullish(),
   "qualityGrade": zod.union([zod.enum(['A', 'B', 'C']),zod.null()]).optional(),
   "harvestDate": zod.string().nullish(),
@@ -599,7 +606,7 @@ export const GetLotResponse = zod.object({
   "id": zod.string().uuid(),
   "lotId": zod.string().uuid(),
   "version": zod.number(),
-  "status": zod.enum(['ACTIVE', 'REVOKED', 'REPLACED']),
+  "status": zod.enum(['ACTIVE', 'REVOKED', 'REPLACED', 'DISABLED']),
   "publicToken": zod.string(),
   "traceUrl": zod.string().describe('The only content encoded in the QR image'),
   "createdAt": zod.coerce.date(),
@@ -610,6 +617,30 @@ export const GetLotResponse = zod.object({
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 }).and(zod.object({
+  "completeness": zod.object({
+  "percent": zod.number().min(getLotResponseTwoCompletenessPercentMin).max(getLotResponseTwoCompletenessPercentMax),
+  "missing": zod.array(zod.string()),
+  "components": zod.array(zod.object({
+  "key": zod.string(),
+  "weight": zod.number(),
+  "applicable": zod.boolean(),
+  "done": zod.boolean()
+})),
+  "note": zod.string().optional()
+}),
+  "latestQuality": zod.union([zod.object({
+  "grade": zod.enum(['A', 'B', 'C']),
+  "appearance": zod.string().nullish(),
+  "sizeCategory": zod.string().nullish(),
+  "defects": zod.string().nullish(),
+  "inspectionDate": zod.string(),
+  "notes": zod.string().nullish(),
+  "recordedBy": zod.string().describe('FARMER until an independent verifier exists')
+}),zod.null()]).optional(),
+  "scanStats": zod.object({
+  "verifiedScans": zod.number(),
+  "uniqueScanners": zod.number()
+}),
   "plantingDate": zod.string().nullish(),
   "expectedHarvestDate": zod.string().nullish(),
   "qualityNotes": zod.string().nullish(),
@@ -669,6 +700,11 @@ export const UpdateLotBody = zod.object({
   "origin": zod.string().min(updateLotBodyOriginMin).max(updateLotBodyOriginMax).optional()
 })
 
+export const updateLotResponseTwoCompletenessPercentMin = 0;
+export const updateLotResponseTwoCompletenessPercentMax = 100;
+
+
+
 export const UpdateLotResponse = zod.object({
   "id": zod.string().uuid(),
   "lotCode": zod.string(),
@@ -681,6 +717,7 @@ export const UpdateLotResponse = zod.object({
   "farmerName": zod.string().nullish(),
   "status": zod.enum(['CREATED', 'GROWING', 'HARVESTED', 'AVAILABLE', 'RESERVED', 'PARTIALLY_SOLD', 'SOLD_OUT']),
   "listed": zod.boolean(),
+  "recalled": zod.boolean(),
   "pricePerUnit": zod.number().nullish(),
   "qualityGrade": zod.union([zod.enum(['A', 'B', 'C']),zod.null()]).optional(),
   "harvestDate": zod.string().nullish(),
@@ -697,7 +734,7 @@ export const UpdateLotResponse = zod.object({
   "id": zod.string().uuid(),
   "lotId": zod.string().uuid(),
   "version": zod.number(),
-  "status": zod.enum(['ACTIVE', 'REVOKED', 'REPLACED']),
+  "status": zod.enum(['ACTIVE', 'REVOKED', 'REPLACED', 'DISABLED']),
   "publicToken": zod.string(),
   "traceUrl": zod.string().describe('The only content encoded in the QR image'),
   "createdAt": zod.coerce.date(),
@@ -708,6 +745,30 @@ export const UpdateLotResponse = zod.object({
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 }).and(zod.object({
+  "completeness": zod.object({
+  "percent": zod.number().min(updateLotResponseTwoCompletenessPercentMin).max(updateLotResponseTwoCompletenessPercentMax),
+  "missing": zod.array(zod.string()),
+  "components": zod.array(zod.object({
+  "key": zod.string(),
+  "weight": zod.number(),
+  "applicable": zod.boolean(),
+  "done": zod.boolean()
+})),
+  "note": zod.string().optional()
+}),
+  "latestQuality": zod.union([zod.object({
+  "grade": zod.enum(['A', 'B', 'C']),
+  "appearance": zod.string().nullish(),
+  "sizeCategory": zod.string().nullish(),
+  "defects": zod.string().nullish(),
+  "inspectionDate": zod.string(),
+  "notes": zod.string().nullish(),
+  "recordedBy": zod.string().describe('FARMER until an independent verifier exists')
+}),zod.null()]).optional(),
+  "scanStats": zod.object({
+  "verifiedScans": zod.number(),
+  "uniqueScanners": zod.number()
+}),
   "plantingDate": zod.string().nullish(),
   "expectedHarvestDate": zod.string().nullish(),
   "qualityNotes": zod.string().nullish(),
@@ -791,6 +852,11 @@ export const SetLotListingBody = zod.object({
   "pricePerUnit": zod.number().min(setLotListingBodyPricePerUnitMin).max(setLotListingBodyPricePerUnitMax).optional()
 })
 
+export const setLotListingResponseTwoCompletenessPercentMin = 0;
+export const setLotListingResponseTwoCompletenessPercentMax = 100;
+
+
+
 export const SetLotListingResponse = zod.object({
   "id": zod.string().uuid(),
   "lotCode": zod.string(),
@@ -803,6 +869,7 @@ export const SetLotListingResponse = zod.object({
   "farmerName": zod.string().nullish(),
   "status": zod.enum(['CREATED', 'GROWING', 'HARVESTED', 'AVAILABLE', 'RESERVED', 'PARTIALLY_SOLD', 'SOLD_OUT']),
   "listed": zod.boolean(),
+  "recalled": zod.boolean(),
   "pricePerUnit": zod.number().nullish(),
   "qualityGrade": zod.union([zod.enum(['A', 'B', 'C']),zod.null()]).optional(),
   "harvestDate": zod.string().nullish(),
@@ -819,7 +886,7 @@ export const SetLotListingResponse = zod.object({
   "id": zod.string().uuid(),
   "lotId": zod.string().uuid(),
   "version": zod.number(),
-  "status": zod.enum(['ACTIVE', 'REVOKED', 'REPLACED']),
+  "status": zod.enum(['ACTIVE', 'REVOKED', 'REPLACED', 'DISABLED']),
   "publicToken": zod.string(),
   "traceUrl": zod.string().describe('The only content encoded in the QR image'),
   "createdAt": zod.coerce.date(),
@@ -830,6 +897,30 @@ export const SetLotListingResponse = zod.object({
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 }).and(zod.object({
+  "completeness": zod.object({
+  "percent": zod.number().min(setLotListingResponseTwoCompletenessPercentMin).max(setLotListingResponseTwoCompletenessPercentMax),
+  "missing": zod.array(zod.string()),
+  "components": zod.array(zod.object({
+  "key": zod.string(),
+  "weight": zod.number(),
+  "applicable": zod.boolean(),
+  "done": zod.boolean()
+})),
+  "note": zod.string().optional()
+}),
+  "latestQuality": zod.union([zod.object({
+  "grade": zod.enum(['A', 'B', 'C']),
+  "appearance": zod.string().nullish(),
+  "sizeCategory": zod.string().nullish(),
+  "defects": zod.string().nullish(),
+  "inspectionDate": zod.string(),
+  "notes": zod.string().nullish(),
+  "recordedBy": zod.string().describe('FARMER until an independent verifier exists')
+}),zod.null()]).optional(),
+  "scanStats": zod.object({
+  "verifiedScans": zod.number(),
+  "uniqueScanners": zod.number()
+}),
   "plantingDate": zod.string().nullish(),
   "expectedHarvestDate": zod.string().nullish(),
   "qualityNotes": zod.string().nullish(),
@@ -916,6 +1007,11 @@ export const recordLotEventBodyQuantityMax = 100000000;
 export const recordLotEventBodyHarvestAdjustmentMin = -100000000;
 export const recordLotEventBodyHarvestAdjustmentMax = 100000000;
 
+export const recordLotEventBodyAppearanceMax = 300;
+
+export const recordLotEventBodyDefectsMax = 500;
+
+export const recordLotEventBodyInspectionDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
 export const recordLotEventBodyReasonMax = 1000;
 
 export const recordLotEventBodyLocationMax = 200;
@@ -946,6 +1042,10 @@ export const RecordLotEventBody = zod.object({
   "quantity": zod.number().gt(recordLotEventBodyQuantityExclusiveMin).max(recordLotEventBodyQuantityMax).optional(),
   "harvestAdjustment": zod.number().min(recordLotEventBodyHarvestAdjustmentMin).max(recordLotEventBodyHarvestAdjustmentMax).optional().describe('CORRECTION_RECORDED only'),
   "qualityGrade": zod.enum(['A', 'B', 'C']).optional(),
+  "appearance": zod.string().max(recordLotEventBodyAppearanceMax).optional(),
+  "sizeCategory": zod.enum(['small', 'medium', 'large', 'mixed']).optional(),
+  "defects": zod.string().max(recordLotEventBodyDefectsMax).optional(),
+  "inspectionDate": zod.string().regex(recordLotEventBodyInspectionDateRegExp).optional(),
   "reason": zod.string().max(recordLotEventBodyReasonMax).optional(),
   "location": zod.string().max(recordLotEventBodyLocationMax).optional(),
   "latitude": zod.number().min(recordLotEventBodyLatitudeMin).max(recordLotEventBodyLatitudeMax).optional(),
@@ -1019,7 +1119,7 @@ export const ListLotQrCodesResponseItem = zod.object({
   "id": zod.string().uuid(),
   "lotId": zod.string().uuid(),
   "version": zod.number(),
-  "status": zod.enum(['ACTIVE', 'REVOKED', 'REPLACED']),
+  "status": zod.enum(['ACTIVE', 'REVOKED', 'REPLACED', 'DISABLED']),
   "publicToken": zod.string(),
   "traceUrl": zod.string().describe('The only content encoded in the QR image'),
   "createdAt": zod.coerce.date(),
@@ -1062,7 +1162,7 @@ export const RevokeQrResponse = zod.object({
   "id": zod.string().uuid(),
   "lotId": zod.string().uuid(),
   "version": zod.number(),
-  "status": zod.enum(['ACTIVE', 'REVOKED', 'REPLACED']),
+  "status": zod.enum(['ACTIVE', 'REVOKED', 'REPLACED', 'DISABLED']),
   "publicToken": zod.string(),
   "traceUrl": zod.string().describe('The only content encoded in the QR image'),
   "createdAt": zod.coerce.date(),
@@ -1078,6 +1178,11 @@ export const RevokeQrResponse = zod.object({
 export const GetPublicTraceParams = zod.object({
   "publicToken": zod.coerce.string()
 })
+
+export const getPublicTraceResponseCompletenessPercentMin = 0;
+export const getPublicTraceResponseCompletenessPercentMax = 100;
+
+
 
 export const GetPublicTraceResponse = zod.object({
   "verification": zod.enum(['VERIFIED', 'UNVERIFIED_FARMER']),
@@ -1110,6 +1215,40 @@ export const GetPublicTraceResponse = zod.object({
   "status": zod.enum(['CREATED', 'GROWING', 'HARVESTED', 'AVAILABLE', 'RESERVED', 'PARTIALLY_SOLD', 'SOLD_OUT']),
   "listed": zod.boolean(),
   "publicNotes": zod.string().nullish(),
+  "recalled": zod.boolean(),
+  "recall": zod.object({
+  "message": zod.string(),
+  "since": zod.coerce.date()
+}).nullish(),
+  "journey": zod.array(zod.object({
+  "key": zod.enum(['FARM', 'HARVEST', 'QUALITY', 'QR', 'LISTING', 'ORDER', 'DISPATCH', 'CONFIRMATION']),
+  "state": zod.enum(['DONE', 'PENDING']),
+  "at": zod.coerce.date().nullable()
+})),
+  "completeness": zod.object({
+  "percent": zod.number().min(getPublicTraceResponseCompletenessPercentMin).max(getPublicTraceResponseCompletenessPercentMax),
+  "missing": zod.array(zod.string()),
+  "components": zod.array(zod.object({
+  "key": zod.string(),
+  "weight": zod.number(),
+  "applicable": zod.boolean(),
+  "done": zod.boolean()
+})),
+  "note": zod.string().optional()
+}),
+  "farmerRating": zod.object({
+  "average": zod.number().nullable(),
+  "count": zod.number()
+}),
+  "qualityRecord": zod.union([zod.object({
+  "grade": zod.enum(['A', 'B', 'C']),
+  "appearance": zod.string().nullish(),
+  "sizeCategory": zod.string().nullish(),
+  "defects": zod.string().nullish(),
+  "inspectionDate": zod.string(),
+  "notes": zod.string().nullish(),
+  "recordedBy": zod.string().describe('FARMER until an independent verifier exists')
+}),zod.null()]).optional(),
   "timeline": zod.array(zod.object({
   "eventType": zod.string(),
   "label": zod.string(),
@@ -1198,17 +1337,29 @@ export const GetPublicOverviewResponse = zod.object({
  */
 export const recordScanBodyPublicTokenMax = 200;
 
+export const recordScanBodySessionIdMin = 8;
+export const recordScanBodySessionIdMax = 64;
+
+export const recordScanBodyApproxLatMin = -90;
+export const recordScanBodyApproxLatMax = 90;
+
+export const recordScanBodyApproxLonMin = -180;
+export const recordScanBodyApproxLonMax = 180;
+
 
 
 export const RecordScanBody = zod.object({
   "publicToken": zod.string().max(recordScanBodyPublicTokenMax),
   "scanSource": zod.enum(['in_app_scanner', 'camera_link', 'manual_entry']),
   "clientEventId": zod.string().uuid(),
-  "deviceType": zod.enum(['mobile', 'tablet', 'desktop', 'unknown']).optional()
+  "deviceType": zod.enum(['mobile', 'tablet', 'desktop', 'unknown']).optional(),
+  "sessionId": zod.string().min(recordScanBodySessionIdMin).max(recordScanBodySessionIdMax).optional().describe('Random per-browser id; not a fingerprint'),
+  "approxLat": zod.number().min(recordScanBodyApproxLatMin).max(recordScanBodyApproxLatMax).optional().describe('Optional, shared with consent; stored rounded to 0.1 degree'),
+  "approxLon": zod.number().min(recordScanBodyApproxLonMin).max(recordScanBodyApproxLonMax).optional()
 })
 
 export const RecordScanResponse = zod.object({
-  "result": zod.enum(['OK', 'UNKNOWN', 'REVOKED', 'REPLACED', 'INVALID']),
+  "result": zod.enum(['OK', 'UNKNOWN', 'REVOKED', 'REPLACED', 'DISABLED', 'INVALID']),
   "duplicate": zod.boolean().optional()
 })
 
@@ -1249,7 +1400,13 @@ export const ListMarketplaceResponseItem = zod.object({
 }),
   "farmName": zod.string().nullish(),
   "publicToken": zod.string().nullish(),
-  "publicNotes": zod.string().nullish()
+  "publicNotes": zod.string().nullish(),
+  "harvestAgeDays": zod.number().nullish(),
+  "completenessPercent": zod.number().nullish(),
+  "farmerRating": zod.object({
+  "average": zod.number().nullish(),
+  "count": zod.number().optional()
+}).nullish()
 })
 export const ListMarketplaceResponse = zod.array(ListMarketplaceResponseItem)
 
@@ -1279,7 +1436,13 @@ export const GetListingResponse = zod.object({
 }),
   "farmName": zod.string().nullish(),
   "publicToken": zod.string().nullish(),
-  "publicNotes": zod.string().nullish()
+  "publicNotes": zod.string().nullish(),
+  "harvestAgeDays": zod.number().nullish(),
+  "completenessPercent": zod.number().nullish(),
+  "farmerRating": zod.object({
+  "average": zod.number().nullish(),
+  "count": zod.number().optional()
+}).nullish()
 })
 
 
@@ -1296,6 +1459,26 @@ export const GetPublicFarmerResponse = zod.object({
   "state": zod.string().nullish(),
   "verified": zod.boolean(),
   "memberSince": zod.coerce.date(),
+  "stats": zod.object({
+  "activeLots": zod.number(),
+  "traceableQuantityKg": zod.number(),
+  "successfulOrders": zod.number(),
+  "averageCompleteness": zod.number().nullable(),
+  "rating": zod.object({
+  "average": zod.number().nullable(),
+  "count": zod.number(),
+  "freshness": zod.number().nullable(),
+  "quality": zod.number().nullable()
+})
+}),
+  "reviews": zod.array(zod.object({
+  "rating": zod.number(),
+  "freshnessRating": zod.number().nullish(),
+  "qualityRating": zod.number().nullish(),
+  "comment": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "verifiedPurchase": zod.boolean()
+})),
   "farms": zod.array(zod.object({
   "name": zod.string(),
   "district": zod.string().nullish(),
@@ -1322,7 +1505,13 @@ export const GetPublicFarmerResponse = zod.object({
 }),
   "farmName": zod.string().nullish(),
   "publicToken": zod.string().nullish(),
-  "publicNotes": zod.string().nullish()
+  "publicNotes": zod.string().nullish(),
+  "harvestAgeDays": zod.number().nullish(),
+  "completenessPercent": zod.number().nullish(),
+  "farmerRating": zod.object({
+  "average": zod.number().nullish(),
+  "count": zod.number().optional()
+}).nullish()
 }))
 })
 
@@ -1404,6 +1593,8 @@ export const ListOrdersResponseItem = zod.object({
 })).optional(),
   "feedback": zod.union([zod.object({
   "rating": zod.number(),
+  "freshnessRating": zod.number().nullish(),
+  "qualityRating": zod.number().nullish(),
   "comment": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }),zod.null()]).optional()
@@ -1517,6 +1708,8 @@ export const CreateOrderResponse = zod.object({
 })).optional(),
   "feedback": zod.union([zod.object({
   "rating": zod.number(),
+  "freshnessRating": zod.number().nullish(),
+  "qualityRating": zod.number().nullish(),
   "comment": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }),zod.null()]).optional()
@@ -1600,6 +1793,8 @@ export const GetOrderResponse = zod.object({
 })).optional(),
   "feedback": zod.union([zod.object({
   "rating": zod.number(),
+  "freshnessRating": zod.number().nullish(),
+  "qualityRating": zod.number().nullish(),
   "comment": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }),zod.null()]).optional()
@@ -1728,6 +1923,8 @@ export const TransitionOrderResponse = zod.object({
 })).optional(),
   "feedback": zod.union([zod.object({
   "rating": zod.number(),
+  "freshnessRating": zod.number().nullish(),
+  "qualityRating": zod.number().nullish(),
   "comment": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }),zod.null()]).optional()
@@ -1740,12 +1937,18 @@ export const SubmitOrderFeedbackParams = zod.object({
 
 export const submitOrderFeedbackBodyRatingMax = 5;
 
+export const submitOrderFeedbackBodyFreshnessRatingMax = 5;
+
+export const submitOrderFeedbackBodyQualityRatingMax = 5;
+
 export const submitOrderFeedbackBodyCommentMax = 1000;
 
 
 
 export const SubmitOrderFeedbackBody = zod.object({
-  "rating": zod.number().min(1).max(submitOrderFeedbackBodyRatingMax),
+  "rating": zod.number().min(1).max(submitOrderFeedbackBodyRatingMax).describe('Overall'),
+  "freshnessRating": zod.number().min(1).max(submitOrderFeedbackBodyFreshnessRatingMax).optional(),
+  "qualityRating": zod.number().min(1).max(submitOrderFeedbackBodyQualityRatingMax).optional(),
   "comment": zod.string().max(submitOrderFeedbackBodyCommentMax).optional()
 })
 
@@ -1959,6 +2162,8 @@ export const GetCustomerOverviewResponse = zod.object({
 })).optional(),
   "feedback": zod.union([zod.object({
   "rating": zod.number(),
+  "freshnessRating": zod.number().nullish(),
+  "qualityRating": zod.number().nullish(),
   "comment": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }),zod.null()]).optional()
@@ -2231,6 +2436,393 @@ export const RunIntegrationResponse = zod.object({
   "error": zod.string().nullish(),
   "startedAt": zod.coerce.date(),
   "finishedAt": zod.coerce.date().nullish()
+})
+
+
+export const ListNotificationsResponse = zod.object({
+  "unread": zod.number(),
+  "items": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "type": zod.string(),
+  "params": zod.record(zod.string(), zod.unknown()),
+  "entityType": zod.string().nullish(),
+  "entityId": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "readAt": zod.coerce.date().nullish()
+}))
+})
+
+
+export const markNotificationsReadBodyIdsMax = 100;
+
+
+
+export const MarkNotificationsReadBody = zod.object({
+  "ids": zod.array(zod.string().uuid()).max(markNotificationsReadBodyIdsMax).optional()
+})
+
+
+/**
+ * @summary Farmer resubmits the application after a correction request
+ */
+export const ResubmitApplicationResponse = zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "email": zod.string(),
+  "phone": zod.string().nullish(),
+  "role": zod.enum(['admin', 'farmer', 'customer']),
+  "status": zod.enum(['pending', 'correction_required', 'active', 'rejected', 'suspended']),
+  "location": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "farmerProfile": zod.union([zod.object({
+  "publicName": zod.string(),
+  "bio": zod.string().nullish(),
+  "village": zod.string().nullish(),
+  "district": zod.string().nullish(),
+  "state": zod.string().nullish(),
+  "verifiedAt": zod.coerce.date().nullish(),
+  "reviewNote": zod.string().nullish()
+}),zod.null()]).optional()
+})
+
+
+export const GetFarmerReviewParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const GetFarmerReviewResponse = zod.object({
+  "user": zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "email": zod.string(),
+  "phone": zod.string().nullish(),
+  "role": zod.enum(['admin', 'farmer', 'customer']),
+  "status": zod.enum(['pending', 'correction_required', 'active', 'rejected', 'suspended']),
+  "location": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "farmerProfile": zod.union([zod.object({
+  "publicName": zod.string(),
+  "bio": zod.string().nullish(),
+  "village": zod.string().nullish(),
+  "district": zod.string().nullish(),
+  "state": zod.string().nullish(),
+  "verifiedAt": zod.coerce.date().nullish(),
+  "reviewNote": zod.string().nullish()
+}),zod.null()]).optional()
+}),
+  "submittedAt": zod.coerce.date().nullish(),
+  "farms": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "village": zod.string().nullish(),
+  "district": zod.string().nullish(),
+  "state": zod.string(),
+  "sizeHectares": zod.number().nullish(),
+  "hasGps": zod.boolean().optional()
+})),
+  "products": zod.array(zod.object({
+  "name": zod.string(),
+  "variety": zod.string()
+})),
+  "lotsCount": zod.number(),
+  "ordersCount": zod.number(),
+  "history": zod.array(zod.object({
+  "action": zod.string(),
+  "at": zod.coerce.date(),
+  "by": zod.string().nullish(),
+  "note": zod.string().nullish()
+}))
+})
+
+
+/**
+ * @summary QR scan analytics (admin = all lots, farmer = own lots)
+ */
+export const getQrAnalyticsQueryDaysMax = 90;
+
+
+
+export const GetQrAnalyticsQueryParams = zod.object({
+  "days": zod.coerce.number().min(1).max(getQrAnalyticsQueryDaysMax).optional()
+})
+
+export const GetQrAnalyticsResponse = zod.object({
+  "days": zod.number(),
+  "totalVerifiedScans": zod.number(),
+  "uniqueScanners": zod.number(),
+  "repeatScans": zod.number(),
+  "failedScans": zod.number(),
+  "verificationRatePct": zod.number().nullable(),
+  "openAnomalies": zod.number(),
+  "perLot": zod.array(zod.object({
+  "lotId": zod.string().uuid(),
+  "lotCode": zod.string(),
+  "scans": zod.number(),
+  "uniqueScanners": zod.number(),
+  "lastScanAt": zod.coerce.date()
+})),
+  "overTime": zod.array(zod.object({
+  "label": zod.string(),
+  "ok": zod.number(),
+  "failed": zod.number()
+})),
+  "failedByResult": zod.array(zod.object({
+  "label": zod.string(),
+  "value": zod.number()
+})),
+  "recent": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "scannedAt": zod.coerce.date(),
+  "result": zod.string(),
+  "scanSource": zod.string(),
+  "deviceType": zod.string().nullish(),
+  "signedIn": zod.boolean(),
+  "sharedLocation": zod.boolean(),
+  "lotCode": zod.string().nullish()
+})),
+  "generatedAt": zod.coerce.date()
+})
+
+
+export const ListQrAnomaliesQueryParams = zod.object({
+  "status": zod.enum(['OPEN', 'INVESTIGATING', 'DISMISSED', 'CONFIRMED']).optional()
+})
+
+export const ListQrAnomaliesResponseItem = zod.object({
+  "id": zod.string().uuid(),
+  "qrId": zod.string().uuid(),
+  "lotId": zod.string().uuid(),
+  "lotCode": zod.string(),
+  "qrVersion": zod.number(),
+  "qrStatus": zod.enum(['ACTIVE', 'REVOKED', 'REPLACED', 'DISABLED']),
+  "kind": zod.enum(['IMPOSSIBLE_TRAVEL', 'DISTANT_SCANS', 'SCAN_BURST']),
+  "status": zod.enum(['OPEN', 'INVESTIGATING', 'DISMISSED', 'CONFIRMED']),
+  "detail": zod.record(zod.string(), zod.unknown()),
+  "detectedAt": zod.coerce.date(),
+  "handledBy": zod.string().nullish(),
+  "handledAt": zod.coerce.date().nullish(),
+  "note": zod.string().nullish()
+})
+export const ListQrAnomaliesResponse = zod.array(ListQrAnomaliesResponseItem)
+
+
+export const HandleQrAnomalyParams = zod.object({
+  "id": zod.coerce.string().uuid(),
+  "action": zod.enum(['investigate', 'dismiss', 'confirm'])
+})
+
+export const handleQrAnomalyBodyNoteMax = 1000;
+
+
+
+export const HandleQrAnomalyBody = zod.object({
+  "note": zod.string().max(handleQrAnomalyBodyNoteMax).optional()
+})
+
+export const HandleQrAnomalyResponse = zod.object({
+  "id": zod.string().uuid(),
+  "qrId": zod.string().uuid(),
+  "lotId": zod.string().uuid(),
+  "lotCode": zod.string(),
+  "qrVersion": zod.number(),
+  "qrStatus": zod.enum(['ACTIVE', 'REVOKED', 'REPLACED', 'DISABLED']),
+  "kind": zod.enum(['IMPOSSIBLE_TRAVEL', 'DISTANT_SCANS', 'SCAN_BURST']),
+  "status": zod.enum(['OPEN', 'INVESTIGATING', 'DISMISSED', 'CONFIRMED']),
+  "detail": zod.record(zod.string(), zod.unknown()),
+  "detectedAt": zod.coerce.date(),
+  "handledBy": zod.string().nullish(),
+  "handledAt": zod.coerce.date().nullish(),
+  "note": zod.string().nullish()
+})
+
+
+/**
+ * @summary Temporarily disable an ACTIVE QR (reversible)
+ */
+export const DisableQrParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const disableQrBodyReasonMin = 3;
+export const disableQrBodyReasonMax = 500;
+
+
+
+export const DisableQrBody = zod.object({
+  "reason": zod.string().min(disableQrBodyReasonMin).max(disableQrBodyReasonMax),
+  "anomalyId": zod.string().uuid().optional()
+})
+
+export const DisableQrResponse = zod.object({
+  "id": zod.string().uuid(),
+  "lotId": zod.string().uuid(),
+  "version": zod.number(),
+  "status": zod.enum(['ACTIVE', 'REVOKED', 'REPLACED', 'DISABLED']),
+  "publicToken": zod.string(),
+  "traceUrl": zod.string().describe('The only content encoded in the QR image'),
+  "createdAt": zod.coerce.date(),
+  "revokedAt": zod.coerce.date().nullish(),
+  "revokeReason": zod.string().nullish(),
+  "replacedById": zod.string().nullish()
+})
+
+
+export const EnableQrParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const enableQrBodyReasonMin = 3;
+export const enableQrBodyReasonMax = 500;
+
+
+
+export const EnableQrBody = zod.object({
+  "reason": zod.string().min(enableQrBodyReasonMin).max(enableQrBodyReasonMax),
+  "anomalyId": zod.string().uuid().optional()
+})
+
+export const EnableQrResponse = zod.object({
+  "id": zod.string().uuid(),
+  "lotId": zod.string().uuid(),
+  "version": zod.number(),
+  "status": zod.enum(['ACTIVE', 'REVOKED', 'REPLACED', 'DISABLED']),
+  "publicToken": zod.string(),
+  "traceUrl": zod.string().describe('The only content encoded in the QR image'),
+  "createdAt": zod.coerce.date(),
+  "revokedAt": zod.coerce.date().nullish(),
+  "revokeReason": zod.string().nullish(),
+  "replacedById": zod.string().nullish()
+})
+
+
+export const PreviewLotRecallParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const PreviewLotRecallResponse = zod.object({
+  "lotCode": zod.string(),
+  "farmerId": zod.string().uuid(),
+  "farmerName": zod.string().nullish(),
+  "qrActive": zod.boolean(),
+  "inventory": zod.object({
+  "harvested": zod.number(),
+  "available": zod.number(),
+  "reserved": zod.number(),
+  "sold": zod.number(),
+  "loss": zod.number(),
+  "unit": zod.string()
+}),
+  "openOrders": zod.array(zod.object({
+  "orderId": zod.string().uuid(),
+  "orderCode": zod.string(),
+  "status": zod.string(),
+  "quantity": zod.number()
+})),
+  "ordersTotal": zod.number(),
+  "customersAffected": zod.number()
+})
+
+
+export const RecallLotParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const recallLotBodyReasonMin = 5;
+export const recallLotBodyReasonMax = 1000;
+
+export const recallLotBodyPublicMessageMin = 5;
+export const recallLotBodyPublicMessageMax = 300;
+
+
+
+export const RecallLotBody = zod.object({
+  "reason": zod.string().min(recallLotBodyReasonMin).max(recallLotBodyReasonMax).describe('Internal; admins only'),
+  "publicMessage": zod.string().min(recallLotBodyPublicMessageMin).max(recallLotBodyPublicMessageMax).describe('Shown on the public QR page; no personal data')
+})
+
+export const RecallLotResponse = zod.object({
+  "id": zod.string().uuid(),
+  "lotId": zod.string().uuid(),
+  "status": zod.enum(['ACTIVE', 'CLEARED']),
+  "reason": zod.string(),
+  "publicMessage": zod.string(),
+  "initiatedAt": zod.coerce.date(),
+  "clearedAt": zod.coerce.date().nullish(),
+  "clearNote": zod.string().nullish(),
+  "impact": zod.record(zod.string(), zod.unknown()).optional()
+})
+
+
+export const ClearLotRecallParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const clearLotRecallBodyNoteMin = 3;
+export const clearLotRecallBodyNoteMax = 1000;
+
+
+
+export const ClearLotRecallBody = zod.object({
+  "note": zod.string().min(clearLotRecallBodyNoteMin).max(clearLotRecallBodyNoteMax)
+})
+
+export const ClearLotRecallResponse = zod.object({
+  "id": zod.string().uuid(),
+  "lotId": zod.string().uuid(),
+  "status": zod.enum(['ACTIVE', 'CLEARED']),
+  "reason": zod.string(),
+  "publicMessage": zod.string(),
+  "initiatedAt": zod.coerce.date(),
+  "clearedAt": zod.coerce.date().nullish(),
+  "clearNote": zod.string().nullish(),
+  "impact": zod.record(zod.string(), zod.unknown()).optional()
+})
+
+
+export const GetLotRecallParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const GetLotRecallResponse = zod.union([zod.object({
+  "id": zod.string().uuid(),
+  "lotId": zod.string().uuid(),
+  "status": zod.enum(['ACTIVE', 'CLEARED']),
+  "reason": zod.string(),
+  "publicMessage": zod.string(),
+  "initiatedAt": zod.coerce.date(),
+  "clearedAt": zod.coerce.date().nullish(),
+  "clearNote": zod.string().nullish(),
+  "impact": zod.record(zod.string(), zod.unknown()).optional()
+}),zod.null()])
+
+
+export const ListReviewsResponseItem = zod.object({
+  "orderId": zod.string().uuid(),
+  "orderCode": zod.string(),
+  "customerName": zod.string(),
+  "farmerName": zod.string().nullish(),
+  "rating": zod.number(),
+  "freshnessRating": zod.number().nullish(),
+  "qualityRating": zod.number().nullish(),
+  "comment": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "hidden": zod.boolean(),
+  "hiddenReason": zod.string().nullish()
+})
+export const ListReviewsResponse = zod.array(ListReviewsResponseItem)
+
+
+export const ModerateReviewParams = zod.object({
+  "orderId": zod.coerce.string().uuid(),
+  "action": zod.enum(['hide', 'restore'])
+})
+
+export const moderateReviewBodyReasonMax = 500;
+
+
+
+export const ModerateReviewBody = zod.object({
+  "reason": zod.string().max(moderateReviewBodyReasonMax).optional()
 })
 
 

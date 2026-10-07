@@ -23,6 +23,7 @@ import { requireRole, revokeAllSessions } from "../lib/auth";
 import { badRequest, conflict, notFound } from "../lib/errors";
 import { actorOf, parse } from "../lib/http";
 import { audit } from "../services/records";
+import { notify, type NotificationType } from "../services/notifications";
 import { notifyChange } from "../services/realtime";
 import { serializeEvent } from "../services/lots";
 import { integrationStatus, runSource, serializeRun, SOURCES, type SourceKey } from "../services/external/ingestion";
@@ -54,14 +55,21 @@ router.post("/admin/users/:id/:action", async (req, res) => {
       case "approve":
         if (u.role !== "farmer") throw badRequest("Only farmer accounts require approval");
         if (u.status === "active") throw conflict("Farmer is already approved", "INVALID_STATE_TRANSITION");
+        if (u.status === "suspended" || u.status === "rejected") throw conflict("Reactivate or review this account first", "INVALID_STATE_TRANSITION");
         status = "active";
         await tx
           .update(farmerProfilesTable)
           .set({ verifiedAt: new Date(), verifiedBy: actor.user.id, reviewNote: note ?? null, updatedAt: new Date() })
           .where(eq(farmerProfilesTable.userId, u.id));
         break;
+      case "request-correction":
+        if (u.role !== "farmer" || u.status !== "pending") throw conflict("Only a pending application can be sent back for correction", "INVALID_STATE_TRANSITION");
+        if (!note?.trim()) throw badRequest("Tell the farmer what to correct");
+        status = "correction_required";
+        await tx.update(farmerProfilesTable).set({ reviewNote: note, updatedAt: new Date() }).where(eq(farmerProfilesTable.userId, u.id));
+        break;
       case "reject":
-        if (u.role !== "farmer" || u.status !== "pending") throw conflict("Only pending farmers can be rejected", "INVALID_STATE_TRANSITION");
+        if (u.role !== "farmer" || (u.status !== "pending" && u.status !== "correction_required")) throw conflict("Only pending farmers can be rejected", "INVALID_STATE_TRANSITION");
         if (!note?.trim()) throw badRequest("A note explaining the rejection is required");
         status = "rejected";
         await tx.update(farmerProfilesTable).set({ reviewNote: note, updatedAt: new Date() }).where(eq(farmerProfilesTable.userId, u.id));
@@ -77,7 +85,9 @@ router.post("/admin/users/:id/:action", async (req, res) => {
         break;
     }
     await tx.update(usersTable).set({ status, updatedAt: new Date() }).where(eq(usersTable.id, u.id));
-    await audit(tx, actor, `USER_${action.toUpperCase()}`, "user", u.id, before, { status, note: note ?? null });
+    await audit(tx, actor, `USER_${action.toUpperCase().replace("-", "_")}`, "user", u.id, before, { status, note: note ?? null });
+    const map: Record<string, NotificationType | undefined> = { approve: "FARMER_VERIFIED", "request-correction": "FARMER_CORRECTION_REQUIRED", reject: "FARMER_REJECTED" };
+    if (map[action] && u.role === "farmer") await notify(tx, [u.id], { type: map[action]!, params: { note: note ?? null }, entityType: "user", entityId: u.id });
     await notifyChange(tx, { topic: "users", entityId: u.id, farmerId: u.role === "farmer" ? u.id : undefined, customerId: u.role === "customer" ? u.id : undefined });
     await notifyChange(tx, { topic: "listings" });
   });

@@ -130,7 +130,7 @@ paths:
         - name: action
           in: path
           required: true
-          schema: { type: string, enum: [approve, reject, suspend, reactivate] }
+          schema: { type: string, enum: [approve, request-correction, reject, suspend, reactivate] }
       requestBody:
         required: false
         content:
@@ -786,6 +786,230 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/IngestionRun" }
 
+  /me/notifications:
+    get:
+      operationId: listNotifications
+      tags: [auth]
+      responses:
+        "200":
+          description: Own in-app notifications (newest first)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/NotificationList" }
+  /me/notifications/read:
+    post:
+      operationId: markNotificationsRead
+      tags: [auth]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MarkReadBody" }
+      responses:
+        "204": { description: Marked read }
+  /me/resubmit:
+    post:
+      operationId: resubmitApplication
+      tags: [auth]
+      summary: Farmer resubmits the application after a correction request
+      responses:
+        "200":
+          description: Back in review
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CurrentUser" }
+        "409": { $ref: "#/components/responses/Error" }
+  /admin/farmers/{id}/review:
+    get:
+      operationId: getFarmerReview
+      tags: [admin]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Everything an admin needs to review a farmer application
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FarmerReview" }
+  /analytics/qr:
+    get:
+      operationId: getQrAnalytics
+      tags: [qr]
+      summary: QR scan analytics (admin = all lots, farmer = own lots)
+      parameters:
+        - { name: days, in: query, schema: { type: integer, minimum: 1, maximum: 90 } }
+      responses:
+        "200":
+          description: Analytics
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/QrAnalytics" }
+  /admin/anomalies:
+    get:
+      operationId: listQrAnomalies
+      tags: [qr]
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string, enum: [OPEN, INVESTIGATING, DISMISSED, CONFIRMED] }
+      responses:
+        "200":
+          description: Potential QR anomalies (signals for review, not verdicts)
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/QrAnomaly" }
+  /admin/anomalies/{id}/{action}:
+    post:
+      operationId: handleQrAnomaly
+      tags: [qr]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+        - name: action
+          in: path
+          required: true
+          schema: { type: string, enum: [investigate, dismiss, confirm] }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AnomalyNoteBody" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/QrAnomaly" }
+        "409": { $ref: "#/components/responses/Error" }
+  /admin/qr/{id}/disable:
+    post:
+      operationId: disableQr
+      tags: [qr]
+      summary: Temporarily disable an ACTIVE QR (reversible)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/QrReasonBody" }
+      responses:
+        "200":
+          description: Disabled
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/QrCode" }
+  /admin/qr/{id}/enable:
+    post:
+      operationId: enableQr
+      tags: [qr]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/QrReasonBody" }
+      responses:
+        "200":
+          description: Re-enabled
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/QrCode" }
+  /admin/lots/{id}/recall-impact:
+    get:
+      operationId: previewLotRecall
+      tags: [lots]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: What a recall would affect
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RecallImpact" }
+  /admin/lots/{id}/recall:
+    post:
+      operationId: recallLot
+      tags: [lots]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RecallBody" }
+      responses:
+        "200":
+          description: Recalled
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Recall" }
+        "409": { $ref: "#/components/responses/Error" }
+  /admin/lots/{id}/recall/clear:
+    post:
+      operationId: clearLotRecall
+      tags: [lots]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ClearRecallBody" }
+      responses:
+        "200":
+          description: Recall cleared (the lot stays unlisted until the farmer relists it)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Recall" }
+  /lots/{id}/recall:
+    get:
+      operationId: getLotRecall
+      tags: [lots]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Latest recall for the lot, or null
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/Recall"
+                  - type: "null"
+  /admin/reviews:
+    get:
+      operationId: listReviews
+      tags: [admin]
+      responses:
+        "200":
+          description: Reviews for moderation (including hidden)
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ModerationReview" }
+  /admin/reviews/{orderId}/{action}:
+    post:
+      operationId: moderateReview
+      tags: [admin]
+      parameters:
+        - { name: orderId, in: path, required: true, schema: { type: string, format: uuid } }
+        - name: action
+          in: path
+          required: true
+          schema: { type: string, enum: [hide, restore] }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ModerateReviewBody" }
+      responses:
+        "204": { description: Done }
+        "409": { $ref: "#/components/responses/Error" }
+
 components:
   responses:
     Error:
@@ -808,7 +1032,7 @@ components:
         status: { type: string }
 
     UserRole: { type: string, enum: [admin, farmer, customer] }
-    UserStatus: { type: string, enum: [pending, active, rejected, suspended] }
+    UserStatus: { type: string, enum: [pending, correction_required, active, rejected, suspended] }
     FarmerProfile:
       type: object
       required: [publicName]
@@ -1003,7 +1227,7 @@ components:
         engine: { type: string, description: "Rule-based engine identifier and version (no ML model)" }
     LotSummary:
       type: object
-      required: [id, lotCode, productName, variety, farmId, farmName, farmerId, status, listed, inventory, origin, createdAt, updatedAt]
+      required: [id, lotCode, productName, variety, farmId, farmName, farmerId, status, listed, recalled, inventory, origin, createdAt, updatedAt]
       properties:
         id: { type: string, format: uuid }
         lotCode: { type: string }
@@ -1016,6 +1240,7 @@ components:
         farmerName: { type: [string, "null"] }
         status: { $ref: "#/components/schemas/LotStatus" }
         listed: { type: boolean }
+        recalled: { type: boolean }
         pricePerUnit: { type: [number, "null"] }
         qualityGrade:
           oneOf:
@@ -1034,8 +1259,19 @@ components:
       allOf:
         - $ref: "#/components/schemas/LotSummary"
         - type: object
-          required: [risk]
+          required: [risk, completeness, scanStats]
           properties:
+            completeness: { $ref: "#/components/schemas/Completeness" }
+            latestQuality:
+              oneOf:
+                - $ref: "#/components/schemas/QualityRecord"
+                - type: "null"
+            scanStats:
+              type: object
+              required: [verifiedScans, uniqueScanners]
+              properties:
+                verifiedScans: { type: integer }
+                uniqueScanners: { type: integer }
             plantingDate: { type: [string, "null"] }
             expectedHarvestDate: { type: [string, "null"] }
             qualityNotes: { type: [string, "null"] }
@@ -1140,6 +1376,10 @@ components:
         quantity: { type: number, exclusiveMinimum: 0, maximum: 100000000 }
         harvestAdjustment: { type: number, minimum: -100000000, maximum: 100000000, description: "CORRECTION_RECORDED only" }
         qualityGrade: { $ref: "#/components/schemas/QualityGrade" }
+        appearance: { type: string, maxLength: 300 }
+        sizeCategory: { type: string, enum: [small, medium, large, mixed] }
+        defects: { type: string, maxLength: 500 }
+        inspectionDate: { type: string, pattern: "^\\d{4}-\\d{2}-\\d{2}$" }
         reason: { type: string, maxLength: 1000 }
         location: { type: string, maxLength: 200 }
         latitude: { type: number, minimum: -90, maximum: 90 }
@@ -1175,7 +1415,7 @@ components:
         isPublic: { type: boolean }
         metadata: { type: object, additionalProperties: true }
 
-    QrStatus: { type: string, enum: [ACTIVE, REVOKED, REPLACED] }
+    QrStatus: { type: string, enum: [ACTIVE, REVOKED, REPLACED, DISABLED] }
     QrCode:
       type: object
       required: [id, lotId, version, status, traceUrl, publicToken, createdAt]
@@ -1236,7 +1476,7 @@ components:
         storageCondition: { type: [string, "null"] }
     PublicTrace:
       type: object
-      required: [verification, lotCode, productName, variety, farmer, farmName, origin, status, listed, timeline, lastUpdatedAt, qrVersion, unit, retrievedAt]
+      required: [verification, lotCode, productName, variety, farmer, farmName, origin, status, listed, recalled, journey, completeness, farmerRating, timeline, lastUpdatedAt, qrVersion, unit, retrievedAt]
       properties:
         verification: { type: string, enum: [VERIFIED, UNVERIFIED_FARMER] }
         lotCode: { type: string }
@@ -1259,6 +1499,27 @@ components:
         status: { $ref: "#/components/schemas/LotStatus" }
         listed: { type: boolean }
         publicNotes: { type: [string, "null"] }
+        recalled: { type: boolean }
+        recall:
+          type: [object, "null"]
+          required: [message, since]
+          properties:
+            message: { type: string }
+            since: { type: string, format: date-time }
+        journey:
+          type: array
+          items: { $ref: "#/components/schemas/JourneyStep" }
+        completeness: { $ref: "#/components/schemas/Completeness" }
+        farmerRating:
+          type: object
+          required: [average, count]
+          properties:
+            average: { type: [number, "null"] }
+            count: { type: integer }
+        qualityRecord:
+          oneOf:
+            - $ref: "#/components/schemas/QualityRecord"
+            - type: "null"
         timeline:
           type: array
           items: { $ref: "#/components/schemas/PublicTimelineEntry" }
@@ -1347,11 +1608,259 @@ components:
                 condition: { type: [string, "null"] }
                 observationTime: { type: string, format: date-time }
         generatedAt: { type: string, format: date-time }
+    JourneyStep:
+      type: object
+      required: [key, state, at]
+      properties:
+        key: { type: string, enum: [FARM, HARVEST, QUALITY, QR, LISTING, ORDER, DISPATCH, CONFIRMATION] }
+        state: { type: string, enum: [DONE, PENDING] }
+        at: { type: [string, "null"], format: date-time }
+    Completeness:
+      type: object
+      required: [percent, missing, components]
+      properties:
+        percent: { type: integer, minimum: 0, maximum: 100 }
+        missing: { type: array, items: { type: string } }
+        components:
+          type: array
+          items:
+            type: object
+            required: [key, weight, applicable, done]
+            properties:
+              key: { type: string }
+              weight: { type: integer }
+              applicable: { type: boolean }
+              done: { type: boolean }
+        note: { type: string }
+    QualityRecord:
+      type: object
+      required: [grade, inspectionDate, recordedBy]
+      properties:
+        grade: { $ref: "#/components/schemas/QualityGrade" }
+        appearance: { type: [string, "null"] }
+        sizeCategory: { type: [string, "null"] }
+        defects: { type: [string, "null"] }
+        inspectionDate: { type: string }
+        notes: { type: [string, "null"] }
+        recordedBy: { type: string, description: "FARMER until an independent verifier exists" }
+    Notification:
+      type: object
+      required: [id, type, params, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        type: { type: string }
+        params: { type: object, additionalProperties: true }
+        entityType: { type: [string, "null"] }
+        entityId: { type: [string, "null"] }
+        createdAt: { type: string, format: date-time }
+        readAt: { type: [string, "null"], format: date-time }
+    NotificationList:
+      type: object
+      required: [unread, items]
+      properties:
+        unread: { type: integer }
+        items: { type: array, items: { $ref: "#/components/schemas/Notification" } }
+    MarkReadBody:
+      type: object
+      additionalProperties: false
+      properties:
+        ids: { type: array, maxItems: 100, items: { type: string, format: uuid } }
+    QrAnalytics:
+      type: object
+      required: [days, totalVerifiedScans, uniqueScanners, repeatScans, failedScans, verificationRatePct, openAnomalies, perLot, overTime, failedByResult, recent, generatedAt]
+      properties:
+        days: { type: integer }
+        totalVerifiedScans: { type: integer }
+        uniqueScanners: { type: integer }
+        repeatScans: { type: integer }
+        failedScans: { type: integer }
+        verificationRatePct: { type: [number, "null"] }
+        openAnomalies: { type: integer }
+        perLot:
+          type: array
+          items:
+            type: object
+            required: [lotId, lotCode, scans, uniqueScanners, lastScanAt]
+            properties:
+              lotId: { type: string, format: uuid }
+              lotCode: { type: string }
+              scans: { type: integer }
+              uniqueScanners: { type: integer }
+              lastScanAt: { type: string, format: date-time }
+        overTime:
+          type: array
+          items:
+            type: object
+            required: [label, ok, failed]
+            properties:
+              label: { type: string }
+              ok: { type: integer }
+              failed: { type: integer }
+        failedByResult: { type: array, items: { $ref: "#/components/schemas/CountPoint" } }
+        recent:
+          type: array
+          items:
+            type: object
+            required: [id, scannedAt, result, scanSource, signedIn, sharedLocation]
+            properties:
+              id: { type: string, format: uuid }
+              scannedAt: { type: string, format: date-time }
+              result: { type: string }
+              scanSource: { type: string }
+              deviceType: { type: [string, "null"] }
+              signedIn: { type: boolean }
+              sharedLocation: { type: boolean }
+              lotCode: { type: [string, "null"] }
+        generatedAt: { type: string, format: date-time }
+    QrAnomaly:
+      type: object
+      required: [id, qrId, lotId, lotCode, qrVersion, qrStatus, kind, status, detail, detectedAt]
+      properties:
+        id: { type: string, format: uuid }
+        qrId: { type: string, format: uuid }
+        lotId: { type: string, format: uuid }
+        lotCode: { type: string }
+        qrVersion: { type: integer }
+        qrStatus: { $ref: "#/components/schemas/QrStatus" }
+        kind: { type: string, enum: [IMPOSSIBLE_TRAVEL, DISTANT_SCANS, SCAN_BURST] }
+        status: { type: string, enum: [OPEN, INVESTIGATING, DISMISSED, CONFIRMED] }
+        detail: { type: object, additionalProperties: true }
+        detectedAt: { type: string, format: date-time }
+        handledBy: { type: [string, "null"] }
+        handledAt: { type: [string, "null"], format: date-time }
+        note: { type: [string, "null"] }
+    AnomalyNoteBody:
+      type: object
+      additionalProperties: false
+      properties:
+        note: { type: string, maxLength: 1000 }
+    QrReasonBody:
+      type: object
+      required: [reason]
+      additionalProperties: false
+      properties:
+        reason: { type: string, minLength: 3, maxLength: 500 }
+        anomalyId: { type: string, format: uuid }
+    RecallImpact:
+      type: object
+      required: [lotCode, farmerId, qrActive, inventory, openOrders, ordersTotal, customersAffected]
+      properties:
+        lotCode: { type: string }
+        farmerId: { type: string, format: uuid }
+        farmerName: { type: [string, "null"] }
+        qrActive: { type: boolean }
+        inventory:
+          type: object
+          required: [harvested, available, reserved, sold, loss, unit]
+          properties:
+            harvested: { type: number }
+            available: { type: number }
+            reserved: { type: number }
+            sold: { type: number }
+            loss: { type: number }
+            unit: { type: string }
+        openOrders:
+          type: array
+          items:
+            type: object
+            required: [orderId, orderCode, status, quantity]
+            properties:
+              orderId: { type: string, format: uuid }
+              orderCode: { type: string }
+              status: { type: string }
+              quantity: { type: number }
+        ordersTotal: { type: integer }
+        customersAffected: { type: integer }
+    Recall:
+      type: object
+      required: [id, lotId, status, reason, publicMessage, initiatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        lotId: { type: string, format: uuid }
+        status: { type: string, enum: [ACTIVE, CLEARED] }
+        reason: { type: string }
+        publicMessage: { type: string }
+        initiatedAt: { type: string, format: date-time }
+        clearedAt: { type: [string, "null"], format: date-time }
+        clearNote: { type: [string, "null"] }
+        impact: { type: object, additionalProperties: true }
+    RecallBody:
+      type: object
+      required: [reason, publicMessage]
+      additionalProperties: false
+      properties:
+        reason: { type: string, minLength: 5, maxLength: 1000, description: "Internal; admins only" }
+        publicMessage: { type: string, minLength: 5, maxLength: 300, description: "Shown on the public QR page; no personal data" }
+    ClearRecallBody:
+      type: object
+      required: [note]
+      additionalProperties: false
+      properties:
+        note: { type: string, minLength: 3, maxLength: 1000 }
+    FarmerReview:
+      type: object
+      required: [user, farms, products, lotsCount, ordersCount, history]
+      properties:
+        user: { $ref: "#/components/schemas/CurrentUser" }
+        submittedAt: { type: [string, "null"], format: date-time }
+        farms:
+          type: array
+          items:
+            type: object
+            required: [id, name, state]
+            properties:
+              id: { type: string, format: uuid }
+              name: { type: string }
+              village: { type: [string, "null"] }
+              district: { type: [string, "null"] }
+              state: { type: string }
+              sizeHectares: { type: [number, "null"] }
+              hasGps: { type: boolean }
+        products:
+          type: array
+          items:
+            type: object
+            required: [name, variety]
+            properties:
+              name: { type: string }
+              variety: { type: string }
+        lotsCount: { type: integer }
+        ordersCount: { type: integer }
+        history:
+          type: array
+          items:
+            type: object
+            required: [action, at]
+            properties:
+              action: { type: string }
+              at: { type: string, format: date-time }
+              by: { type: [string, "null"] }
+              note: { type: [string, "null"] }
+    ModerationReview:
+      type: object
+      required: [orderId, orderCode, customerName, rating, createdAt, hidden]
+      properties:
+        orderId: { type: string, format: uuid }
+        orderCode: { type: string }
+        customerName: { type: string }
+        farmerName: { type: [string, "null"] }
+        rating: { type: integer }
+        freshnessRating: { type: [integer, "null"] }
+        qualityRating: { type: [integer, "null"] }
+        comment: { type: [string, "null"] }
+        createdAt: { type: string, format: date-time }
+        hidden: { type: boolean }
+        hiddenReason: { type: [string, "null"] }
+    ModerateReviewBody:
+      type: object
+      additionalProperties: false
+      properties:
+        reason: { type: string, maxLength: 500 }
     TraceUnavailable:
       type: object
       required: [status, message]
       properties:
-        status: { type: string, enum: [REVOKED, REPLACED] }
+        status: { type: string, enum: [REVOKED, REPLACED, DISABLED] }
         message: { type: string }
     RecordScanBody:
       type: object
@@ -1362,11 +1871,14 @@ components:
         scanSource: { type: string, enum: [in_app_scanner, camera_link, manual_entry] }
         clientEventId: { type: string, format: uuid }
         deviceType: { type: string, enum: [mobile, tablet, desktop, unknown] }
+        sessionId: { type: string, minLength: 8, maxLength: 64, description: "Random per-browser id; not a fingerprint" }
+        approxLat: { type: number, minimum: -90, maximum: 90, description: "Optional, shared with consent; stored rounded to 0.1 degree" }
+        approxLon: { type: number, minimum: -180, maximum: 180 }
     ScanResult:
       type: object
       required: [result]
       properties:
-        result: { type: string, enum: [OK, UNKNOWN, REVOKED, REPLACED, INVALID] }
+        result: { type: string, enum: [OK, UNKNOWN, REVOKED, REPLACED, DISABLED, INVALID] }
         duplicate: { type: boolean }
     QrScan:
       type: object
@@ -1419,6 +1931,13 @@ components:
         farmName: { type: [string, "null"] }
         publicToken: { type: [string, "null"] }
         publicNotes: { type: [string, "null"] }
+        harvestAgeDays: { type: [integer, "null"] }
+        completenessPercent: { type: [integer, "null"] }
+        farmerRating:
+          type: [object, "null"]
+          properties:
+            average: { type: [number, "null"] }
+            count: { type: integer }
     PublicFarm:
       type: object
       required: [name, state]
@@ -1428,7 +1947,7 @@ components:
         state: { type: string }
     PublicFarmer:
       type: object
-      required: [id, publicName, verified, listings, memberSince, farms]
+      required: [id, publicName, verified, listings, memberSince, farms, stats, reviews]
       properties:
         id: { type: string, format: uuid }
         publicName: { type: string }
@@ -1438,6 +1957,34 @@ components:
         state: { type: [string, "null"] }
         verified: { type: boolean }
         memberSince: { type: string, format: date-time }
+        stats:
+          type: object
+          required: [activeLots, traceableQuantityKg, successfulOrders, averageCompleteness, rating]
+          properties:
+            activeLots: { type: integer }
+            traceableQuantityKg: { type: number }
+            successfulOrders: { type: integer }
+            averageCompleteness: { type: [integer, "null"] }
+            rating:
+              type: object
+              required: [average, count, freshness, quality]
+              properties:
+                average: { type: [number, "null"] }
+                count: { type: integer }
+                freshness: { type: [number, "null"] }
+                quality: { type: [number, "null"] }
+        reviews:
+          type: array
+          items:
+            type: object
+            required: [rating, createdAt, verifiedPurchase]
+            properties:
+              rating: { type: integer }
+              freshnessRating: { type: [integer, "null"] }
+              qualityRating: { type: [integer, "null"] }
+              comment: { type: [string, "null"] }
+              createdAt: { type: string, format: date-time }
+              verifiedPurchase: { type: boolean }
         farms:
           type: array
           items: { $ref: "#/components/schemas/PublicFarm" }
@@ -1486,6 +2033,8 @@ components:
       required: [rating, createdAt]
       properties:
         rating: { type: integer }
+        freshnessRating: { type: [integer, "null"] }
+        qualityRating: { type: [integer, "null"] }
         comment: { type: [string, "null"] }
         createdAt: { type: string, format: date-time }
     Order:
@@ -1568,7 +2117,9 @@ components:
       required: [rating]
       additionalProperties: false
       properties:
-        rating: { type: integer, minimum: 1, maximum: 5 }
+        rating: { type: integer, minimum: 1, maximum: 5, description: "Overall" }
+        freshnessRating: { type: integer, minimum: 1, maximum: 5 }
+        qualityRating: { type: integer, minimum: 1, maximum: 5 }
         comment: { type: string, maxLength: 1000 }
 
     CountPoint:

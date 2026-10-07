@@ -8,6 +8,7 @@ import { actorOf, parse } from "../lib/http";
 import { authLimiter } from "../lib/rate-limit";
 import { audit } from "../services/records";
 import { notifyChange } from "../services/realtime";
+import { notifyAdmins } from "../services/notifications";
 
 const router = Router();
 
@@ -72,6 +73,7 @@ router.post("/auth/register", authLimiter, async (req, res) => {
     }
     await audit(tx, { user: { id: u.id, role: u.role }, requestId: String(req.id) }, "USER_REGISTERED", "user", u.id, null, { role: u.role, status: u.status });
     await notifyChange(tx, { topic: "users", adminOnly: true });
+    if (u.role === "farmer") await notifyAdmins(tx, { type: "FARMER_APPLICATION", params: { name: u.name }, entityType: "user", entityId: u.id });
     return u;
   });
   await createSession(res, user.id, req.get("user-agent"));
@@ -123,6 +125,20 @@ router.patch("/me/profile", requireAuth, async (req, res) => {
         .where(eq(farmerProfilesTable.userId, user.id));
     }
     await audit(tx, actorOf(req), "PROFILE_UPDATED", "user", user.id, null, { fields: Object.keys(body) });
+  });
+  const [fresh] = await db.select().from(usersTable).where(eq(usersTable.id, user.id));
+  res.json(await serializeUser(fresh));
+});
+
+router.post("/me/resubmit", requireAuth, async (req, res) => {
+  const user = req.user!;
+  if (user.role !== "farmer" || user.status !== "correction_required") throw conflict("Only a farmer who was asked to correct their application can resubmit", "INVALID_STATE_TRANSITION");
+  await db.transaction(async (tx) => {
+    await tx.update(usersTable).set({ status: "pending", updatedAt: new Date() }).where(eq(usersTable.id, user.id));
+    await tx.update(farmerProfilesTable).set({ submittedAt: new Date(), updatedAt: new Date() }).where(eq(farmerProfilesTable.userId, user.id));
+    await audit(tx, actorOf(req), "FARMER_RESUBMITTED", "user", user.id, { status: "correction_required" }, { status: "pending" });
+    await notifyAdmins(tx, { type: "FARMER_APPLICATION", params: { name: user.name, resubmitted: true }, entityType: "user", entityId: user.id });
+    await notifyChange(tx, { topic: "users", adminOnly: true });
   });
   const [fresh] = await db.select().from(usersTable).where(eq(usersTable.id, user.id));
   res.json(await serializeUser(fresh));
