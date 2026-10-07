@@ -4,6 +4,7 @@ import { Cloud, Droplets, Thermometer } from "lucide-react";
 import { Card, Empty, ErrorState, Loading, PageHeader, Pill, Table } from "@/components/app/common";
 import { dateOnly, dateTime, timeAgo } from "@/lib/format";
 import type { IntegrationStatus } from "@workspace/api-client-react";
+import { FaostatCard, PunjabPotatoCard } from "@/components/app/reference-data";
 
 export function SourceFooter({ s }: { s: IntegrationStatus }) {
   return (
@@ -59,6 +60,8 @@ export default function MarketPage() {
           <div className="mt-1 text-xs text-ink/45">Prices in INR per quintal as published by the source.</div>
         </>
       )}
+      <h3 className="mb-3 mt-10 eyebrow !text-ink/75">Where Punjab grows potato <Pill className="ml-2 bg-white/10 text-ink/60">Annual reference data</Pill></h3>
+      <div className="grid gap-4 lg:grid-cols-2"><PunjabPotatoCard /><FaostatCard /></div>
       <h3 className="mb-3 mt-10 eyebrow !text-ink/75">Weather at my farms</h3>
       {farms.data?.length ? <div className="grid gap-4 md:grid-cols-2">{farms.data.map((f) => <Weather key={f.id} farmId={f.id} name={f.name} />)}</div> : <Empty title="Add a farm to see weather" />}
     </>

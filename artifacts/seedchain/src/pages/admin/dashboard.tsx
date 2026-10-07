@@ -4,8 +4,8 @@ import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, Res
 import { AlertTriangle } from "lucide-react";
 import { BigNumber, Card, ErrorState, Loading, PageHeader } from "@/components/app/common";
 import { CountUp, GlassCard, Reveal } from "@/components/motion";
-import { SourceFooter } from "@/pages/farmer/market";
 import { qty } from "@/lib/format";
+import { DataHealth } from "@/components/app/reference-data";
 
 const COLORS = ["#86d6a0", "#4fa874", "#c8e6b0", "#7fb2d9", "#d9b86b", "#9a8fd1", "#6b7f74"];
 const RISK_COLORS: Record<string, string> = { LOW: "#86d6a0", MEDIUM: "#e0c36a", HIGH: "#e89a5a", CRITICAL: "#e5736a" };
@@ -83,7 +83,8 @@ export default function AdminDashboard() {
         </Chart>
         <Chart title="Potato modal price" subtitle="INR / quintal · external, data.gov.in" empty={!d.marketTrend.length}>{areaChart(d.marketTrend, "#d9b86b", "mkt")}</Chart>
       </div>
-      <Card className="mt-5 p-5 sm:p-6"><div className="eyebrow mb-3">External data freshness</div>{d.externalFreshness.map((s) => <div key={s.source} className="mb-3 border-b border-white/[0.07] pb-3 last:mb-0 last:border-0 last:pb-0"><div className="text-sm">{s.label}</div><SourceFooter s={s} /></div>)}</Card>
+      <div className="eyebrow mb-3 mt-8">Data health: every external source</div>
+      <DataHealth />
     </>
   );
 }
