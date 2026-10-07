@@ -7,6 +7,7 @@ RUN corepack enable
 WORKDIR /repo
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json .npmrc tsconfig.base.json tsconfig.json ./
 COPY lib ./lib
+COPY data ./data
 COPY artifacts ./artifacts
 RUN pnpm install --frozen-lockfile
 RUN pnpm run typecheck:libs \
