@@ -1,3 +1,4 @@
+import i18n from "@/i18n";
 import { ApiError, customFetch } from "@workspace/api-client-react";
 
 /** Human-readable message from any thrown API/network error. */
@@ -5,10 +6,13 @@ export function errMsg(err: unknown): string {
   if (err instanceof ApiError) {
     const d = err.data as { error?: string; details?: Array<{ path?: (string | number)[]; message?: string }> } | null;
     const detail = d?.details?.[0]?.message ? ` (${(d.details[0].path ?? []).join(".")}: ${d.details[0].message})` : "";
-    return `${d?.error ?? err.statusText ?? "Request failed"}${detail}`;
+    const code = (err.data as { code?: string } | null)?.code;
+    // Known codes are translated; other server messages are shown as sent (they are specific, e.g. "Only 5 kg left").
+    const known = code ? i18n.t(`errors.${code}`, { defaultValue: "" }) : "";
+    return `${known || d?.error || err.statusText || i18n.t("errors.requestFailed")}${detail}`;
   }
-  if (err instanceof TypeError) return "Cannot reach the server. Check your connection.";
-  return err instanceof Error ? err.message : "Something went wrong";
+  if (err instanceof TypeError) return i18n.t("errors.network");
+  return err instanceof Error ? err.message : i18n.t("errors.generic");
 }
 
 export function isNetworkError(err: unknown): boolean {

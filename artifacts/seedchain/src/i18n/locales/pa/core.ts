@@ -1,5 +1,5 @@
-import type { Messages } from "./en";
-const pa: Messages = {
+import type { Core } from "../en/core";
+const core: Core = {
   lang: { label: "ਭਾਸ਼ਾ", en: "English", hi: "हिन्दी", pa: "ਪੰਜਾਬੀ" },
   nav: {
     platform: "ਪਲੇਟਫਾਰਮ", trace: "ਟਰੇਸ", marketplace: "ਮੰਡੀ", farmers: "ਕਿਸਾਨਾਂ ਲਈ", insights: "ਜਾਣਕਾਰੀ",
@@ -45,4 +45,4 @@ const pa: Messages = {
     checkConnection: "ਆਪਣਾ ਕਨੈਕਸ਼ਨ ਜਾਂਚੋ ਅਤੇ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।",
   },
 };
-export default pa;
+export default core;

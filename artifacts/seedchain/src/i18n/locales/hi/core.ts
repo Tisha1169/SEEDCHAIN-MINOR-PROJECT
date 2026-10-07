@@ -1,5 +1,5 @@
-import type { Messages } from "./en";
-const hi: Messages = {
+import type { Core } from "../en/core";
+const core: Core = {
   lang: { label: "भाषा", en: "English", hi: "हिन्दी", pa: "ਪੰਜਾਬੀ" },
   nav: {
     platform: "प्लेटफ़ॉर्म", trace: "ट्रेस", marketplace: "बाज़ार", farmers: "किसानों के लिए", insights: "जानकारी",
@@ -45,4 +45,4 @@ const hi: Messages = {
     checkConnection: "अपना कनेक्शन जाँचें और फिर कोशिश करें।",
   },
 };
-export default hi;
+export default core;

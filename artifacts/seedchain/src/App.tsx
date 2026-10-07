@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Switch, Route, Router as WouterRouter, Redirect } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { lazy, Suspense, useEffect, type ComponentType } from "react";
@@ -122,6 +123,7 @@ function OfflineSync() {
 }
 
 export default function App() {
+  const { i18n } = useTranslation();
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -130,7 +132,7 @@ export default function App() {
             <RealtimeProvider>
               <OfflineSync />
               <Suspense fallback={<Loading />}>
-                <Router />
+                <Router key={i18n.language} />
               </Suspense>
             </RealtimeProvider>
           </AuthProvider>

@@ -1,0 +1,38 @@
+const shared = {
+  time: { justNow: "just now", minAgo: "{{n}} min ago", hAgo: "{{n}} h ago", dAgo: "{{n}} d ago" },
+  errors: {
+    network: "Cannot reach the server. Check your connection.",
+    generic: "Something went wrong",
+    requestFailed: "Request failed",
+    CSRF: "Your session could not be verified. Refresh the page and try again.",
+    NOT_FOUND: "Not found",
+    PAYLOAD_TOO_LARGE: "The request is too large",
+    RATE_LIMITED: "Too many requests. Please wait a moment and try again.",
+    INTERNAL: "Something went wrong on our side. Please try again.",
+    INVALID_STATE_TRANSITION: "That action is not allowed in the current state",
+    UNAUTHORIZED: "Please sign in to continue",
+    FORBIDDEN: "You do not have permission to do that",
+  },
+  enums: {
+    unit: { kg: "kg", quintal: "quintal", tonne: "tonne", t: "t" },
+    orderStatus: { PENDING: "Pending", ACCEPTED: "Accepted", PREPARING: "Preparing", READY: "Ready", DISPATCHED: "Dispatched", DELIVERED: "Delivered", CUSTOMER_CONFIRMED: "Receipt confirmed", REJECTED: "Declined", CANCELLED: "Cancelled" },
+    lotStatus: { CREATED: "Created", GROWING: "Growing", HARVESTED: "Harvested", AVAILABLE: "Available", RESERVED: "Reserved", PARTIALLY_SOLD: "Partially sold", SOLD_OUT: "Sold out", RECALLED: "Recalled" },
+    risk: { LOW: "Low", MEDIUM: "Medium", HIGH: "High", CRITICAL: "Critical" },
+    fulfillment: { CUSTOMER_PICKUP: "Customer pickup", FARMER_DELIVERY: "Farmer delivery", THIRD_PARTY_DELIVERY: "Third-party delivery (recorded by farmer)" },
+    userStatus: { active: "Active", pending: "Pending approval", rejected: "Rejected", suspended: "Suspended" },
+    role: { admin: "Admin", farmer: "Farmer", customer: "Customer" },
+    storageType: { COLD_STORAGE: "Cold storage", WAREHOUSE: "Warehouse", FARM_SHED: "Farm shed", OPEN_AIR: "Open air", OTHER: "Other" },
+    event: {
+      LOT_CREATED: "Lot registered by farmer", GROWING_RECORDED: "Crop growing", HARVEST_RECORDED: "Harvest recorded", QUALITY_RECORDED: "Quality recorded",
+      STORAGE_RECORDED: "Storage recorded by farmer", QR_GENERATED: "QR identity issued", QR_REPLACED: "QR label replaced", QR_DISABLED: "QR temporarily disabled for review",
+      QR_ENABLED: "QR re-enabled after review", LOT_RECALLED: "Lot recalled", LOT_RECALL_CLEARED: "Recall cleared", QR_REVOKED: "A QR label for this lot was revoked",
+      QR_SCANNED: "First verified scan", LOT_AVAILABLE: "Listed for customers by farmer", LOT_UNLISTED: "Listing paused by farmer", ORDER_CREATED: "Customer order placed",
+      ORDER_ACCEPTED: "Order accepted by farmer", ORDER_PREPARED: "Order being prepared", ORDER_READY: "Order ready", ORDER_DISPATCHED: "Dispatch recorded",
+      CUSTOMER_PICKUP: "Handed over to customer at pickup", DELIVERY_COMPLETED: "Delivery / handover completed", CUSTOMER_RECEIVED: "Customer confirmed receipt",
+      ORDER_REJECTED: "Order declined; stock released", ORDER_CANCELLED: "Order cancelled; stock released", LOSS_RECORDED: "Loss recorded", SPOILAGE_RECORDED: "Spoilage recorded",
+      CORRECTION_RECORDED: "Correction recorded", LOT_SOLD_OUT: "Lot sold out",
+    },
+  },
+};
+export default shared;
+export type Shared = typeof shared;

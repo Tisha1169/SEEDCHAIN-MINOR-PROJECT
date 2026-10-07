@@ -1,19 +1,28 @@
+import i18n, { currentLocale } from "@/i18n";
+
 export const dateTime = (iso: string | null | undefined) =>
-  iso ? new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }) : "—";
+  iso ? new Date(iso).toLocaleString(currentLocale(), { dateStyle: "medium", timeStyle: "short" }) : "—";
 export const dateOnly = (iso: string | null | undefined) =>
-  iso ? new Date(iso.length === 10 ? `${iso}T00:00:00` : iso).toLocaleDateString(undefined, { dateStyle: "medium" }) : "—";
+  iso ? new Date(iso.length === 10 ? `${iso}T00:00:00` : iso).toLocaleDateString(currentLocale(), { dateStyle: "medium" }) : "—";
 export const qty = (n: number | null | undefined, unit = "kg") =>
-  n == null ? "—" : `${n.toLocaleString(undefined, { maximumFractionDigits: 3 })} ${unit}`;
+  n == null ? "—" : `${n.toLocaleString(currentLocale(), { maximumFractionDigits: 3 })} ${unitLabel(unit)}`;
 export const inr = (n: number | null | undefined) =>
-  n == null ? "—" : n.toLocaleString("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 2 });
+  n == null ? "—" : n.toLocaleString(currentLocale(), { style: "currency", currency: "INR", maximumFractionDigits: 2 });
 export const titleCase = (s: string) => s.toLowerCase().replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
+/** Units such as kg/quintal are translated when a translation exists, otherwise shown as stored. */
+export const unitLabel = (u: string) => i18n.t(`enums.unit.${u}`, { defaultValue: u });
+
+/** Label for an enum value (order/lot status, risk, fulfilment, event types…); falls back to a readable form of the raw value. */
+export const enumLabel = (kind: string, value: string | null | undefined) =>
+  value ? i18n.t(`enums.${kind}.${value}`, { defaultValue: titleCase(value) }) : "—";
 
 export function timeAgo(iso: string): string {
   const s = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 1000));
-  if (s < 60) return "just now";
-  if (s < 3600) return `${Math.floor(s / 60)} min ago`;
-  if (s < 86400) return `${Math.floor(s / 3600)} h ago`;
-  return `${Math.floor(s / 86400)} d ago`;
+  if (s < 60) return i18n.t("time.justNow");
+  if (s < 3600) return i18n.t("time.minAgo", { n: Math.floor(s / 60) });
+  if (s < 86400) return i18n.t("time.hAgo", { n: Math.floor(s / 3600) });
+  return i18n.t("time.dAgo", { n: Math.floor(s / 86400) });
 }
 
 export const ORDER_STATUS_STYLE: Record<string, string> = {

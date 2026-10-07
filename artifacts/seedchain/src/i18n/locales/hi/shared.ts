@@ -1,0 +1,38 @@
+import type { Shared } from "../en/shared";
+const shared: Shared = {
+  time: { justNow: "अभी-अभी", minAgo: "{{n}} मिनट पहले", hAgo: "{{n}} घंटे पहले", dAgo: "{{n}} दिन पहले" },
+  errors: {
+    network: "सर्वर तक नहीं पहुँच सके। अपना कनेक्शन जाँचें।",
+    generic: "कुछ गड़बड़ हो गई",
+    requestFailed: "अनुरोध विफल रहा",
+    CSRF: "आपका सत्र सत्यापित नहीं हो सका। पेज रिफ़्रेश करके फिर कोशिश करें।",
+    NOT_FOUND: "नहीं मिला",
+    PAYLOAD_TOO_LARGE: "अनुरोध बहुत बड़ा है",
+    RATE_LIMITED: "बहुत अधिक अनुरोध। कृपया थोड़ी देर रुककर फिर कोशिश करें।",
+    INTERNAL: "हमारी ओर से कुछ गड़बड़ हो गई। कृपया फिर कोशिश करें।",
+    INVALID_STATE_TRANSITION: "मौजूदा स्थिति में यह कार्य अनुमत नहीं है",
+    UNAUTHORIZED: "जारी रखने के लिए साइन इन करें",
+    FORBIDDEN: "आपको ऐसा करने की अनुमति नहीं है",
+  },
+  enums: {
+    unit: { kg: "किग्रा", quintal: "क्विंटल", tonne: "टन", t: "टन" },
+    orderStatus: { PENDING: "लंबित", ACCEPTED: "स्वीकृत", PREPARING: "तैयार हो रहा है", READY: "तैयार", DISPATCHED: "भेजा गया", DELIVERED: "पहुँचाया गया", CUSTOMER_CONFIRMED: "प्राप्ति की पुष्टि", REJECTED: "अस्वीकृत", CANCELLED: "रद्द" },
+    lotStatus: { CREATED: "बनाया गया", GROWING: "उग रहा है", HARVESTED: "कटाई हो चुकी", AVAILABLE: "उपलब्ध", RESERVED: "आरक्षित", PARTIALLY_SOLD: "आंशिक रूप से बिका", SOLD_OUT: "बिक चुका", RECALLED: "वापस बुलाया गया" },
+    risk: { LOW: "कम", MEDIUM: "मध्यम", HIGH: "अधिक", CRITICAL: "गंभीर" },
+    fulfillment: { CUSTOMER_PICKUP: "ग्राहक स्वयं ले जाएँगे", FARMER_DELIVERY: "किसान द्वारा डिलीवरी", THIRD_PARTY_DELIVERY: "तीसरे पक्ष द्वारा डिलीवरी (किसान द्वारा दर्ज)" },
+    userStatus: { active: "सक्रिय", pending: "अनुमोदन लंबित", rejected: "अस्वीकृत", suspended: "निलंबित" },
+    role: { admin: "एडमिन", farmer: "किसान", customer: "ग्राहक" },
+    storageType: { COLD_STORAGE: "कोल्ड स्टोरेज", WAREHOUSE: "गोदाम", FARM_SHED: "खेत का शेड", OPEN_AIR: "खुले में", OTHER: "अन्य" },
+    event: {
+      LOT_CREATED: "किसान ने लॉट दर्ज किया", GROWING_RECORDED: "फ़सल उग रही है", HARVEST_RECORDED: "कटाई दर्ज", QUALITY_RECORDED: "गुणवत्ता दर्ज",
+      STORAGE_RECORDED: "किसान ने भंडारण दर्ज किया", QR_GENERATED: "QR पहचान जारी", QR_REPLACED: "QR लेबल बदला गया", QR_DISABLED: "समीक्षा के लिए QR अस्थायी रूप से बंद",
+      QR_ENABLED: "समीक्षा के बाद QR फिर चालू", LOT_RECALLED: "लॉट वापस बुलाया गया", LOT_RECALL_CLEARED: "वापसी रद्द की गई", QR_REVOKED: "इस लॉट का एक QR लेबल रद्द किया गया",
+      QR_SCANNED: "पहला सत्यापित स्कैन", LOT_AVAILABLE: "किसान ने ग्राहकों के लिए सूचीबद्ध किया", LOT_UNLISTED: "किसान ने सूची रोकी", ORDER_CREATED: "ग्राहक ने ऑर्डर दिया",
+      ORDER_ACCEPTED: "किसान ने ऑर्डर स्वीकार किया", ORDER_PREPARED: "ऑर्डर तैयार हो रहा है", ORDER_READY: "ऑर्डर तैयार", ORDER_DISPATCHED: "भेजना दर्ज",
+      CUSTOMER_PICKUP: "पिकअप पर ग्राहक को सौंपा गया", DELIVERY_COMPLETED: "डिलीवरी / हस्तांतरण पूरा", CUSTOMER_RECEIVED: "ग्राहक ने प्राप्ति की पुष्टि की",
+      ORDER_REJECTED: "ऑर्डर अस्वीकृत; स्टॉक वापस", ORDER_CANCELLED: "ऑर्डर रद्द; स्टॉक वापस", LOSS_RECORDED: "नुकसान दर्ज", SPOILAGE_RECORDED: "खराबी दर्ज",
+      CORRECTION_RECORDED: "सुधार दर्ज", LOT_SOLD_OUT: "लॉट बिक चुका",
+    },
+  },
+};
+export default shared;

@@ -1,0 +1,38 @@
+import type { Shared } from "../en/shared";
+const shared: Shared = {
+  time: { justNow: "ਹੁਣੇ", minAgo: "{{n}} ਮਿੰਟ ਪਹਿਲਾਂ", hAgo: "{{n}} ਘੰਟੇ ਪਹਿਲਾਂ", dAgo: "{{n}} ਦਿਨ ਪਹਿਲਾਂ" },
+  errors: {
+    network: "ਸਰਵਰ ਤੱਕ ਨਹੀਂ ਪਹੁੰਚ ਸਕੇ। ਆਪਣਾ ਕਨੈਕਸ਼ਨ ਜਾਂਚੋ।",
+    generic: "ਕੁਝ ਗਲਤ ਹੋ ਗਿਆ",
+    requestFailed: "ਬੇਨਤੀ ਅਸਫਲ ਰਹੀ",
+    CSRF: "ਤੁਹਾਡਾ ਸੈਸ਼ਨ ਤਸਦੀਕ ਨਹੀਂ ਹੋ ਸਕਿਆ। ਪੰਨਾ ਰਿਫ੍ਰੈਸ਼ ਕਰਕੇ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।",
+    NOT_FOUND: "ਨਹੀਂ ਮਿਲਿਆ",
+    PAYLOAD_TOO_LARGE: "ਬੇਨਤੀ ਬਹੁਤ ਵੱਡੀ ਹੈ",
+    RATE_LIMITED: "ਬਹੁਤ ਜ਼ਿਆਦਾ ਬੇਨਤੀਆਂ। ਕਿਰਪਾ ਕਰਕੇ ਥੋੜ੍ਹੀ ਦੇਰ ਰੁਕ ਕੇ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।",
+    INTERNAL: "ਸਾਡੇ ਪਾਸਿਓਂ ਕੁਝ ਗਲਤ ਹੋ ਗਿਆ। ਕਿਰਪਾ ਕਰਕੇ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।",
+    INVALID_STATE_TRANSITION: "ਮੌਜੂਦਾ ਸਥਿਤੀ ਵਿੱਚ ਇਹ ਕਾਰਵਾਈ ਮਨਜ਼ੂਰ ਨਹੀਂ ਹੈ",
+    UNAUTHORIZED: "ਜਾਰੀ ਰੱਖਣ ਲਈ ਸਾਈਨ ਇਨ ਕਰੋ",
+    FORBIDDEN: "ਤੁਹਾਨੂੰ ਇਹ ਕਰਨ ਦੀ ਇਜਾਜ਼ਤ ਨਹੀਂ ਹੈ",
+  },
+  enums: {
+    unit: { kg: "ਕਿਲੋ", quintal: "ਕੁਇੰਟਲ", tonne: "ਟਨ", t: "ਟਨ" },
+    orderStatus: { PENDING: "ਬਕਾਇਆ", ACCEPTED: "ਮਨਜ਼ੂਰ", PREPARING: "ਤਿਆਰ ਹੋ ਰਿਹਾ ਹੈ", READY: "ਤਿਆਰ", DISPATCHED: "ਭੇਜਿਆ ਗਿਆ", DELIVERED: "ਪਹੁੰਚਾਇਆ ਗਿਆ", CUSTOMER_CONFIRMED: "ਪ੍ਰਾਪਤੀ ਦੀ ਪੁਸ਼ਟੀ", REJECTED: "ਇਨਕਾਰ", CANCELLED: "ਰੱਦ" },
+    lotStatus: { CREATED: "ਬਣਾਇਆ ਗਿਆ", GROWING: "ਉੱਗ ਰਿਹਾ ਹੈ", HARVESTED: "ਵਾਢੀ ਹੋ ਚੁੱਕੀ", AVAILABLE: "ਉਪਲਬਧ", RESERVED: "ਰਾਖਵਾਂ", PARTIALLY_SOLD: "ਅੰਸ਼ਕ ਤੌਰ ’ਤੇ ਵਿਕਿਆ", SOLD_OUT: "ਵਿਕ ਚੁੱਕਾ", RECALLED: "ਵਾਪਸ ਮੰਗਵਾਇਆ ਗਿਆ" },
+    risk: { LOW: "ਘੱਟ", MEDIUM: "ਦਰਮਿਆਨਾ", HIGH: "ਵੱਧ", CRITICAL: "ਗੰਭੀਰ" },
+    fulfillment: { CUSTOMER_PICKUP: "ਗਾਹਕ ਆਪ ਲੈ ਕੇ ਜਾਵੇਗਾ", FARMER_DELIVERY: "ਕਿਸਾਨ ਵੱਲੋਂ ਡਿਲੀਵਰੀ", THIRD_PARTY_DELIVERY: "ਤੀਜੀ ਧਿਰ ਵੱਲੋਂ ਡਿਲੀਵਰੀ (ਕਿਸਾਨ ਵੱਲੋਂ ਦਰਜ)" },
+    userStatus: { active: "ਸਰਗਰਮ", pending: "ਮਨਜ਼ੂਰੀ ਬਕਾਇਆ", rejected: "ਇਨਕਾਰ", suspended: "ਮੁਅੱਤਲ" },
+    role: { admin: "ਐਡਮਿਨ", farmer: "ਕਿਸਾਨ", customer: "ਗਾਹਕ" },
+    storageType: { COLD_STORAGE: "ਕੋਲਡ ਸਟੋਰੇਜ", WAREHOUSE: "ਗੋਦਾਮ", FARM_SHED: "ਖੇਤ ਦਾ ਸ਼ੈੱਡ", OPEN_AIR: "ਖੁੱਲ੍ਹੇ ਵਿੱਚ", OTHER: "ਹੋਰ" },
+    event: {
+      LOT_CREATED: "ਕਿਸਾਨ ਨੇ ਲਾਟ ਦਰਜ ਕੀਤਾ", GROWING_RECORDED: "ਫ਼ਸਲ ਉੱਗ ਰਹੀ ਹੈ", HARVEST_RECORDED: "ਵਾਢੀ ਦਰਜ", QUALITY_RECORDED: "ਗੁਣਵੱਤਾ ਦਰਜ",
+      STORAGE_RECORDED: "ਕਿਸਾਨ ਨੇ ਭੰਡਾਰਨ ਦਰਜ ਕੀਤਾ", QR_GENERATED: "QR ਪਛਾਣ ਜਾਰੀ", QR_REPLACED: "QR ਲੇਬਲ ਬਦਲਿਆ ਗਿਆ", QR_DISABLED: "ਸਮੀਖਿਆ ਲਈ QR ਅਸਥਾਈ ਤੌਰ ’ਤੇ ਬੰਦ",
+      QR_ENABLED: "ਸਮੀਖਿਆ ਤੋਂ ਬਾਅਦ QR ਮੁੜ ਚਾਲੂ", LOT_RECALLED: "ਲਾਟ ਵਾਪਸ ਮੰਗਵਾਇਆ ਗਿਆ", LOT_RECALL_CLEARED: "ਵਾਪਸੀ ਰੱਦ ਕੀਤੀ ਗਈ", QR_REVOKED: "ਇਸ ਲਾਟ ਦਾ ਇੱਕ QR ਲੇਬਲ ਰੱਦ ਕੀਤਾ ਗਿਆ",
+      QR_SCANNED: "ਪਹਿਲਾ ਤਸਦੀਕਸ਼ੁਦਾ ਸਕੈਨ", LOT_AVAILABLE: "ਕਿਸਾਨ ਨੇ ਗਾਹਕਾਂ ਲਈ ਸੂਚੀਬੱਧ ਕੀਤਾ", LOT_UNLISTED: "ਕਿਸਾਨ ਨੇ ਸੂਚੀ ਰੋਕੀ", ORDER_CREATED: "ਗਾਹਕ ਨੇ ਆਰਡਰ ਦਿੱਤਾ",
+      ORDER_ACCEPTED: "ਕਿਸਾਨ ਨੇ ਆਰਡਰ ਮਨਜ਼ੂਰ ਕੀਤਾ", ORDER_PREPARED: "ਆਰਡਰ ਤਿਆਰ ਹੋ ਰਿਹਾ ਹੈ", ORDER_READY: "ਆਰਡਰ ਤਿਆਰ", ORDER_DISPATCHED: "ਭੇਜਣਾ ਦਰਜ",
+      CUSTOMER_PICKUP: "ਪਿਕਅੱਪ ’ਤੇ ਗਾਹਕ ਨੂੰ ਸੌਂਪਿਆ ਗਿਆ", DELIVERY_COMPLETED: "ਡਿਲੀਵਰੀ / ਹਵਾਲਗੀ ਪੂਰੀ", CUSTOMER_RECEIVED: "ਗਾਹਕ ਨੇ ਪ੍ਰਾਪਤੀ ਦੀ ਪੁਸ਼ਟੀ ਕੀਤੀ",
+      ORDER_REJECTED: "ਆਰਡਰ ਇਨਕਾਰ; ਸਟਾਕ ਵਾਪਸ", ORDER_CANCELLED: "ਆਰਡਰ ਰੱਦ; ਸਟਾਕ ਵਾਪਸ", LOSS_RECORDED: "ਨੁਕਸਾਨ ਦਰਜ", SPOILAGE_RECORDED: "ਖਰਾਬੀ ਦਰਜ",
+      CORRECTION_RECORDED: "ਸੁਧਾਰ ਦਰਜ", LOT_SOLD_OUT: "ਲਾਟ ਵਿਕ ਚੁੱਕਾ",
+    },
+  },
+};
+export default shared;

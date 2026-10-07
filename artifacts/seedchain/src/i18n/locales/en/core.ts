@@ -1,4 +1,4 @@
-const en = {
+const core = {
   lang: { label: "Language", en: "English", hi: "हिन्दी", pa: "ਪੰਜਾਬੀ" },
   nav: {
     platform: "Platform", trace: "Trace", marketplace: "Marketplace", farmers: "For Farmers", insights: "Insights",
@@ -44,5 +44,5 @@ const en = {
     checkConnection: "Check your connection and try again.",
   },
 };
-export default en;
-export type Messages = typeof en;
+export default core;
+export type Core = typeof core;
