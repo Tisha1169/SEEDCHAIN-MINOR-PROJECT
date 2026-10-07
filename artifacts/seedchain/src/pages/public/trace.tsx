@@ -10,7 +10,7 @@ import { ProduceTile } from "@/components/art";
 import { Reveal } from "@/components/motion";
 import { motion, useReducedMotion } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { dateOnly, dateTime, qty, timeAgo, titleCase } from "@/lib/format";
+import { dateOnly, dateTime, enumLabel, qty, timeAgo, unitLabel } from "@/lib/format";
 import { errMsg, uuid } from "@/lib/api";
 import { LotStatusPill } from "@/components/app/common";
 
@@ -33,6 +33,17 @@ function Shell({ children }: { children: React.ReactNode }) {
       <div className="relative z-[2] mx-auto max-w-xl px-4 pb-16 pt-24 sm:pt-28">{children}</div>
     </div>
   );
+}
+
+/** The server sends English text for a few event details; known shapes are re-expressed in the chosen language. */
+function traceDetail(eventType: string, detail: string | null | undefined, tr: (k: string, o?: Record<string, unknown>) => string): string | null {
+  if (!detail) return null;
+  const grade = detail.match(/^Grade (\w+)$/);
+  if (grade) return tr("traceExtra.gradeDetail", { g: grade[1] });
+  const q = detail.match(/^([\d.,]+) (\w+)$/);
+  if (q) return `${q[1]} ${unitLabel(q[2])}`;
+  if (eventType === "STORAGE_RECORDED") return enumLabel("storageKind", detail.replace(/ /g, "_"));
+  return detail;
 }
 
 export default function TracePage() {
@@ -149,7 +160,7 @@ export default function TracePage() {
               {t.storage && (
                 <div className="mt-4 rounded-2xl bg-white/[0.04] p-3.5 text-sm">
                   <div className="mb-1 flex items-center gap-2 text-xs font-medium tracking-wide text-ink/70"><Thermometer className="h-4 w-4 text-accent" />{tr("trace.storage")}</div>
-                  <div className="text-ink/60">{titleCase(t.storage.storageType)} {tr("trace.since")} {dateOnly(t.storage.storageStart)}{t.storage.temperatureC != null && ` · ${t.storage.temperatureC}°C`}{t.storage.storageCondition && ` · ${t.storage.storageCondition}`}</div>
+                  <div className="text-ink/60">{enumLabel("storageKind", t.storage.storageType)} {tr("trace.since")} {dateOnly(t.storage.storageStart)}{t.storage.temperatureC != null && ` · ${t.storage.temperatureC}°C`}{t.storage.storageCondition && ` · ${t.storage.storageCondition}`}</div>
                 </div>
               )}
               {t.publicNotes && <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-ink/60">{t.publicNotes}</p>}
@@ -170,9 +181,9 @@ export default function TracePage() {
               {t.timeline.map((e, i) => (
                 <motion.li key={`${e.eventType}-${i}`} initial={reduce ? false : { opacity: 0, x: -12 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true, margin: "-6%" }} transition={{ duration: 0.6, delay: Math.min(i * 0.05, 0.4) }} className="relative">
                   <span className="absolute -left-8 top-0.5 flex h-[23px] w-[23px] items-center justify-center rounded-full border border-accent/50 bg-[#07130c] shadow-[0_0_16px_-2px_rgba(134,214,160,0.55)]"><span className="h-1.5 w-1.5 rounded-full bg-accent" /></span>
-                  <div className="text-[15px] leading-tight">{e.label}</div>
+                  <div className="text-[15px] leading-tight">{enumLabel("event", e.eventType)}</div>
                   <div className="mt-1 text-xs text-ink/45">{dateTime(e.eventTime)}{e.location ? ` · ${e.location}` : ""}</div>
-                  {e.detail && <div className="mt-0.5 text-xs text-ink/65">{e.detail}</div>}
+                  {e.detail && <div className="mt-0.5 text-xs text-ink/65">{traceDetail(e.eventType, e.detail, tr)}</div>}
                 </motion.li>
               ))}
             </ol>
