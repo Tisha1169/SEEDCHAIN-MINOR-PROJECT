@@ -12,7 +12,10 @@ import {
   type Role,
 } from "../src/domain/state-machine";
 import { assessRisk, levelForScore, type RiskInput } from "../src/domain/risk";
-import { buildTraceUrl, extractTokenFromPayload, formatLotCode, generatePublicToken, isWellFormedToken } from "../src/domain/qr";
+import { buildTraceUrl, districtCode, extractTokenFromPayload, formatLotCode, generatePublicToken, isWellFormedToken } from "../src/domain/qr";
+import { detectTravelAnomaly, haversineKm, isSessionBurst, roundCoord } from "../src/domain/anomaly";
+import { computeCompleteness } from "../src/domain/completeness";
+import { buildJourney } from "../src/domain/journey";
 import { toPublicTimeline } from "../src/domain/public-trace";
 import { normaliseMarketRecord, parseIndianDate, redactUrl, describeWeatherCode } from "../src/services/external/ingestion";
 
@@ -44,9 +47,11 @@ describe("QR identity", () => {
   });
 
   it("formats lot codes", () => {
-    expect(formatLotCode(2026, "Punjab", 1)).toBe("LOT-2026-PB-000001");
-    expect(formatLotCode(2026, "Uttar Pradesh", 42n)).toBe("LOT-2026-UP-000042");
-    expect(formatLotCode(2026, "Atlantis", 7)).toBe("LOT-2026-XX-000007");
+    expect(formatLotCode(2026, "Punjab", "Jalandhar", 123)).toBe("SC-PB-JAL-2026-000123");
+    expect(formatLotCode(2026, "Uttar Pradesh", "Agra", 42n)).toBe("SC-UP-AGR-2026-000042");
+    expect(formatLotCode(2026, "Atlantis", null, 7)).toBe("SC-XX-XXX-2026-000007");
+    expect(districtCode("S.A.S Nagar")).toBe("SAS");
+    expect(districtCode("Ro")).toBe("XXX");
   });
 });
 
@@ -209,5 +214,78 @@ describe("external data normalisation", () => {
     expect(describeWeatherCode(0)).toBe("Clear sky");
     expect(describeWeatherCode(63)).toBe("Rain");
     expect(describeWeatherCode(null)).toBeNull();
+  });
+});
+
+
+describe("QR anomaly signals", () => {
+  const t0 = new Date("2026-10-07T10:00:00Z");
+  const at = (min: number) => new Date(t0.getTime() + min * 60_000);
+  const jalandhar = { lat: 31.3, lon: 75.6 };
+  const mumbai = { lat: 19.1, lon: 72.9 };
+  const ludhiana = { lat: 30.9, lon: 75.9 };
+
+  it("computes great-circle distance", () => {
+    expect(Math.round(haversineKm(jalandhar, ludhiana))).toBeGreaterThan(40);
+    expect(Math.round(haversineKm(jalandhar, ludhiana))).toBeLessThan(60);
+    expect(haversineKm(jalandhar, mumbai)).toBeGreaterThan(1300);
+    expect(roundCoord(31.3456)).toBe(31.3);
+  });
+  it("flags physically impossible travel between scans of the same QR", () => {
+    const s = detectTravelAnomaly([{ at: t0, ...jalandhar }], { at: at(30), ...mumbai });
+    expect(s?.kind).toBe("IMPOSSIBLE_TRAVEL");
+    expect(s?.impliedSpeedKmh).toBeGreaterThan(900);
+  });
+  it("does not flag nearby scans, plausible travel, or old scans", () => {
+    expect(detectTravelAnomaly([{ at: t0, ...jalandhar }], { at: at(5), ...ludhiana })).toBeNull();
+    expect(detectTravelAnomaly([{ at: t0, ...jalandhar }], { at: at(60 * 20), ...mumbai })).toBeNull(); // 20 h: a flight is possible
+    expect(detectTravelAnomaly([{ at: t0, ...jalandhar }], { at: at(60 * 30), ...mumbai })).toBeNull(); // outside lookback
+  });
+  it("allows for the coarse-coordinate tolerance (no flag for ~30 km jitter)", () => {
+    expect(detectTravelAnomaly([{ at: t0, lat: 31.3, lon: 75.6 }], { at: at(1), lat: 31.5, lon: 75.7 })).toBeNull();
+  });
+  it("flags distant scans in a short time as a weaker signal", () => {
+    const delhi = { lat: 28.6, lon: 77.2 };
+    const s = detectTravelAnomaly([{ at: t0, ...jalandhar }], { at: at(90), ...delhi });
+    expect(s?.kind).toBe("DISTANT_SCANS");
+  });
+  it("detects session bursts", () => {
+    expect(isSessionBurst(14)).toBe(false);
+    expect(isSessionBurst(15)).toBe(true);
+  });
+});
+
+describe("traceability completeness", () => {
+  const base = { farmRecorded: true, farmerVerified: true, harvestRecorded: true, qualityRecorded: true, qrActive: true, inventoryTracked: true, hasOrder: false, customerConfirmed: false };
+  it("is 100% for an unsold lot with every base component (lifecycle steps do not apply yet)", () => {
+    const c = computeCompleteness(base);
+    expect(c.percent).toBe(100);
+    expect(c.missing).toEqual([]);
+    expect(c.components.find((x) => x.key === "ORDER")?.applicable).toBe(false);
+  });
+  it("explains what is missing and weights it", () => {
+    const c = computeCompleteness({ ...base, qualityRecorded: false, farmerVerified: false });
+    expect(c.missing).toEqual(["FARMER_VERIFIED", "QUALITY"]);
+    expect(c.percent).toBe(63); // base weights total 80; 50 of 80 recorded
+  });
+  it("counts the sale lifecycle once an order exists", () => {
+    expect(computeCompleteness({ ...base, hasOrder: true }).missing).toEqual(["CUSTOMER_CONFIRMATION"]);
+    expect(computeCompleteness({ ...base, hasOrder: true }).percent).toBe(90); // 90 of 100 once the sale lifecycle applies
+    expect(computeCompleteness({ ...base, hasOrder: true, customerConfirmed: true }).percent).toBe(100);
+  });
+  it("is 0 when nothing is recorded", () => {
+    expect(computeCompleteness({ ...base, farmRecorded: false, farmerVerified: false, harvestRecorded: false, qualityRecorded: false, qrActive: false, inventoryTracked: false }).percent).toBe(0);
+  });
+});
+
+describe("public journey", () => {
+  it("marks a step DONE only when its event exists and never invents the rest", () => {
+    const j = buildJourney([
+      { eventType: "LOT_CREATED", eventTime: new Date("2026-10-01T00:00:00Z") },
+      { eventType: "HARVEST_RECORDED", eventTime: new Date("2026-09-30T00:00:00Z") },
+      { eventType: "QR_GENERATED", eventTime: new Date("2026-10-01T00:00:01Z") },
+    ]);
+    expect(j.map((s) => `${s.key}:${s.state}`)).toEqual(["FARM:DONE", "HARVEST:DONE", "QUALITY:PENDING", "QR:DONE", "LISTING:PENDING", "ORDER:PENDING", "DISPATCH:PENDING", "CONFIRMATION:PENDING"]);
+    expect(j.find((s) => s.key === "QUALITY")?.at).toBeNull();
   });
 });

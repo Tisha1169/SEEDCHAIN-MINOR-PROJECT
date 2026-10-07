@@ -24,6 +24,8 @@ export interface ChangeNotice {
   lotId?: string;
   farmerId?: string;
   customerId?: string;
+  /** Delivered only to this user (notifications). */
+  userId?: string;
   /** If true, only admins receive it. */
   adminOnly?: boolean;
 }
@@ -45,6 +47,7 @@ let listener: PoolClient | null = null;
 let heartbeat: NodeJS.Timeout | null = null;
 
 function visibleTo(c: Client, n: ChangeNotice): boolean {
+  if (n.userId) return c.userId === n.userId;
   if (c.lotId) return n.lotId === c.lotId && !n.adminOnly;
   if (c.role === "admin") return true;
   if (n.adminOnly) return false;

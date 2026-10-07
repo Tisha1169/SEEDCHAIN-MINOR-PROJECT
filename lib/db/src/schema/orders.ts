@@ -112,11 +112,24 @@ export const orderFeedbackTable = pgTable(
     customerId: uuid("customer_id")
       .notNull()
       .references(() => usersTable.id),
+    /** Overall rating. */
     rating: integer("rating").notNull(),
+    freshnessRating: integer("freshness_rating"),
+    qualityRating: integer("quality_rating"),
     comment: text("comment"),
+    /** Denormalised for fast farmer ratings; always equals orders.farmer_id. */
+    farmerId: uuid("farmer_id").references(() => usersTable.id),
+    hiddenAt: timestamp("hidden_at", { withTimezone: true }),
+    hiddenBy: uuid("hidden_by").references(() => usersTable.id),
+    hiddenReason: text("hidden_reason"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [check("feedback_rating_range", sql`${t.rating} BETWEEN 1 AND 5`)],
+  (t) => [
+    check("feedback_rating_range", sql`${t.rating} BETWEEN 1 AND 5`),
+    check("feedback_freshness_range", sql`${t.freshnessRating} IS NULL OR ${t.freshnessRating} BETWEEN 1 AND 5`),
+    check("feedback_quality_range", sql`${t.qualityRating} IS NULL OR ${t.qualityRating} BETWEEN 1 AND 5`),
+    index("feedback_farmer_idx").on(t.farmerId),
+  ],
 );
 
 export type Order = typeof ordersTable.$inferSelect;

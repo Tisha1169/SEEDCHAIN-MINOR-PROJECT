@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { Navbar } from "@/components/layout/navbar";
+import { AuthShell } from "@/components/app/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Card, Field, inputCls, textareaCls } from "@/components/app/common";
 import { useAuth } from "@/hooks/use-auth";
@@ -14,9 +14,8 @@ export default function Register() {
   const [busy, setBusy] = useState(false);
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setF({ ...f, [k]: e.target.value });
   return (
-    <div className="min-h-screen pb-16">
-      <Navbar />
-      <div className="relative z-[2] mx-auto max-w-lg px-4 pt-32">
+    <AuthShell>
+      <div>
         <Card className="p-7 sm:p-9">
           <div className="eyebrow mb-3">Join SeedChain</div>
           <h1 className="text-4xl font-extralight tracking-tight">Create your account</h1>
@@ -65,11 +64,11 @@ export default function Register() {
               <Field label="City / area (optional)"><input className={inputCls} value={f.location} onChange={set("location")} /></Field>
             )}
             {error && <div className="rounded-xl bg-rose-400/10 p-3 text-sm text-rose-300" role="alert">{error}</div>}
-            <Button disabled={busy} className="h-11 w-full rounded-2xl bg-glass-2 text-neutral-950 hover:bg-white/85">{busy ? "Creating…" : "Create account"}</Button>
+            <Button disabled={busy} className="h-11 w-full rounded-2xl">{busy ? "Creating…" : "Create account"}</Button>
           </form>
           <p className="mt-5 text-center text-sm text-ink/55">Already registered? <Link href="/login" className="font-medium text-accent">Sign in</Link></p>
         </Card>
       </div>
-    </div>
+    </AuthShell>
   );
 }

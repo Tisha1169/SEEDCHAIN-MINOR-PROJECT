@@ -159,7 +159,7 @@ export default function ScanPage() {
                   {state.title.includes("permission") || state.title.includes("camera") || state.title.includes("Camera") ? <CameraOff className="mx-auto mb-3 h-10 w-10 text-amber-500" /> : state.title.includes("Cannot reach") ? <AlertTriangle className="mx-auto mb-3 h-10 w-10 text-amber-500" /> : <ShieldAlert className="mx-auto mb-3 h-10 w-10 text-rose-500" />}
                   <div className="text-lg font-medium">{state.title}</div>
                   <p className="mt-1 text-sm text-ink/60">{state.detail}</p>
-                  <Button onClick={() => (state.retryToken ? void resolve(state.retryToken, "in_app_scanner") : void start())} className="mt-4 rounded-full bg-glass-2 text-neutral-950">
+                  <Button onClick={() => (state.retryToken ? void resolve(state.retryToken, "in_app_scanner") : void start())} className="mt-4 rounded-full">
                     <RefreshCw className="mr-2 h-4 w-4" />{state.retryToken ? "Retry" : "Scan again"}
                   </Button>
                 </>

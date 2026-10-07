@@ -8,12 +8,13 @@ import { pgTable, uuid, text, timestamp, pgEnum, index, numeric } from "drizzle-
 export const userRoleEnum = pgEnum("user_role", ["admin", "farmer", "customer"]);
 
 /**
- * pending   – farmer registered, waiting for admin approval
+ * pending   – farmer registered (or resubmitted), waiting for admin approval
+ * correction_required – admin asked the farmer to fix details and resubmit
  * active    – may use the platform
  * rejected  – farmer application rejected by admin
  * suspended – disabled by admin
  */
-export const userStatusEnum = pgEnum("user_status", ["pending", "active", "rejected", "suspended"]);
+export const userStatusEnum = pgEnum("user_status", ["pending", "correction_required", "active", "rejected", "suspended"]);
 
 export const usersTable = pgTable(
   "users",
@@ -45,6 +46,8 @@ export const farmerProfilesTable = pgTable("farmer_profiles", {
   verifiedAt: timestamp("verified_at", { withTimezone: true }),
   verifiedBy: uuid("verified_by").references(() => usersTable.id),
   reviewNote: text("review_note"),
+  /** Last time the farmer submitted (or resubmitted) the application for review. */
+  submittedAt: timestamp("submitted_at", { withTimezone: true }).defaultNow().notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });

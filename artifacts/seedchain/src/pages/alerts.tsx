@@ -28,7 +28,7 @@ export default function AlertsPage() {
           <Card key={a.id} className="p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div><div className="mb-1 flex items-center gap-2"><Pill className={SEV[a.severity]}>{a.severity}</Pill><span className="text-sm font-medium">{titleCase(a.type)}</span>{a.resolvedAt && <Pill className="bg-emerald-400/15 text-emerald-300">Resolved</Pill>}</div><p className="text-sm">{a.message}</p><div className="mt-1 text-xs text-ink/45">{dateTime(a.createdAt)}{a.acknowledgedAt && ` · acknowledged ${dateTime(a.acknowledgedAt)}`}{a.entityType === "lot" && a.entityId && <> · <Link href={`/${user?.role}/lots/${a.entityId}`} className="text-accent">open lot</Link></>}{a.entityType === "order" && a.entityId && <> · <Link href={`/${user?.role}/orders/${a.entityId}`} className="text-accent">open order</Link></>}</div></div>
-              <div className="flex gap-2">{!a.acknowledgedAt && <Button size="sm" variant="outline" className="rounded-full" onClick={() => void act(a.id, "acknowledge")}>Acknowledge</Button>}{user?.role === "admin" && !a.resolvedAt && <Button size="sm" className="rounded-full bg-glass-2 text-neutral-950" onClick={() => void act(a.id, "resolve")}>Resolve</Button>}</div>
+              <div className="flex gap-2">{!a.acknowledgedAt && <Button size="sm" variant="outline" className="rounded-full" onClick={() => void act(a.id, "acknowledge")}>Acknowledge</Button>}{user?.role === "admin" && !a.resolvedAt && <Button size="sm" className="rounded-full" onClick={() => void act(a.id, "resolve")}>Resolve</Button>}</div>
             </div>
           </Card>))}</div>
       )}

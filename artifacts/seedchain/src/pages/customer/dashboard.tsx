@@ -12,7 +12,7 @@ export default function CustomerDashboard() {
   const d = q.data;
   return (
     <>
-      <PageHeader title="Your dashboard" actions={<><Link href="/scan"><Button className="rounded-full bg-glass-2 text-neutral-950"><ScanLine className="mr-2 h-4 w-4" />Scan a QR</Button></Link><Link href="/marketplace"><Button variant="outline" className="rounded-full"><ShoppingBag className="mr-2 h-4 w-4" />Browse produce</Button></Link></>} />
+      <PageHeader title="Your dashboard" actions={<><Link href="/scan"><Button className="rounded-full"><ScanLine className="mr-2 h-4 w-4" />Scan a QR</Button></Link><Link href="/marketplace"><Button variant="outline" className="rounded-full"><ShoppingBag className="mr-2 h-4 w-4" />Browse produce</Button></Link></>} />
       <div className="mb-6 grid gap-4 sm:grid-cols-3"><Stat label="Active orders" value={d.activeOrders} /><Stat label="Completed orders" value={d.completedOrders} /><Stat label="Total spent" value={inr(d.totalSpent)} hint="Confirmed orders only" /></div>
       <div className="grid gap-5 lg:grid-cols-2">
         <div><h3 className="mb-3 eyebrow !text-ink/75">Recent orders</h3>

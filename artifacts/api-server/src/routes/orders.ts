@@ -10,7 +10,8 @@ import {
 import { requireAuth, requireRole } from "../lib/auth";
 import { badRequest } from "../lib/errors";
 import { actorOf, parse, withIdempotency } from "../lib/http";
-import { createOrder, getOrder, listOrders, submitFeedback, transitionOrder } from "../services/orders";
+import { createOrder, getOrder, listOrders, transitionOrder } from "../services/orders";
+import { submitReview } from "../services/reviews";
 import { reportOfflineConflict } from "./lots";
 
 const router = Router();
@@ -36,7 +37,7 @@ router.get("/orders/:id", requireAuth, async (req, res) => {
 router.post("/orders/:id/feedback", requireRole(["customer"]), async (req, res) => {
   const { id } = parse(GetOrderParams, req.params);
   const body = parse(SubmitOrderFeedbackBody, req.body);
-  res.status(201).json(await submitFeedback(actorOf(req), id, body.rating, body.comment));
+  res.status(201).json(await submitReview(actorOf(req), id, body));
 });
 
 router.post("/orders/:id/:action", requireRole(["farmer", "customer", "admin"]), async (req, res) => {

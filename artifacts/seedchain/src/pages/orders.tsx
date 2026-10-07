@@ -27,7 +27,7 @@ export function OrdersList({ base }: { base: "farmer" | "customer" | "admin" }) 
       <PageHeader title={base === "customer" ? "My orders" : base === "farmer" ? "Customer orders" : "All orders"} subtitle="Statuses update live as the farmer progresses each order."
         actions={<select className="h-10 rounded-full border bg-glass-2 px-4 text-sm" value={status} onChange={(e) => setStatus(e.target.value)} aria-label="Filter by status"><option value="">All statuses</option>{["PENDING", "ACCEPTED", "PREPARING", "READY", "DISPATCHED", "DELIVERED", "CUSTOMER_CONFIRMED", "REJECTED", "CANCELLED"].map((s) => <option key={s} value={s}>{titleCase(s)}</option>)}</select>} />
       {q.isLoading ? <Loading /> : q.error ? <ErrorState error={q.error} onRetry={() => void q.refetch()} /> : !q.data?.length ? (
-        <Empty title="No orders yet" hint={user?.role === "customer" ? "Browse produce and order directly from a farmer." : "Orders from customers appear here instantly."} action={user?.role === "customer" ? <Link href="/marketplace"><Button className="rounded-full bg-glass-2 text-neutral-950">Browse produce</Button></Link> : undefined} />
+        <Empty title="No orders yet" hint={user?.role === "customer" ? "Browse produce and order directly from a farmer." : "Orders from customers appear here instantly."} action={user?.role === "customer" ? <Link href="/marketplace"><Button className="rounded-full">Browse produce</Button></Link> : undefined} />
       ) : (
         <Table head={["Order", base === "customer" ? "Farmer" : "Customer", "Items", "Total", "Fulfilment", "Status", "Placed", ""]}>
           {q.data.map((o) => (
@@ -58,7 +58,7 @@ function FeedbackForm({ order }: { order: Order }) {
       <h3 className="mb-3 eyebrow !text-ink/75">How was it?</h3>
       <div className="mb-3 flex gap-1">{[1, 2, 3, 4, 5].map((n) => <button key={n} type="button" onClick={() => setRating(n)} className={`text-2xl ${n <= rating ? "text-amber-400" : "text-zinc-300"}`} aria-label={`${n} stars`}>★</button>)}</div>
       <textarea className={textareaCls} rows={2} placeholder="Optional comment" value={comment} onChange={(e) => setComment(e.target.value)} />
-      <Button className="mt-3 rounded-full bg-glass-2 text-neutral-950" onClick={async () => {
+      <Button className="mt-3 rounded-full" onClick={async () => {
         try {
           await apiRequest({ url: `/api/orders/${order.id}/feedback`, method: "POST", body: { rating, ...(comment && { comment }) } });
           toast({ title: "Thanks for your feedback" });

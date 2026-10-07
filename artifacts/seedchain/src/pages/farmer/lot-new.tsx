@@ -28,7 +28,7 @@ export default function LotNew() {
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => setF({ ...f, [k]: e.target.type === "checkbox" ? (e.target as HTMLInputElement).checked : e.target.value });
 
   if (farms.isLoading || products.isLoading) return <Loading />;
-  if (!farms.data?.length) return <Card className="p-8 text-center"><p className="mb-3">Add a farm first.</p><Link href="/farmer/farms"><Button className="rounded-full bg-glass-2 text-neutral-950">Add farm</Button></Link></Card>;
+  if (!farms.data?.length) return <Card className="p-8 text-center"><p className="mb-3">Add a farm first.</p><Link href="/farmer/farms"><Button className="rounded-full">Add farm</Button></Link></Card>;
 
   if (created) {
     const qr = created.activeQr;
@@ -40,7 +40,7 @@ export default function LotNew() {
           <p className="mb-5 text-sm text-ink/55">Its public trace page is already live. Print this label and attach it to the produce.</p>
           {qr ? <QrLabel traceUrl={qr.traceUrl} lotCode={created.lotCode} productName={created.productName} variety={created.variety} origin={created.origin} /> : <p className="text-sm text-rose-300">No active QR found. Open the lot to generate one.</p>}
           <div className="mt-6 flex flex-wrap justify-center gap-2">
-            <Link href={`/farmer/lots/${created.id}`}><Button className="rounded-full bg-glass-2 text-neutral-950">Open lot</Button></Link>
+            <Link href={`/farmer/lots/${created.id}`}><Button className="rounded-full">Open lot</Button></Link>
             {qr && <Link href={`/trace/${qr.publicToken}`}><Button variant="outline" className="rounded-full">Preview public page</Button></Link>}
             <Button variant="outline" className="rounded-full" onClick={() => { setCreated(null); setId(uuid()); }}>Create another</Button>
           </div>

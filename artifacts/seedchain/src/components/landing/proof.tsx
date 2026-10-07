@@ -15,7 +15,7 @@ export function FarmerPassport({ data }: LandingProps) {
     <Section id="farmers">
       <div className="grid items-center gap-14 lg:grid-cols-[1.05fr_1fr] lg:gap-24">
         <Reveal y={50}>
-          <Frame src="/media/farmer.webp" alt="A SeedChain farmer in the field" art={<FieldScene />} ratio="aspect-[4/5] sm:aspect-[5/4]">
+          <Frame src="/media/farmer.webp" alt="Potatoes in the field above a sunrise valley" art={<FieldScene />} ratio="aspect-[4/5] sm:aspect-[5/4]" position="38% 50%">
             <div className="absolute inset-x-4 bottom-4 z-10 sm:inset-x-8 sm:bottom-8">
               <GlassCard strong className="p-5 sm:p-7" lift={false}>
                 <div className="flex items-center gap-4">
@@ -121,7 +121,7 @@ export function CustomerExperience({ data }: LandingProps) {
       <div className="grid gap-5 lg:grid-cols-2">
         <Reveal>
           <GlassCard strong className="overflow-hidden !rounded-[32px]">
-            <div className="relative aspect-[16/10]"><ProduceTile name={f?.productName ?? "Potato"} className="absolute inset-0" />
+            <div className="relative aspect-[16/10]"><ProduceTile name={f?.productName ?? "Potato"} seed={f?.lotCode} className="absolute inset-0" />
               {f && <div className="absolute left-4 top-4 rounded-full glass-strong px-3 py-1.5 text-[10px] tracking-[0.2em]">{f.verified ? "VERIFIED FARMER" : "REGISTERED"}</div>}
             </div>
             <div className="p-6 sm:p-8">
@@ -162,7 +162,7 @@ export function Closing() {
     <>
       <section className="px-3 pb-6 pt-10 sm:px-6">
         <Reveal y={50}>
-          <Frame src="/media/field.webp" art={<FieldScene />} ratio="aspect-[4/5] sm:aspect-[16/8]" className="mx-auto max-w-[1320px] !rounded-[36px] sm:!rounded-[48px]">
+          <Frame src="/media/farmer.webp" art={<FieldScene />} ratio="aspect-[4/5] sm:aspect-[16/8]" scrim position="30% 60%" className="mx-auto max-w-[1320px] !rounded-[36px] sm:!rounded-[48px]">
             <div className="absolute inset-0 z-10 flex flex-col items-center justify-center px-6 text-center">
               <Display lines={["Know what", "you eat."]} className="text-[clamp(3rem,9vw,8rem)]" />
               <Reveal delay={0.3} className="mt-10 flex flex-wrap justify-center gap-3">

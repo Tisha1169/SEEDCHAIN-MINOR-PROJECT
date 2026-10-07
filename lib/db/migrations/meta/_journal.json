@@ -22,6 +22,13 @@
       "when": 1791379422791,
       "tag": "0002_event_recorded_clock",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791386067044,
+      "tag": "0003_pilot_upgrade",
+      "breakpoints": true
     }
   ]
 }

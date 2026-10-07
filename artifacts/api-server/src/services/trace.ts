@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, ilike, or, sql, gt } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, or, sql, gt } from "drizzle-orm";
 import {
   db,
   farmerProfilesTable,
@@ -13,7 +13,12 @@ import {
   type User,
 } from "@workspace/db";
 import { HttpError, notFound } from "../lib/errors";
+import { buildJourney } from "../domain/journey";
+import { loadCompleteness, loadFarmerRatings, noRating } from "./lot-insights";
+import { detectAnomalies } from "./qr-ops";
+import { lotRecallsTable, lotQualityRecordsTable } from "@workspace/db";
 import { isWellFormedToken } from "../domain/qr";
+import { roundCoord } from "../domain/anomaly";
 import { toPublicTimeline } from "../domain/public-trace";
 import { availableOf } from "../domain/state-machine";
 import { counters } from "./lots";
@@ -33,7 +38,9 @@ export async function getPublicTrace(token: string) {
       410,
       qr.status === "REVOKED"
         ? "This QR label has been revoked. Do not rely on it; contact the seller."
-        : "This QR label has been replaced by a newer label. Scan the current label on the produce.",
+        : qr.status === "DISABLED"
+          ? "This QR label is temporarily disabled while SeedChain reviews it. Do not rely on it until it is re-enabled."
+          : "This QR label has been replaced by a newer label. Scan the current label on the produce.",
       qr.status,
       { status: qr.status },
     );
@@ -70,7 +77,19 @@ export async function getPublicTrace(token: string) {
   const c = counters(row.lot);
   const lastEventAt = events.reduce((m, e) => (e.recordedAt > m ? e.recordedAt : m), row.lot.updatedAt);
   const verified = row.userStatus === "active" && !!row.profile?.verifiedAt;
+  const completeness = (await loadCompleteness([row.lot.id])).get(row.lot.id)!;
+  const rating = (await loadFarmerRatings([row.lot.farmerId])).get(row.lot.farmerId) ?? noRating;
+  const [quality] = await db.select().from(lotQualityRecordsTable).where(eq(lotQualityRecordsTable.lotId, row.lot.id)).orderBy(desc(lotQualityRecordsTable.inspectionDate), desc(lotQualityRecordsTable.createdAt)).limit(1);
+  const [recall] = row.lot.recalled ? await db.select().from(lotRecallsTable).where(and(eq(lotRecallsTable.lotId, row.lot.id), eq(lotRecallsTable.status, "ACTIVE"))) : [];
   return {
+    recalled: row.lot.recalled,
+    recall: recall ? { message: recall.publicMessage, since: recall.initiatedAt.toISOString() } : null,
+    journey: buildJourney(events.filter((e) => e.isPublic).map((e) => ({ eventType: e.eventType, eventTime: e.eventTime }))),
+    completeness: { percent: completeness.percent, missing: completeness.missing, components: completeness.components.map((x) => ({ key: x.key, weight: x.weight, applicable: x.applicable, done: x.done })), note: "How complete the digital traceability record is. Not a food-safety score." },
+    farmerRating: { average: rating.average, count: rating.count },
+    qualityRecord: quality
+      ? { grade: quality.grade, appearance: quality.appearance, sizeCategory: quality.sizeCategory, defects: quality.defects, inspectionDate: quality.inspectionDate, notes: quality.notes, recordedBy: quality.recordedBy }
+      : null,
     verification: verified ? "VERIFIED" : "UNVERIFIED_FARMER",
     lotCode: row.lot.lotCode,
     lotId: row.lot.id,
@@ -88,7 +107,7 @@ export async function getPublicTrace(token: string) {
     origin: row.lot.origin,
     harvestDate: row.lot.harvestDate,
     harvestedQuantity: c.harvested > 0 ? c.harvested : null,
-    availableQuantity: row.lot.listed ? availableOf(c) : null,
+    availableQuantity: row.lot.listed && !row.lot.recalled ? availableOf(c) : null,
     qualityGrade: row.lot.qualityGrade,
     qualityNotes: row.lot.qualityNotes,
     storage: storage
@@ -101,7 +120,7 @@ export async function getPublicTrace(token: string) {
         }
       : null,
     status: row.lot.status,
-    listed: row.lot.listed,
+    listed: row.lot.listed && !row.lot.recalled,
     publicNotes: row.lot.publicNotes,
     timeline: toPublicTimeline(
       events.map((e) => ({
@@ -126,11 +145,12 @@ export interface ScanInput {
   scanSource: "in_app_scanner" | "camera_link" | "manual_entry";
   clientEventId: string;
   deviceType?: "mobile" | "tablet" | "desktop" | "unknown";
+  /** Random per-browser id (not a fingerprint). */
+  sessionId?: string;
+  /** Optional, explicitly shared by the scanner; stored rounded to 0.1° (~11 km). */
+  approxLat?: number;
+  approxLon?: number;
 }
-
-/** Thresholds for the duplicate-scan heuristic (possible label copying). */
-const BURST_WINDOW_MS = 10 * 60_000;
-const BURST_LIMIT = 50;
 
 export async function recordScan(input: ScanInput, user: User | undefined) {
   const [prior] = await db.select().from(qrScanEventsTable).where(eq(qrScanEventsTable.clientEventId, input.clientEventId));
@@ -173,8 +193,10 @@ export async function recordScan(input: ScanInput, user: User | undefined) {
   }
 
   const [lot] = await db.select().from(lotsTable).where(eq(lotsTable.id, qr.lotId));
-  const result = qr.status === "ACTIVE" ? "OK" : qr.status === "REVOKED" ? "REVOKED" : "REPLACED";
+  const result = qr.status === "ACTIVE" ? "OK" : qr.status === "REVOKED" ? "REVOKED" : qr.status === "DISABLED" ? "DISABLED" : "REPLACED";
   let duplicate = false;
+  const lat = input.approxLat != null && input.approxLon != null ? roundCoord(input.approxLat) : null;
+  const lon = input.approxLat != null && input.approxLon != null ? roundCoord(input.approxLon!) : null;
 
   await db.transaction(async (tx) => {
     if (user && result === "OK") {
@@ -185,15 +207,21 @@ export async function recordScan(input: ScanInput, user: User | undefined) {
         .limit(1);
       duplicate = !!recent;
     }
-    await tx.insert(qrScanEventsTable).values({
-      lotId: lot.id,
-      qrId: qr.id,
-      scanSource: input.scanSource,
-      result,
-      userId: user?.id ?? null,
-      deviceType: input.deviceType ?? null,
-      clientEventId: input.clientEventId,
-    });
+    const [scanRow] = await tx
+      .insert(qrScanEventsTable)
+      .values({
+        lotId: lot.id,
+        qrId: qr.id,
+        scanSource: input.scanSource,
+        result,
+        userId: user?.id ?? null,
+        deviceType: input.deviceType ?? null,
+        clientEventId: input.clientEventId,
+        sessionId: input.sessionId ?? null,
+        approxLat: lat,
+        approxLon: lon,
+      })
+      .returning();
 
     if (result === "OK") {
       const [{ n }] = await tx
@@ -207,25 +235,11 @@ export async function recordScan(input: ScanInput, user: User | undefined) {
           { lotId: lot.id, eventType: "QR_SCANNED", reason: "First verified scan of this QR", metadata: { qrVersion: qr.version } },
         );
       }
-      const [{ burst }] = await tx
-        .select({ burst: sql<number>`count(*)::int` })
-        .from(qrScanEventsTable)
-        .where(and(eq(qrScanEventsTable.lotId, lot.id), gte(qrScanEventsTable.scannedAt, new Date(Date.now() - BURST_WINDOW_MS))));
-      if (burst > BURST_LIMIT) {
-        await raiseAlert(tx, {
-          type: "DUPLICATE_SCAN",
-          severity: "MEDIUM",
-          message: `${lot.lotCode} was scanned ${burst} times in 10 minutes (possible copied label)`,
-          entityType: "lot",
-          entityId: lot.id,
-          farmerId: lot.farmerId,
-          dedupeKey: `DUPLICATE_SCAN:${lot.id}:${hour}`,
-        });
-      }
+      await detectAnomalies(tx, qr, lot, { scanId: scanRow.id, at: scanRow.scannedAt, sessionId: input.sessionId, lat, lon });
     } else {
       await raiseAlert(tx, {
         type: "REVOKED_QR",
-        severity: result === "REVOKED" ? "HIGH" : "LOW",
+        severity: result === "REVOKED" || result === "DISABLED" ? "HIGH" : "LOW",
         message: `A ${result.toLowerCase()} QR (v${qr.version}) of ${lot.lotCode} was scanned`,
         entityType: "lot",
         entityId: lot.id,
@@ -310,7 +324,7 @@ function serializeListing(r: ListingRow) {
 }
 
 /** Only listed lots with stock, from active (admin-approved) farmers. */
-const sellable = () => and(eq(lotsTable.listed, true), sql`${lotsTable.availableQty} > 0`, eq(usersTable.status, "active"));
+const sellable = () => and(eq(lotsTable.listed, true), eq(lotsTable.recalled, false), sql`${lotsTable.availableQty} > 0`, eq(usersTable.status, "active"));
 
 export async function listMarketplace(q?: string, state?: string) {
   const conds = [sellable()];
@@ -324,7 +338,7 @@ export async function listMarketplace(q?: string, state?: string) {
 }
 
 export async function getListing(lotId: string) {
-  const [row] = await listingQuery().where(and(eq(lotsTable.id, lotId), eq(lotsTable.listed, true), eq(usersTable.status, "active")));
+  const [row] = await listingQuery().where(and(eq(lotsTable.id, lotId), eq(lotsTable.listed, true), eq(lotsTable.recalled, false), eq(usersTable.status, "active")));
   if (!row) throw notFound("Listing not found");
   return serializeListing(row);
 }

@@ -14,7 +14,7 @@ export function Timeline({ items }: { items: TimelineItem[] }) {
     <ol className="relative space-y-4 border-l-2 border-accent/25 pl-6">
       {items.map((e) => (
         <li key={e.key} className="relative">
-          <CheckCircle2 className="absolute -left-[34px] top-0.5 h-5 w-5 rounded-full bg-glass-2 text-accent" />
+          <CheckCircle2 className="absolute -left-[34px] top-0.5 h-5 w-5 rounded-full bg-[#07130c] text-accent" />
           <div className="text-sm font-medium text-ink">{e.label}</div>
           <div className="text-xs text-ink/50">
             {dateTime(e.time)}

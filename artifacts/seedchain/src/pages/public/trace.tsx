@@ -74,7 +74,7 @@ export default function TracePage() {
             <ShieldAlert className="mx-auto mb-3 h-12 w-12 text-rose-500" />
             <h1 className="text-xl font-medium">Not a recognised SeedChain QR</h1>
             <p className="mt-2 text-sm text-ink/60">This code does not match any lot in our records. Do not rely on the label. It may be damaged or counterfeit.</p>
-            <Link href="/scan"><Button className="mt-5 rounded-full bg-glass-2 text-neutral-950">Scan another QR</Button></Link>
+            <Link href="/scan"><Button className="mt-5 rounded-full">Scan another QR</Button></Link>
           </Card>
         </Shell>
       );
@@ -129,7 +129,7 @@ export default function TracePage() {
         <Reveal blur={false} delay={0.05}>
           <div className="glass overflow-hidden rounded-[28px]">
             <div className="relative aspect-[16/9]">
-              <ProduceTile name={t.productName} className="absolute inset-0" />
+              <ProduceTile name={t.productName} seed={t.lotCode} className="absolute inset-0" />
               <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-5">
                 <div><h1 className="text-4xl font-extralight tracking-tight">{t.productName}</h1><div className="text-ink/65">{t.variety}</div></div>
                 <LotStatusPill status={t.status} />

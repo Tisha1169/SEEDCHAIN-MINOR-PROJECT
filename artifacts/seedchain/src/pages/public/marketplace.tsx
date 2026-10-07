@@ -5,7 +5,7 @@ import { useGetListing, useGetPublicFarmer, useListMarketplace, type Fulfillment
 import { BadgeCheck, MapPin, QrCode, Search, Sprout } from "lucide-react";
 import { Navbar } from "@/components/layout/navbar";
 import { Button } from "@/components/ui/button";
-import { ProduceTile } from "@/components/art";
+import { FieldScene, Frame, ProduceTile } from "@/components/art";
 import { GlassCard } from "@/components/motion";
 import { Card, Empty, ErrorState, Field, inputCls, Kv, Loading, textareaCls } from "@/components/app/common";
 import { useAuth } from "@/hooks/use-auth";
@@ -18,7 +18,7 @@ function ListingCard({ l }: { l: Listing }) {
     <Link href={`/marketplace/${l.lotId}`} className="group block h-full">
       <GlassCard className="flex h-full flex-col overflow-hidden !rounded-[28px]">
         <div className="relative aspect-[16/10] overflow-hidden">
-          <ProduceTile name={l.productName} className="absolute inset-0 transition-transform duration-[1200ms] ease-out group-hover:scale-[1.06]" />
+          <ProduceTile name={l.productName} seed={l.lotCode} className="absolute inset-0 transition-transform duration-[1200ms] ease-out group-hover:scale-[1.06]" />
           <div className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full glass-strong px-3 py-1.5 text-[10px] tracking-[0.18em]">{l.farmer.verified ? <><BadgeCheck className="h-3.5 w-3.5 text-accent" />VERIFIED FARMER</> : "REGISTERED"}</div>
           <div className="absolute bottom-3 right-4 text-right"><div className="text-2xl font-extralight">{inr(l.pricePerUnit)}</div><div className="text-[10px] tracking-[0.18em] text-ink/55">PER {l.unit.toUpperCase()}</div></div>
         </div>
@@ -106,6 +106,12 @@ export function ListingPage() {
 
   return (
     <Wrap>
+      <Frame ratio="aspect-[16/7] sm:aspect-[21/7]" className="mb-5 !rounded-[28px]" art={<ProduceTile name={l.productName} seed={l.lotCode} className="h-full w-full" />}>
+        <div className="absolute bottom-4 left-5 right-5 z-10 flex items-end justify-between gap-3">
+          <div className="eyebrow !text-ink/70">{l.origin}</div>
+          <div className="glass-strong rounded-full px-3.5 py-1.5 text-[11px] tracking-[0.18em]">{l.lotCode}</div>
+        </div>
+      </Frame>
       <div className="grid gap-5 md:grid-cols-5">
         <Card className="p-6 md:col-span-3">
           <div className="text-4xl font-extralight tracking-tight">{l.productName} <span className="text-ink/50">· {l.variety}</span></div>
@@ -125,7 +131,7 @@ export function ListingPage() {
         <Card className="p-6 md:col-span-2">
           <h2 className="eyebrow mb-5">Order from the farmer</h2>
           {!user ? (
-            <div className="space-y-3 text-sm"><p>Sign in as a customer to order.</p><Link href="/login"><Button className="w-full rounded-2xl bg-glass-2 text-neutral-950">Sign in</Button></Link><Link href="/register"><Button variant="outline" className="w-full rounded-2xl">Create account</Button></Link></div>
+            <div className="space-y-3 text-sm"><p>Sign in as a customer to order.</p><Link href="/login"><Button className="w-full rounded-2xl">Sign in</Button></Link><Link href="/register"><Button variant="outline" className="w-full rounded-2xl">Create account</Button></Link></div>
           ) : user.role !== "customer" ? (
             <p className="text-sm text-ink/60">Only customer accounts can place orders. You are signed in as a {user.role}.</p>
           ) : (
@@ -139,7 +145,7 @@ export function ListingPage() {
               {method !== "CUSTOMER_PICKUP" && <Field label="Delivery address"><textarea className={textareaCls} rows={2} required value={address} onChange={(e) => setAddress(e.target.value)} /></Field>}
               <Field label="Note for the farmer (optional)"><input className={inputCls} value={notes} onChange={(e) => setNotes(e.target.value)} /></Field>
               <div className="flex justify-between border-t pt-3 text-sm"><span>Total</span><b>{inr(total)}</b></div>
-              <Button disabled={busy || !(n > 0)} className="h-11 w-full rounded-2xl bg-glass-2 text-neutral-950 hover:bg-white/85">{busy ? "Placing order…" : "Place order"}</Button>
+              <Button disabled={busy || !(n > 0)} className="h-11 w-full rounded-2xl">{busy ? "Placing order…" : "Place order"}</Button>
               <p className="text-[11px] text-ink/45">Stock is reserved for you immediately. The farmer then accepts or declines.</p>
             </form>
           )}
@@ -160,6 +166,7 @@ export function FarmerPublicPage() {
     <Wrap>
       {q.isLoading ? <Loading /> : q.error || !q.data ? <ErrorState error={q.error} onRetry={() => void q.refetch()} /> : (
         <>
+          <Frame src="/media/farmer.webp" alt="Farmland at sunrise" art={<FieldScene />} ratio="aspect-[16/6] sm:aspect-[21/6]" position="40% 55%" className="mb-5 !rounded-[28px]" />
           <Card className="mb-6 p-6">
             <h1 className="flex items-center gap-2 text-4xl font-extralight tracking-tight">{q.data.publicName}{q.data.verified && <BadgeCheck className="h-6 w-6 text-accent" />}</h1>
             <div className="mt-1 text-sm text-ink/55">{[q.data.village, q.data.district, q.data.state].filter(Boolean).join(", ")} · member since {dateOnly(q.data.memberSince)}</div>

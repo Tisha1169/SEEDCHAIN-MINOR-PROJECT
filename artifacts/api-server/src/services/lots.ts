@@ -4,6 +4,8 @@ import {
   farmsTable,
   lotsTable,
   lotStorageRecordsTable,
+  lotQualityRecordsTable,
+  qrScanEventsTable,
   marketPriceObservationsTable,
   orderItemsTable,
   ordersTable,
@@ -34,6 +36,8 @@ import { assessRisk, type RiskResult } from "../domain/risk";
 import { buildTraceUrl, formatLotCode, generatePublicToken } from "../domain/qr";
 import { appendEvent, audit, raiseAlert, resolveAlertsByKey, type Actor } from "./records";
 import { notifyChange } from "./realtime";
+import { notify } from "./notifications";
+import { loadCompleteness } from "./lot-insights";
 
 // ------------------------------------------------------------------ helpers
 
@@ -144,6 +148,7 @@ function summary(r: LotRow, qr: QrCode | undefined) {
     farmerName: r.farmerName,
     status: r.lot.status,
     listed: r.lot.listed,
+    recalled: r.lot.recalled,
     pricePerUnit: r.lot.pricePerUnit == null ? null : Number(r.lot.pricePerUnit),
     qualityGrade: r.lot.qualityGrade,
     harvestDate: r.lot.harvestDate,
@@ -306,8 +311,19 @@ async function lotDetail(tx: DbOrTx, row: LotRow) {
     .orderBy(desc(lotStorageRecordsTable.storageStart))
     .limit(1);
   const s = summary(row, qrs.get(row.lot.id));
+  const completeness = (await loadCompleteness([row.lot.id], tx)).get(row.lot.id)!;
+  const [quality] = await tx.select().from(lotQualityRecordsTable).where(eq(lotQualityRecordsTable.lotId, row.lot.id)).orderBy(desc(lotQualityRecordsTable.inspectionDate), desc(lotQualityRecordsTable.createdAt)).limit(1);
+  const [scan] = await tx
+    .select({ total: sql<number>`count(*) FILTER (WHERE ${qrScanEventsTable.result} = 'OK')::int`, unique: sql<number>`count(DISTINCT coalesce(${qrScanEventsTable.sessionId}, ${qrScanEventsTable.userId}::text, ${qrScanEventsTable.id}::text)) FILTER (WHERE ${qrScanEventsTable.result} = 'OK')::int` })
+    .from(qrScanEventsTable)
+    .where(eq(qrScanEventsTable.lotId, row.lot.id));
   return {
     ...s,
+    completeness: { percent: completeness.percent, missing: completeness.missing, components: completeness.components },
+    latestQuality: quality
+      ? { grade: quality.grade, appearance: quality.appearance, sizeCategory: quality.sizeCategory, defects: quality.defects, inspectionDate: quality.inspectionDate, notes: quality.notes, recordedBy: quality.recordedBy }
+      : null,
+    scanStats: { verifiedScans: scan?.total ?? 0, uniqueScanners: scan?.unique ?? 0 },
     plantingDate: row.lot.plantingDate,
     expectedHarvestDate: row.lot.expectedHarvestDate,
     qualityNotes: row.lot.qualityNotes,
@@ -485,7 +501,7 @@ export async function createLot(actor: Actor & { user: User }, input: CreateLotI
     const [product] = await tx.select().from(productsTable).where(eq(productsTable.id, productId));
 
     const seq = (await tx.execute(sql`SELECT nextval(${lotCodeSeq.seqName}) AS n`)).rows[0].n as string;
-    const lotCode = formatLotCode(new Date().getUTCFullYear(), farm.state, BigInt(seq));
+    const lotCode = formatLotCode(new Date().getUTCFullYear(), farm.state, farm.district, BigInt(seq));
     const [lot] = await tx
       .insert(lotsTable)
       .values({
@@ -539,12 +555,13 @@ export async function createLot(actor: Actor & { user: User }, input: CreateLotI
         metadata: { unit: current.unit },
       });
       if (input.qualityGrade) {
+        await tx.insert(lotQualityRecordsTable).values({ lotId: lot.id, farmerId: farmer.id, grade: input.qualityGrade, inspectionDate: input.harvestDate!, notes: input.qualityNotes ?? null });
         await appendEvent(tx, actor, {
           lotId: lot.id,
           eventType: "QUALITY_RECORDED",
           status: current.status,
           reason: input.qualityNotes ?? "Quality grading at harvest",
-          metadata: { qualityGrade: input.qualityGrade },
+          metadata: { qualityGrade: input.qualityGrade, recordedBy: "FARMER" },
         });
       }
     }
@@ -598,6 +615,7 @@ export async function updateLot(
 export async function setListing(actor: Actor & { user: User }, lotId: string, input: { listed: boolean; pricePerUnit?: number }) {
   await db.transaction(async (tx) => {
     const lot = await lockOwnedLot(tx, lotId, actor.user);
+    if (lot.recalled && input.listed) throw conflict("A recalled lot cannot be listed", "LOT_RECALLED");
     const c = counters(lot);
     const price = input.pricePerUnit ?? (lot.pricePerUnit == null ? null : Number(lot.pricePerUnit));
     if (input.listed) {
@@ -637,6 +655,10 @@ export interface RecordEventInput {
   quantity?: number;
   harvestAdjustment?: number;
   qualityGrade?: "A" | "B" | "C";
+  appearance?: string;
+  sizeCategory?: string;
+  defects?: string;
+  inspectionDate?: string;
   reason?: string;
   location?: string;
   latitude?: number;
@@ -696,6 +718,19 @@ export async function recordLotEvent(actor: Actor & { user: User }, lotId: strin
         extra = { qualityGrade: input.qualityGrade, qualityNotes: input.reason ?? lot.qualityNotes };
         metadata.qualityGrade = input.qualityGrade;
         metadata.previousGrade = lot.qualityGrade;
+        metadata.recordedBy = "FARMER";
+        for (const k of ["appearance", "sizeCategory", "defects"] as const) if (input[k]) metadata[k] = input[k];
+        await tx.insert(lotQualityRecordsTable).values({
+          lotId: lot.id,
+          farmerId: lot.farmerId,
+          grade: input.qualityGrade,
+          appearance: input.appearance ?? null,
+          sizeCategory: input.sizeCategory ?? null,
+          defects: input.defects ?? null,
+          inspectionDate: input.inspectionDate ?? eventTime.toISOString().slice(0, 10),
+          notes: input.reason ?? null,
+          clientEventId: input.clientEventId,
+        });
         break;
       case "STORAGE_RECORDED": {
         if (!input.storage) throw badRequest("storage is required for STORAGE_RECORDED");
@@ -804,7 +839,7 @@ export async function replaceQr(actor: Actor & { user: User }, lotId: string, re
     if (actor.user.role === "farmer" && lot.farmerId !== actor.user.id) throw notFound("Lot not found");
     if (actor.user.role === "customer") throw forbidden();
     const [{ v }] = await tx.select({ v: max(qrCodesTable.version) }).from(qrCodesTable).where(eq(qrCodesTable.lotId, lotId));
-    const [old] = await tx.select().from(qrCodesTable).where(and(eq(qrCodesTable.lotId, lotId), eq(qrCodesTable.status, "ACTIVE")));
+    const [old] = await tx.select().from(qrCodesTable).where(and(eq(qrCodesTable.lotId, lotId), inArray(qrCodesTable.status, ["ACTIVE", "DISABLED"])));
     if (old) await tx.update(qrCodesTable).set({ status: "REPLACED", revokedAt: new Date(), revokedBy: actor.user.id, revokeReason: reason }).where(eq(qrCodesTable.id, old.id));
     const fresh = await issueQr(tx, actor, lotId, (v ?? 0) + 1);
     if (old) await tx.update(qrCodesTable).set({ replacedById: fresh.id }).where(eq(qrCodesTable.id, old.id));
@@ -821,9 +856,10 @@ export async function revokeQr(actor: Actor & { user: User }, qrId: string, reas
   await db.transaction(async (tx) => {
     const [qr] = await tx.select().from(qrCodesTable).where(eq(qrCodesTable.id, qrId)).for("update");
     if (!qr) throw notFound("QR not found");
-    if (qr.status !== "ACTIVE") throw conflict(`QR is already ${qr.status}`, "INVALID_STATE_TRANSITION");
+    if (qr.status !== "ACTIVE" && qr.status !== "DISABLED") throw conflict(`QR is already ${qr.status}`, "INVALID_STATE_TRANSITION");
     const [lot] = await tx.select().from(lotsTable).where(eq(lotsTable.id, qr.lotId)).for("update");
     await tx.update(qrCodesTable).set({ status: "REVOKED", revokedAt: new Date(), revokedBy: actor.user.id, revokeReason: reason }).where(eq(qrCodesTable.id, qr.id));
+    await notify(tx, [lot.farmerId], { type: "QR_REVOKED", params: { lotCode: lot.lotCode }, entityType: "lot", entityId: lot.id });
     const ev = await appendEvent(tx, actor, { lotId: qr.lotId, eventType: "QR_REVOKED", reason, metadata: { qrId: qr.id, qrVersion: qr.version } });
     await audit(tx, actor, "QR_REVOKED", "qr_code", qr.id, { status: "ACTIVE" }, { status: "REVOKED", reason }, ev.id);
     if (issueReplacement) {

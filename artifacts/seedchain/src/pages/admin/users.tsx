@@ -58,7 +58,7 @@ export default function AdminUsers() {
         <DialogContent>
           <DialogHeader><DialogTitle>{target && `${titleCase(target.action)} ${target.u.name}`}</DialogTitle><DialogDescription>Recorded in the audit log.</DialogDescription></DialogHeader>
           <textarea className={textareaCls} rows={3} placeholder={target?.action === "reject" || target?.action === "suspend" ? "Reason (required)" : "Verification note (optional)"} value={note} onChange={(e) => setNote(e.target.value)} />
-          <DialogFooter><Button variant="ghost" onClick={() => setTarget(null)}>Cancel</Button><Button disabled={busy || ((target?.action === "reject" || target?.action === "suspend") && !note.trim())} className="bg-glass-2 text-neutral-950" onClick={() => void run()}>Confirm</Button></DialogFooter>
+          <DialogFooter><Button variant="ghost" onClick={() => setTarget(null)}>Cancel</Button><Button disabled={busy || ((target?.action === "reject" || target?.action === "suspend") && !note.trim())} onClick={() => void run()}>Confirm</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </>

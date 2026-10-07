@@ -1,4 +1,5 @@
-import { useId, useState, type ReactNode } from "react";
+import { useId, useRef, useState, type ReactNode } from "react";
+import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
 
 /* ---------------------------------------------------------------------------
    Procedural cinematic artwork.
@@ -104,29 +105,84 @@ export function FieldScene({ className = "" }: { className?: string }) {
   );
 }
 
-/** Frame: rounded cinematic panel. Real photo (if present in /public/media) is layered over the generated art. */
-export function Frame({ children, src, alt = "", className = "", art, overlay = true, ratio = "aspect-[16/10]" }: { children?: ReactNode; src?: string; alt?: string; className?: string; art?: ReactNode; overlay?: boolean; ratio?: string }) {
+/**
+ * Frame: rounded cinematic panel. A real photo (if present in /public/media) is layered over the generated art,
+ * lazy-loaded, and scales very slowly as it scrolls through the viewport (disabled for reduced motion).
+ */
+export function Frame({
+  children,
+  src,
+  alt = "",
+  className = "",
+  art,
+  overlay = true,
+  scrim = false,
+  position = "50% 50%",
+  ratio = "aspect-[16/10]",
+}: {
+  children?: ReactNode;
+  src?: string;
+  alt?: string;
+  className?: string;
+  art?: ReactNode;
+  overlay?: boolean;
+  /** Extra darkening for frames that carry text or UI on top of a bright photo. */
+  scrim?: boolean;
+  position?: string;
+  ratio?: string;
+}) {
   const [photo, setPhoto] = useState(!!src);
+  const ref = useRef<HTMLDivElement>(null);
+  const reduce = useReducedMotion();
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
+  const scale = useTransform(scrollYProgress, [0, 1], [1.02, 1.12]);
   return (
-    <div className={`relative isolate overflow-hidden rounded-[32px] border border-white/10 bg-black shadow-[0_40px_120px_-40px_rgba(0,0,0,0.9)] ${ratio} ${className}`}>
+    <div ref={ref} className={`relative isolate overflow-hidden rounded-[32px] border border-white/10 bg-black shadow-[0_40px_120px_-40px_rgba(0,0,0,0.9)] ${ratio} ${className}`}>
       <div className="absolute inset-0 [&>svg]:h-full [&>svg]:w-full">{art}</div>
-      {src && photo && <img src={src} alt={alt} loading="lazy" decoding="async" onError={() => setPhoto(false)} className="absolute inset-0 h-full w-full object-cover" />}
+      {src && photo && (
+        <motion.img
+          src={src}
+          alt={alt}
+          loading="lazy"
+          decoding="async"
+          onError={() => setPhoto(false)}
+          style={{ objectPosition: position, scale: reduce ? 1 : scale }}
+          className="absolute inset-0 h-full w-full object-cover will-change-transform"
+        />
+      )}
       {overlay && <div className="absolute inset-0 bg-[radial-gradient(120%_90%_at_50%_0%,transparent_30%,rgba(0,0,0,0.55)_100%)]" />}
       {overlay && <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/70 to-transparent" />}
+      {scrim && <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(3,8,5,0.55),rgba(3,8,5,0.72))]" />}
       <div className="pointer-events-none absolute inset-0 rounded-[32px] shadow-[inset_0_1px_0_rgba(255,255,255,0.14)]" />
       {children}
     </div>
   );
 }
 
-/** Small produce tile for cards and passports. */
-export function ProduceTile({ name, className = "" }: { name: string; className?: string }) {
+const TILES = [
+  { src: "/media/tile-harvest.webp", pos: "22% 86%" },
+  { src: "/media/tile-valley.webp", pos: "30% 88%" },
+  { src: "/media/tile-seedling.webp", pos: "56% 86%" },
+];
+
+/**
+ * Produce tile for cards, passports and headers. Potato listings show the supplied potato photography
+ * (one of three crops, chosen deterministically from `seed`/name so a given lot always looks the same);
+ * other crops keep generated art rather than showing a potato photo for the wrong product.
+ */
+export function ProduceTile({ name, seed, className = "", alt }: { name: string; seed?: string; className?: string; alt?: string }) {
   const n = name.toLowerCase();
-  const seed = [...n].reduce((a, c) => a + c.charCodeAt(0), 7);
+  const isPotato = n.includes("potato") || !n;
+  const key = [...(seed ?? n)].reduce((a, c) => a + c.charCodeAt(0), 7);
+  const tile = TILES[key % TILES.length];
+  const [photo, setPhoto] = useState(isPotato);
   return (
     <div className={`relative overflow-hidden bg-black [&>svg]:h-full [&>svg]:w-full ${className}`}>
-      {n.includes("potato") || !n ? <PotatoScene seed={seed} /> : <FieldScene />}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+      {isPotato ? <PotatoScene seed={key} /> : <FieldScene />}
+      {isPotato && photo && (
+        <img src={tile.src} alt={alt ?? `${name} from a SeedChain farm`} loading="lazy" decoding="async" width={960} height={540} onError={() => setPhoto(false)} style={{ objectPosition: tile.pos }} className="absolute inset-0 h-full w-full object-cover" />
+      )}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/5 to-transparent" />
     </div>
   );
 }

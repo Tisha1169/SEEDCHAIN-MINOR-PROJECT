@@ -78,7 +78,7 @@ export function QrScene({ data }: LandingProps) {
       </div>
 
       <Reveal y={60}>
-        <Frame src="/media/qr-label.webp" art={<FieldScene />} ratio="aspect-auto sm:aspect-[16/8]" overlay>
+        <Frame src="/media/potato.webp" art={<FieldScene />} ratio="aspect-auto sm:aspect-[16/8]" scrim>
           <div className="relative z-10 flex flex-col items-center justify-center gap-10 px-6 py-14 sm:absolute sm:inset-0 sm:flex-row sm:gap-0 sm:p-12 lg:justify-around">
             {/* physical label (real QR) */}
             <motion.div initial={reduce ? false : { opacity: 0, y: 40, rotate: -4 }} whileInView={{ opacity: 1, y: 0, rotate: -3 }} viewport={{ once: true }} transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }} className="relative w-[230px] shrink-0 rounded-[20px] bg-[#f4f2ea] p-5 text-neutral-900 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.8)] sm:w-[260px]">

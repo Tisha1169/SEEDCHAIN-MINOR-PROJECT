@@ -377,7 +377,7 @@ describe("input handling", () => {
     expect(r.status).toBe(201);
     expect(r.body.farmerId).toBe(farmerA.user.id);
     expect(r.body.status).toBe("CREATED");
-    expect(r.body.lotCode).toMatch(/^LOT-\d{4}-PB-\d{6}$/);
+    expect(r.body.lotCode).toMatch(/^SC-PB-[A-Z]{3}-\d{4}-\d{6}$/);
     expect(r.body.inventory).toMatchObject({ harvested: 0, sold: 0 });
     const p = await farmerA.agent.patch(`/api/lots/${lotA.id}`).send({ publicNotes: "ok", harvestedQty: 999999, status: "SOLD_OUT", farmerId: farmerB.user.id });
     expect(p.status).toBe(200);

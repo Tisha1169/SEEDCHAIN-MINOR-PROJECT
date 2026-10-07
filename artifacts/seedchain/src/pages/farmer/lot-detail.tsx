@@ -117,7 +117,7 @@ export default function LotDetailPage({ base }: { base: "farmer" | "admin" }) {
                 <h4 className="mb-2 text-sm font-medium">Listing for customers</h4>
                 <div className="flex flex-wrap items-end gap-3">
                   <Field label={`Price per ${unit} (₹)`}><input className={`${inputCls} w-40`} type="number" min="0" step="any" placeholder={lot.pricePerUnit?.toString() ?? ""} value={price} onChange={(e) => setPrice(e.target.value)} /></Field>
-                  <Button disabled={busy} className="rounded-full bg-glass-2 text-neutral-950" onClick={() => void listing(true)}>{lot.listed ? "Update price" : "List for sale"}</Button>
+                  <Button disabled={busy} className="rounded-full" onClick={() => void listing(true)}>{lot.listed ? "Update price" : "List for sale"}</Button>
                   {lot.listed && <Button disabled={busy} variant="outline" className="rounded-full" onClick={() => void listing(false)}>Pause listing</Button>}
                 </div>
               </div>
@@ -154,7 +154,7 @@ export default function LotDetailPage({ base }: { base: "farmer" | "admin" }) {
             {dlg === "REVOKE_QR" && <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={f.replacement} onChange={(e) => setF({ ...f, replacement: e.target.checked })} />Issue a replacement label for the same lot</label>}
             <Field label={dlg === "REPLACE_QR" || dlg === "REVOKE_QR" || dlg === "CORRECTION_RECORDED" || dlg === "LOSS_RECORDED" || dlg === "SPOILAGE_RECORDED" ? "Reason (required)" : "Notes (optional)"}><textarea className={textareaCls} rows={2} value={f.reason} onChange={(e) => setF({ ...f, reason: e.target.value })} /></Field>
           </div>
-          <DialogFooter><Button variant="ghost" onClick={() => setDlg(null)}>Cancel</Button><Button disabled={busy} className="bg-glass-2 text-neutral-950" onClick={() => void submitEvent()}>{busy ? "Saving…" : "Save"}</Button></DialogFooter>
+          <DialogFooter><Button variant="ghost" onClick={() => setDlg(null)}>Cancel</Button><Button disabled={busy} onClick={() => void submitEvent()}>{busy ? "Saving…" : "Save"}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </>

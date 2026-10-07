@@ -38,7 +38,7 @@ router.get("/farms", requireRole(["farmer", "admin"], { active: false }), async 
   res.json(rows.map((r) => serializeFarm({ ...r.f, farmerName: r.farmerName })));
 });
 
-router.post("/farms", requireRole(["farmer"]), async (req, res) => {
+router.post("/farms", requireRole(["farmer"], { active: false }), async (req, res) => {
   const body = parse(CreateFarmBody, req.body);
   const [farm] = await db.transaction(async (tx) => {
     const rows = await tx.insert(farmsTable).values({ ...body, farmerId: req.user!.id }).returning();
@@ -50,7 +50,7 @@ router.post("/farms", requireRole(["farmer"]), async (req, res) => {
   res.status(201).json(serializeFarm(farm));
 });
 
-router.patch("/farms/:id", requireRole(["farmer"]), async (req, res) => {
+router.patch("/farms/:id", requireRole(["farmer"], { active: false }), async (req, res) => {
   const { id } = parse(UpdateFarmParams, req.params);
   const body = parse(UpdateFarmBody, req.body);
   const farm = await db.transaction(async (tx) => {
@@ -73,7 +73,7 @@ router.get("/products", requireRole(["farmer", "admin"], { active: false }), asy
   res.json(rows.map((p) => ({ ...p, createdAt: p.createdAt.toISOString() })));
 });
 
-router.post("/products", requireRole(["farmer"]), async (req, res) => {
+router.post("/products", requireRole(["farmer"], { active: false }), async (req, res) => {
   const body = parse(CreateProductBody, req.body);
   const [dup] = await db
     .select({ id: productsTable.id })

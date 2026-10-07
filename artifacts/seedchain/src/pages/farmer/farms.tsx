@@ -53,7 +53,7 @@ export default function FarmsPage() {
                 <Field label="Latitude"><input className={inputCls} type="number" step="any" min="-90" max="90" value={f.lat} onChange={(e) => setF({ ...f, lat: e.target.value })} /></Field>
                 <Field label="Longitude"><input className={inputCls} type="number" step="any" min="-180" max="180" value={f.lon} onChange={(e) => setF({ ...f, lon: e.target.value })} /></Field>
               </div>
-              <div className="flex gap-2"><Button type="button" variant="outline" className="rounded-full" onClick={locate}><LocateFixed className="mr-2 h-4 w-4" />Use my location</Button><Button disabled={createFarm.isPending} className="rounded-full bg-glass-2 text-neutral-950">Save farm</Button></div>
+              <div className="flex gap-2"><Button type="button" variant="outline" className="rounded-full" onClick={locate}><LocateFixed className="mr-2 h-4 w-4" />Use my location</Button><Button disabled={createFarm.isPending} className="rounded-full">Save farm</Button></div>
             </form>
           </Card>
         </div>
@@ -76,7 +76,7 @@ export default function FarmsPage() {
                 <Field label="Variety"><input className={inputCls} required placeholder="e.g. Kufri Jyoti" value={p.variety} onChange={(e) => setP({ ...p, variety: e.target.value })} /></Field>
               </div>
               <Field label="Sold per"><select className={inputCls} value={p.unit} onChange={(e) => setP({ ...p, unit: e.target.value as typeof p.unit })}><option value="kg">kg</option><option value="quintal">quintal (100 kg)</option><option value="tonne">tonne</option></select></Field>
-              <Button disabled={createProduct.isPending} className="rounded-full bg-glass-2 text-neutral-950">Save product</Button>
+              <Button disabled={createProduct.isPending} className="rounded-full">Save product</Button>
             </form>
           </Card>
         </div>

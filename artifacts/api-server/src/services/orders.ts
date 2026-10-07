@@ -29,6 +29,7 @@ import {
 import { appendEvent, audit, raiseAlert, type Actor } from "./records";
 import { applyLotState, counters, maybeSoldOut, serializeEvent } from "./lots";
 import { notifyChange } from "./realtime";
+import { notify, type NotificationType } from "./notifications";
 
 function orderCode(): string {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -205,6 +206,7 @@ export async function createOrder(actor: Actor & { user: User }, idempotencyKey:
       const lines: { lot: Lot; qty: number; price: number }[] = [];
       for (const lot of lots) {
         const qty = qtyByLot.get(lot.id)!;
+        if (lot.recalled) throw conflict(`${lot.lotCode} has been recalled and cannot be ordered`, "LOT_RECALLED");
         if (!lot.listed || lot.pricePerUnit == null) throw conflict(`${lot.lotCode} is not listed for sale`, "NOT_LISTED");
         const available = availableOf(counters(lot));
         if (qty > available) {
@@ -257,6 +259,7 @@ export async function createOrder(actor: Actor & { user: User }, idempotencyKey:
         });
         await notifyChange(tx, { topic: "lots", entityId: lot.id, lotId: lot.id, farmerId });
       }
+      await notify(tx, [farmerId], { type: "ORDER_NEW", params: { orderCode: order.orderCode, customerName: customer.name }, entityType: "order", entityId: order.id });
       await audit(tx, actor, "ORDER_CREATED", "order", order.id, null, { orderCode: order.orderCode, total: order.totalAmount, items: lines.map((l) => ({ lot: l.lot.lotCode, qty: l.qty })) });
       await notifyChange(tx, { topic: "orders", entityId: order.id, farmerId, customerId: customer.id });
       await notifyChange(tx, { topic: "listings" });
@@ -323,6 +326,16 @@ export async function transitionOrder(actor: Actor & { user: User }, orderId: st
     const role = viewerRole(user, order)!;
     const method = order.fulfillmentMethod as FulfillmentMethod;
     const rule = checkOrderTransition(action, role, order.status as OrderStatus, method, input.reason);
+    const forward = ["accept", "prepare", "ready", "dispatch", "complete"].includes(action);
+    if (forward) {
+      const [recalled] = await tx
+        .select({ code: lotsTable.lotCode })
+        .from(orderItemsTable)
+        .innerJoin(lotsTable, eq(lotsTable.id, orderItemsTable.lotId))
+        .where(and(eq(orderItemsTable.orderId, order.id), eq(lotsTable.recalled, true)))
+        .limit(1);
+      if (recalled) throw conflict(`${recalled.code} is recalled; this order cannot move forward (it can still be cancelled or rejected)`, "LOT_RECALLED");
+    }
 
     const now = new Date();
     const patch: Partial<typeof ordersTable.$inferInsert> = { status: rule.to, updatedAt: now };
@@ -421,22 +434,22 @@ export async function transitionOrder(actor: Actor & { user: User }, orderId: st
       .update(ordersTable)
       .set({ ...patch, version: sql`${ordersTable.version} + 1` })
       .where(eq(ordersTable.id, order.id));
+    const NOTIFY: Partial<Record<OrderAction, { type: NotificationType; to: "customer" | "farmer" | "other" }>> = {
+      accept: { type: "ORDER_ACCEPTED", to: "customer" },
+      reject: { type: "ORDER_REJECTED", to: "customer" },
+      dispatch: { type: "ORDER_DISPATCHED", to: "customer" },
+      complete: { type: "ORDER_DELIVERED", to: "customer" },
+      cancel: { type: "ORDER_CANCELLED", to: "other" },
+      "confirm-receipt": { type: "ORDER_CONFIRMED", to: "farmer" },
+    };
+    const nf = NOTIFY[action];
+    if (nf) {
+      const targets = nf.to === "customer" ? [order.customerId] : nf.to === "farmer" ? [order.farmerId] : role === "customer" ? [order.farmerId] : role === "admin" ? [order.farmerId, order.customerId] : [order.customerId];
+      await notify(tx, targets.filter((id) => id !== user.id), { type: nf.type, params: { orderCode: order.orderCode }, entityType: "order", entityId: order.id });
+    }
     await audit(tx, actor, `ORDER_${action.toUpperCase().replace("-", "_")}`, "order", order.id, { status: order.status }, { status: rule.to, reason: input.reason ?? null });
     await notifyChange(tx, { topic: "orders", entityId: order.id, farmerId: order.farmerId, customerId: order.customerId });
     if (rule.inventory !== "none") await notifyChange(tx, { topic: "listings" });
   });
   return { duplicate: false, order: await getOrder(user, orderId) };
 }
-
-export async function submitFeedback(actor: Actor & { user: User }, orderId: string, rating: number, comment?: string) {
-  const [o] = await db.select().from(ordersTable).where(eq(ordersTable.id, orderId));
-  if (!o || o.customerId !== actor.user.id) throw notFound("Order not found");
-  if (o.status !== "CUSTOMER_CONFIRMED") throw conflict("Feedback can be given after confirming receipt", "INVALID_STATE_TRANSITION");
-  await db.transaction(async (tx) => {
-    await tx.insert(orderFeedbackTable).values({ orderId, customerId: actor.user.id, rating, comment: comment ?? null });
-    await audit(tx, actor, "ORDER_FEEDBACK", "order", orderId, null, { rating });
-    await notifyChange(tx, { topic: "orders", entityId: orderId, farmerId: o.farmerId, customerId: o.customerId });
-  });
-  return getOrder(actor.user, orderId);
-}
-

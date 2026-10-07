@@ -66,6 +66,8 @@ export const lotsTable = pgTable(
     ),
     pricePerUnit: numeric("price_per_unit", { precision: 12, scale: 2, mode: "number" }),
     listed: boolean("listed").notNull().default(false),
+    /** Fast flag; the history lives in lot_recalls. A recalled lot cannot be listed or ordered. */
+    recalled: boolean("recalled").notNull().default(false),
     qualityGrade: qualityGradeEnum("quality_grade"),
     qualityNotes: text("quality_notes"),
     origin: text("origin").notNull(),
@@ -93,7 +95,8 @@ export const lotsTable = pgTable(
   ],
 );
 
-export const qrStatusEnum = pgEnum("qr_status", ["ACTIVE", "REVOKED", "REPLACED"]);
+/** DISABLED = temporarily switched off by an admin (reversible); REVOKED/REPLACED are final. */
+export const qrStatusEnum = pgEnum("qr_status", ["ACTIVE", "REVOKED", "REPLACED", "DISABLED"]);
 
 /**
  * A QR identity for a lot. The printed QR encodes only
@@ -201,7 +204,7 @@ export const lotStorageRecordsTable = pgTable(
   ],
 );
 
-export const scanResultEnum = pgEnum("scan_result", ["OK", "UNKNOWN", "REVOKED", "REPLACED", "INVALID"]);
+export const scanResultEnum = pgEnum("scan_result", ["OK", "UNKNOWN", "REVOKED", "REPLACED", "DISABLED", "INVALID"]);
 
 /** QR scans. No IP address or precise location is stored. */
 export const qrScanEventsTable = pgTable(
@@ -218,9 +221,18 @@ export const qrScanEventsTable = pgTable(
     /** Coarse, user-consented location only (e.g. "Ludhiana, Punjab"). */
     location: text("location"),
     clientEventId: uuid("client_event_id").unique(),
+    /** Random per-browser id (no fingerprinting) used only to tell repeat scans from distinct scanners. */
+    sessionId: text("session_id"),
+    /** Coarse position (rounded to 0.1°, about 11 km), only when the scanner explicitly shared it. */
+    approxLat: doublePrecision("approx_lat"),
+    approxLon: doublePrecision("approx_lon"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [index("scans_lot_idx").on(t.lotId), index("scans_time_idx").on(t.scannedAt)],
+  (t) => [
+    index("scans_lot_idx").on(t.lotId),
+    index("scans_time_idx").on(t.scannedAt),
+    index("scans_qr_time_idx").on(t.qrId, t.scannedAt),
+  ],
 );
 
 export type Lot = typeof lotsTable.$inferSelect;
@@ -228,3 +240,92 @@ export type QrCode = typeof qrCodesTable.$inferSelect;
 export type TraceabilityEvent = typeof traceabilityEventsTable.$inferSelect;
 export type LotStorageRecord = typeof lotStorageRecordsTable.$inferSelect;
 export type QrScanEvent = typeof qrScanEventsTable.$inferSelect;
+
+
+export const recallStatusEnum = pgEnum("recall_status", ["ACTIVE", "CLEARED"]);
+
+/** Recall history for a lot. At most one ACTIVE recall per lot. */
+export const lotRecallsTable = pgTable(
+  "lot_recalls",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    lotId: uuid("lot_id")
+      .notNull()
+      .references(() => lotsTable.id),
+    status: recallStatusEnum("status").notNull().default("ACTIVE"),
+    /** Internal reason (admins only). */
+    reason: text("reason").notNull(),
+    /** Short message shown on the public trace page (no customer or personal data). */
+    publicMessage: text("public_message").notNull(),
+    initiatedBy: uuid("initiated_by")
+      .notNull()
+      .references(() => usersTable.id),
+    initiatedAt: timestamp("initiated_at", { withTimezone: true }).defaultNow().notNull(),
+    clearedBy: uuid("cleared_by").references(() => usersTable.id),
+    clearedAt: timestamp("cleared_at", { withTimezone: true }),
+    clearNote: text("clear_note"),
+    /** Snapshot at initiation: affected quantity, open orders, customers notified. */
+    impact: jsonb("impact").$type<Record<string, unknown>>().notNull().default({}),
+  },
+  (t) => [index("recalls_lot_idx").on(t.lotId), uniqueIndex("recalls_one_active_per_lot").on(t.lotId).where(sql`status = 'ACTIVE'`)],
+);
+
+export const anomalyStatusEnum = pgEnum("anomaly_status", ["OPEN", "INVESTIGATING", "DISMISSED", "CONFIRMED"]);
+
+/**
+ * Potential QR anomalies. These are signals for a human, never a verdict:
+ * the UI says "potential anomaly" and an admin decides what to do.
+ */
+export const qrAnomaliesTable = pgTable(
+  "qr_anomalies",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    qrId: uuid("qr_id")
+      .notNull()
+      .references(() => qrCodesTable.id),
+    lotId: uuid("lot_id")
+      .notNull()
+      .references(() => lotsTable.id),
+    kind: text("kind").notNull(),
+    status: anomalyStatusEnum("status").notNull().default("OPEN"),
+    detail: jsonb("detail").$type<Record<string, unknown>>().notNull().default({}),
+    detectedAt: timestamp("detected_at", { withTimezone: true }).defaultNow().notNull(),
+    handledBy: uuid("handled_by").references(() => usersTable.id),
+    handledAt: timestamp("handled_at", { withTimezone: true }),
+    note: text("note"),
+  },
+  (t) => [
+    index("anomalies_status_idx").on(t.status, t.detectedAt),
+    index("anomalies_lot_idx").on(t.lotId),
+    uniqueIndex("anomalies_open_dedupe_uq").on(t.qrId, t.kind).where(sql`status IN ('OPEN','INVESTIGATING')`),
+  ],
+);
+
+/** Farmer-recorded quality inspections. Always labelled "recorded by farmer" unless independently verified. */
+export const lotQualityRecordsTable = pgTable(
+  "lot_quality_records",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    lotId: uuid("lot_id")
+      .notNull()
+      .references(() => lotsTable.id),
+    farmerId: uuid("farmer_id")
+      .notNull()
+      .references(() => usersTable.id),
+    grade: qualityGradeEnum("grade").notNull(),
+    appearance: text("appearance"),
+    sizeCategory: text("size_category"),
+    defects: text("defects"),
+    inspectionDate: date("inspection_date").notNull(),
+    notes: text("notes"),
+    /** "FARMER" until an independent verifier exists in the product. */
+    recordedBy: text("recorded_by").notNull().default("FARMER"),
+    clientEventId: uuid("client_event_id").unique(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index("quality_lot_idx").on(t.lotId, t.inspectionDate)],
+);
+
+export type LotRecall = typeof lotRecallsTable.$inferSelect;
+export type QrAnomaly = typeof qrAnomaliesTable.$inferSelect;
+export type LotQualityRecord = typeof lotQualityRecordsTable.$inferSelect;

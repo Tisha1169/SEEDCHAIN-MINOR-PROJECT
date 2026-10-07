@@ -60,7 +60,13 @@ export function stateCode(state: string | null | undefined): string {
   return "XX";
 }
 
-/** LOT-<year>-<state code>-<6-digit global sequence>, e.g. LOT-2026-PB-000001 */
-export function formatLotCode(year: number, state: string | null | undefined, seq: number | bigint): string {
-  return `LOT-${year}-${stateCode(state)}-${String(seq).padStart(6, "0")}`;
+/** 3-letter district code from the farm's district (e.g. Jalandhar → JAL); XXX when unknown. */
+export function districtCode(district: string | null | undefined): string {
+  const letters = (district ?? "").normalize("NFKD").replace(/[^A-Za-z]/g, "").toUpperCase();
+  return letters.length >= 3 ? letters.slice(0, 3) : "XXX";
+}
+
+/** SC-<state>-<district>-<year>-<6-digit global sequence>, e.g. SC-PB-JAL-2026-000123 (older lots keep their LOT-… codes). */
+export function formatLotCode(year: number, state: string | null | undefined, district: string | null | undefined, seq: number | bigint): string {
+  return `SC-${stateCode(state)}-${districtCode(district)}-${year}-${String(seq).padStart(6, "0")}`;
 }

@@ -9,7 +9,7 @@ export function LotsTable({ base }: { base: "farmer" | "admin" }) {
   const q = useListLots();
   if (q.isLoading) return <Loading />;
   if (q.error) return <ErrorState error={q.error} onRetry={() => void q.refetch()} />;
-  if (!q.data?.length) return <Empty title="No lots yet" hint={base === "farmer" ? "Create a lot to generate its permanent QR." : undefined} action={base === "farmer" ? <Link href="/farmer/lots/new"><Button className="rounded-full bg-glass-2 text-neutral-950">Create a lot</Button></Link> : undefined} />;
+  if (!q.data?.length) return <Empty title="No lots yet" hint={base === "farmer" ? "Create a lot to generate its permanent QR." : undefined} action={base === "farmer" ? <Link href="/farmer/lots/new"><Button className="rounded-full">Create a lot</Button></Link> : undefined} />;
   return (
     <Table head={["Lot", "Product", ...(base === "admin" ? ["Farmer"] : []), "Status", "Harvested", "Available", "Reserved", "Sold", "Listed", "QR", ""]}>
       {q.data.map((l) => (
@@ -34,7 +34,7 @@ export function LotsTable({ base }: { base: "farmer" | "admin" }) {
 export default function FarmerLots() {
   return (
     <>
-      <PageHeader title="My lots" subtitle="Each lot has one permanent identity and QR." actions={<Link href="/farmer/lots/new"><Button className="rounded-full bg-glass-2 text-neutral-950"><Plus className="mr-2 h-4 w-4" />New lot</Button></Link>} />
+      <PageHeader title="My lots" subtitle="Each lot has one permanent identity and QR." actions={<Link href="/farmer/lots/new"><Button className="rounded-full"><Plus className="mr-2 h-4 w-4" />New lot</Button></Link>} />
       <LotsTable base="farmer" />
     </>
   );

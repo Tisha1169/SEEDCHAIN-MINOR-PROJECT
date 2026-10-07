@@ -83,7 +83,7 @@ export function OrderActions({ order }: { order: Order }) {
             key={a}
             disabled={busy}
             variant={DANGER.has(a) ? "outline" : "default"}
-            className={DANGER.has(a) ? "rounded-full border-rose-400/25 text-rose-300 hover:bg-rose-400/10" : "rounded-full bg-glass-2 text-neutral-950 hover:bg-white/85"}
+            className={DANGER.has(a) ? "rounded-full border-rose-400/25 text-rose-300 hover:bg-rose-400/10" : "rounded-full"}
             onClick={() => (needsDialog(a) ? setDialog(a) : void run(a))}
           >
             {LABEL[a]}
@@ -135,7 +135,7 @@ export function OrderActions({ order }: { order: Order }) {
             <Button variant="ghost" onClick={() => setDialog(null)}>Back</Button>
             <Button
               disabled={busy || (dialog === "dispatch" && order.fulfillmentMethod === "THIRD_PARTY_DELIVERY" && !form.thirdPartyName.trim()) || ((dialog === "reject" || dialog === "cancel" || (dialog === "confirm-receipt" && user?.role === "admin")) && user?.role !== "customer" && !form.reason.trim())}
-              className="bg-glass-2 text-neutral-950 hover:bg-white/85"
+             
               onClick={() => dialog && void run(dialog)}
             >
               {busy ? "Saving…" : "Confirm"}

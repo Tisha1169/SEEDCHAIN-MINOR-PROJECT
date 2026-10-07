@@ -9,7 +9,7 @@ export default function NotFound() {
       <div className="mx-auto max-w-md px-4 pt-40 text-center">
         <h1 className="text-5xl font-medium">404</h1>
         <p className="mt-2 text-ink/60">This page does not exist.</p>
-        <Link href="/"><Button className="mt-6 rounded-full bg-glass-2 text-neutral-950">Go home</Button></Link>
+        <Link href="/"><Button className="mt-6 rounded-full">Go home</Button></Link>
       </div>
     </div>
   );

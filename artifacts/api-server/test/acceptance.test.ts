@@ -29,7 +29,10 @@ describe("acceptance: direct farmer → customer flow with live QR trace", () =>
     const farmer = await registerFarmer("Punjab");
     expect(farmer.user.role).toBe("farmer");
     expect(farmer.user.status).toBe("pending");
-    const blocked = await farmer.agent.post("/api/farms").send({ name: "Too early", state: "Punjab" });
+    // Applicants may prepare their farm details for review, but cannot create lots/QR codes until approved.
+    const prep = await farmer.agent.post("/api/farms").send({ name: "Application farm", state: "Punjab", district: "Jalandhar" });
+    expect(prep.status).toBe(201);
+    const blocked = await farmer.agent.post("/api/lots").send({ farmId: prep.body.id, productName: "Potato", variety: "Early", origin: "Punjab" });
     expect(blocked.status).toBe(403);
 
     const pending = await admin.agent.get("/api/admin/users?role=farmer&status=pending");
@@ -59,7 +62,7 @@ describe("acceptance: direct farmer → customer flow with live QR trace", () =>
     });
     expect(lotRes.status).toBe(201);
     const lot = lotRes.body;
-    expect(lot.lotCode).toMatch(/^LOT-\d{4}-PB-\d{6}$/);
+    expect(lot.lotCode).toMatch(/^SC-PB-JAL-\d{4}-\d{6}$/);
     expect(lot.status).toBe("HARVESTED");
     expect(lot.inventory).toMatchObject({ harvested: 1000, available: 1000, reserved: 0, sold: 0, loss: 0 });
     expect(lot.activeQr.status).toBe("ACTIVE");
