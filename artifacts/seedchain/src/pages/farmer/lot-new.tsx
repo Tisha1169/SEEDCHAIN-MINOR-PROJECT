@@ -9,7 +9,7 @@ import { Card, Field, inputCls, Loading, PageHeader, textareaCls } from "@/compo
 import { QrLabel } from "@/components/app/qr-label";
 import { useToast } from "@/hooks/use-toast";
 import { errMsg, uuid } from "@/lib/api";
-import { enumLabel, unitLabel } from "@/lib/format";
+import { cropName, enumLabel, unitLabel } from "@/lib/format";
 import { submitOrQueue } from "@/lib/offline-queue";
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -87,7 +87,7 @@ export default function LotNew() {
       <form onSubmit={submit} className="space-y-5">
         <Card className="space-y-4 p-6">
           <Field label={t("farmer.lotNew.farm")}><select className={inputCls} required value={f.farmId} onChange={set("farmId")}><option value="">{t("farmer.lotNew.selectFarm")}</option>{farms.data.map((x) => <option key={x.id} value={x.id}>{x.name} ({x.state})</option>)}</select></Field>
-          <Field label={t("farmer.lotNew.product")}><select className={inputCls} value={f.productId} onChange={set("productId")}><option value="">{t("farmer.lotNew.newProduct")}</option>{products.data?.map((x) => <option key={x.id} value={x.id}>{x.name} · {x.variety}</option>)}</select></Field>
+          <Field label={t("farmer.lotNew.product")}><select className={inputCls} value={f.productId} onChange={set("productId")}><option value="">{t("farmer.lotNew.newProduct")}</option>{products.data?.map((x) => <option key={x.id} value={x.id}>{cropName(x.name)} · {x.variety}</option>)}</select></Field>
           {!f.productId && (
             <div className="grid grid-cols-3 gap-3">
               <Field label={t("farmer.lotNew.crop")}><input className={inputCls} required value={f.productName} onChange={set("productName")} /></Field>

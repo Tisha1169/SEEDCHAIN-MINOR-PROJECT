@@ -4,7 +4,7 @@ import { useListLots } from "@workspace/api-client-react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Empty, ErrorState, Loading, LotStatusPill, PageHeader, Table } from "@/components/app/common";
-import { qty } from "@/lib/format";
+import { cropName, qty } from "@/lib/format";
 
 export function LotsTable({ base }: { base: "farmer" | "admin" }) {
   const { t } = useTranslation();
@@ -17,7 +17,7 @@ export function LotsTable({ base }: { base: "farmer" | "admin" }) {
       {q.data.map((l) => (
         <tr key={l.id} className="hover:bg-white/[0.04]">
           <td className="px-4 py-3 font-mono text-xs">{l.lotCode}</td>
-          <td className="px-4 py-3">{l.productName} · {l.variety}</td>
+          <td className="px-4 py-3">{cropName(l.productName)} · {l.variety}</td>
           {base === "admin" && <td className="px-4 py-3">{l.farmerName}</td>}
           <td className="px-4 py-3"><LotStatusPill status={l.status} /></td>
           <td className="px-4 py-3">{qty(l.inventory.harvested, l.inventory.unit)}</td>

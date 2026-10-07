@@ -61,6 +61,7 @@ const farmer = {
       observed: "Observed {{time}} · retrieved {{ago}}", source: "Source: {{label}}.", lastUpdate: "Last successful update", noUpdate: "No successful update yet.", attemptFailed: "Latest attempt failed: {{error}}",
     },
     ref: {
+      geography: "India (national). FAOSTAT has no state or district granularity.",
       current: "Current", cached: "Cached, last sync failed", stale: "Stale", noData: "No data yet", notIntegrated: "Not integrated",
       classExternal: "External, regularly synced", classHistorical: "Historical", classReference: "Reference only",
       updates: "Updates: {{freq}}.", dataPeriod: "Data period:", lastSynced: "Last synced {{ago}}.", neverSynced: "Never synced.",

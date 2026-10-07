@@ -10,7 +10,7 @@ import { ProduceTile } from "@/components/art";
 import { Reveal } from "@/components/motion";
 import { motion, useReducedMotion } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { dateOnly, dateTime, enumLabel, qty, timeAgo, unitLabel } from "@/lib/format";
+import { cropName, dateOnly, dateTime, enumLabel, qty, timeAgo, unitLabel } from "@/lib/format";
 import { errMsg, uuid } from "@/lib/api";
 import { LotStatusPill } from "@/components/app/common";
 
@@ -144,7 +144,7 @@ export default function TracePage() {
             <div className="relative aspect-[16/9]">
               <ProduceTile name={t.productName} seed={t.lotCode} className="absolute inset-0" />
               <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-5">
-                <div><h1 className="text-4xl font-extralight tracking-tight">{t.productName}</h1><div className="text-ink/65">{t.variety}</div></div>
+                <div><h1 className="text-4xl font-extralight tracking-tight">{cropName(t.productName)}</h1><div className="text-ink/65">{t.variety}</div></div>
                 <LotStatusPill status={t.status} />
               </div>
             </div>

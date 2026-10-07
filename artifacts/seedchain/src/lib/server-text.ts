@@ -45,6 +45,8 @@ const PATTERNS: Array<[RegExp, string, (m: RegExpMatchArray) => Record<string, u
   [/^Order (\S+) has been (\w+) since (\S+)$/, "alertOrderStuck", (m) => ({ code: m[1], status: i18n.t(`enums.orderStatus.${m[2]}`, { defaultValue: m[2] }), date: m[3] })],
   [/^(\S+): potential QR anomaly \((.+)\)\. A human should investigate before any action\.$/, "alertAnomaly", (m) => ({ code: m[1], kind: m[2] })],
   [/^QR v(\d+) of (\S+) was revoked by an admin: (.*)$/, "alertQrRevoked", (m) => ({ v: m[1], code: m[2], reason: m[3] })],
+  [/^(\w+) attempted (\w+) (.+)$/, "alertUnauthorized", (m) => ({ role: i18n.t(`enums.role.${m[1]}`, { defaultValue: m[1] }), method: m[2], path: m[3] })],
+  [/^Set DATA_GOV_IN_API_KEY .*$/, "hintApiKey", () => ({})],
   [/^(\S+) recalled: (.*)$/, "alertRecalled", (m) => ({ code: m[1], reason: m[2] })],
 ];
 

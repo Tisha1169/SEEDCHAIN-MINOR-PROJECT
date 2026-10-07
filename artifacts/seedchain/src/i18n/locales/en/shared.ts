@@ -14,6 +14,8 @@ const shared = {
     FORBIDDEN: "You do not have permission to do that",
   },
   enums: {
+    crop: { potato: "Potato", tomato: "Tomato", onion: "Onion", wheat: "Wheat", rice: "Rice", maize: "Maize", sugarcane: "Sugarcane", cauliflower: "Cauliflower", peas: "Peas" },
+    eventSource: { web: "Web", offline_sync: "Offline sync", pilot_seed: "Pilot seed", anomaly_detector: "Anomaly detector", open_meteo_current: "Open-Meteo", camera_link: "Phone camera link", in_app_scanner: "In-app scanner", manual_entry: "Manual entry" },
     unit: { kg: "kg", quintal: "quintal", tonne: "tonne", t: "t" },
     orderStatus: { PENDING: "Pending", ACCEPTED: "Accepted", PREPARING: "Preparing", READY: "Ready", DISPATCHED: "Dispatched", DELIVERED: "Delivered", CUSTOMER_CONFIRMED: "Receipt confirmed", REJECTED: "Declined", CANCELLED: "Cancelled" },
     lotStatus: { CREATED: "Created", GROWING: "Growing", HARVESTED: "Harvested", AVAILABLE: "Available", RESERVED: "Reserved", PARTIALLY_SOLD: "Partially sold", SOLD_OUT: "Sold out", RECALLED: "Recalled" },

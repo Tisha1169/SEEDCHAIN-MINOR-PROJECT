@@ -5,7 +5,7 @@ import { useGetFaostatIndia, useGetPunjabPotato, useListDataSources } from "@wor
 import type { SourceInfo } from "@workspace/api-client-react";
 import { Card, Empty, ErrorState, Loading, Pill } from "@/components/app/common";
 import { currentLocale } from "@/i18n";
-import { sourceFrequency, sourceLabel, sourceNote } from "@/lib/server-text";
+import { serverText, sourceFrequency, sourceLabel, sourceNote } from "@/lib/server-text";
 import { dateOnly, timeAgo, unitLabel } from "@/lib/format";
 
 const FRESH: Record<string, { key: string; cls: string }> = {
@@ -84,7 +84,7 @@ export function FaostatCard() {
   return (
     <Card className="p-5">
       <h3 className="font-medium">{t("farmer.ref.indiaTitle")}</h3>
-      <p className="text-xs text-ink/50">{d.geography} {t("farmer.ref.indiaNote")}</p>
+      <p className="text-xs text-ink/50">{t("farmer.ref.geography")} {t("farmer.ref.indiaNote")}</p>
       {rows.length ? (
         <div className="mt-3 h-52">
           <ResponsiveContainer width="100%" height="100%">
@@ -120,7 +120,7 @@ export function DataHealth() {
             <div className="mt-2 text-xs text-ink/55">
               {s.lastSuccess ? <>{t("farmer.ref.lastSuccess", { ago: timeAgo(s.lastSuccess.finishedAt ?? s.lastSuccess.startedAt), n: s.lastSuccess.recordCount, period: s.observationDate ? t("farmer.ref.period", { p: s.observationDate }) : "" })}</> : t("farmer.ref.noSync")}
               {s.lastRun?.status === "FAILED" && <div className="mt-1 text-rose-300">{t("farmer.ref.failed", { error: s.lastRun.error })}</div>}
-              {!s.configured && <div className="mt-1 text-amber-300">{s.configurationHint}</div>}
+              {!s.configured && <div className="mt-1 text-amber-300">{serverText(s.configurationHint)}</div>}
             </div>
           ) : <div className="mt-2 text-xs text-ink/45">{sourceNote(s.source, s.integrationNote) || t("farmer.ref.referenceOnly")}</div>}
         </Card>

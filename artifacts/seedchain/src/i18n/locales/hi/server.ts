@@ -1,6 +1,7 @@
 import type { Server } from "../en/server";
 const server: Server = {
   srv: {
+    alertUnauthorized: "{{role}} ने {{method}} {{path}} का प्रयास किया", hintApiKey: "API सर्वर पर DATA_GOV_IN_API_KEY सेट करें (data.gov.in से मुफ़्त कुंजी)",
     reasonOrderPlaced: "ग्राहक ने ऑर्डर दिया; स्टॉक आरक्षित", reasonLotRegistered: "किसान ने नया लॉट दर्ज किया", reasonLotUpdated: "किसान ने लॉट का विवरण अपडेट किया", reasonStorage: "किसान-प्रबंधित भंडारण",
     reasonFirstScan: "इस QR का पहला सत्यापित स्कैन", reasonHarvest: "कटाई", reasonNoStock: "कोई उपलब्ध या आरक्षित स्टॉक शेष नहीं", reasonListed: "किसान ने उपज ग्राहकों के लिए सूचीबद्ध की", reasonPaused: "किसान ने सूची रोकी",
     reasonQualityAtHarvest: "कटाई के समय गुणवत्ता ग्रेडिंग", reasonAnomaly: "संभावित QR विसंगति: {{kind}}",

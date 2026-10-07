@@ -13,6 +13,9 @@ export const titleCase = (s: string) => s.toLowerCase().replace(/_/g, " ").repla
 /** Units such as kg/quintal are translated when a translation exists, otherwise shown as stored. */
 export const unitLabel = (u: string) => i18n.t(`enums.unit.${u}`, { defaultValue: u });
 
+/** Crop names are translated for display; unknown crops are shown as the farmer entered them. */
+export const cropName = (n: string) => i18n.t(`enums.crop.${n.trim().toLowerCase()}`, { defaultValue: n });
+
 /** Label for an enum value (order/lot status, risk, fulfilment, event types…); falls back to a readable form of the raw value. */
 export const enumLabel = (kind: string, value: string | null | undefined) =>
   value ? i18n.t(`enums.${kind}.${value}`, { defaultValue: titleCase(value) }) : "—";

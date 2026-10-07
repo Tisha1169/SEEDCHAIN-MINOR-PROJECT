@@ -1,3 +1,4 @@
+import { cropName } from "@/lib/format";
 import { useTranslation } from "react-i18next";
 import { useRef } from "react";
 import { Link } from "wouter";
@@ -101,7 +102,7 @@ export function CinematicFrame({ data, loading, failed }: LandingProps) {
           <FloatChip label={t("landing.frame.traceability")} value={cov != null ? `${cov}%` : dash} className="bottom-24 left-4 sm:bottom-32 sm:left-16" delay={2.2} />
           <FloatChip label={t("landing.frame.route")} value={t("landing.frame.routeValue")} className="bottom-24 right-4 sm:bottom-28 sm:right-14" delay={0.7} />
           <div className="absolute inset-x-0 bottom-6 z-10 px-6 text-center sm:bottom-10">
-            <div className="eyebrow">{f ? `${f.productName} · ${f.variety}` : t("landing.frame.harvest")}</div>
+            <div className="eyebrow">{f ? `${cropName(f.productName)} · ${f.variety}` : t("landing.frame.harvest")}</div>
             <div className="mt-2 text-2xl font-extralight tracking-tight text-ink sm:text-4xl">{t("landing.frame.tagline")}</div>
           </div>
         </Frame>

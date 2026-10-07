@@ -1,6 +1,7 @@
 import type { Server } from "../en/server";
 const server: Server = {
   srv: {
+    alertUnauthorized: "{{role}} ਨੇ {{method}} {{path}} ਦੀ ਕੋਸ਼ਿਸ਼ ਕੀਤੀ", hintApiKey: "API ਸਰਵਰ ’ਤੇ DATA_GOV_IN_API_KEY ਸੈੱਟ ਕਰੋ (data.gov.in ਤੋਂ ਮੁਫ਼ਤ ਕੁੰਜੀ)",
     reasonOrderPlaced: "ਗਾਹਕ ਨੇ ਆਰਡਰ ਦਿੱਤਾ; ਸਟਾਕ ਰਾਖਵਾਂ", reasonLotRegistered: "ਕਿਸਾਨ ਨੇ ਨਵਾਂ ਲਾਟ ਦਰਜ ਕੀਤਾ", reasonLotUpdated: "ਕਿਸਾਨ ਨੇ ਲਾਟ ਦਾ ਵੇਰਵਾ ਅੱਪਡੇਟ ਕੀਤਾ", reasonStorage: "ਕਿਸਾਨ-ਪ੍ਰਬੰਧਿਤ ਭੰਡਾਰਨ",
     reasonFirstScan: "ਇਸ QR ਦਾ ਪਹਿਲਾ ਤਸਦੀਕਸ਼ੁਦਾ ਸਕੈਨ", reasonHarvest: "ਵਾਢੀ", reasonNoStock: "ਕੋਈ ਉਪਲਬਧ ਜਾਂ ਰਾਖਵਾਂ ਸਟਾਕ ਬਾਕੀ ਨਹੀਂ", reasonListed: "ਕਿਸਾਨ ਨੇ ਉਪਜ ਗਾਹਕਾਂ ਲਈ ਸੂਚੀਬੱਧ ਕੀਤੀ", reasonPaused: "ਕਿਸਾਨ ਨੇ ਸੂਚੀ ਰੋਕੀ",
     reasonQualityAtHarvest: "ਵਾਢੀ ਵੇਲੇ ਗੁਣਵੱਤਾ ਗ੍ਰੇਡਿੰਗ", reasonAnomaly: "ਸੰਭਾਵੀ QR ਬੇਨਿਯਮੀ: {{kind}}",

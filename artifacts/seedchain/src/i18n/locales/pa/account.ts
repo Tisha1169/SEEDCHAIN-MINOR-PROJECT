@@ -35,7 +35,7 @@ const account: Account = {
   enums: {
     severity: { LOW: "ਘੱਟ", MEDIUM: "ਦਰਮਿਆਨਾ", HIGH: "ਵੱਧ", CRITICAL: "ਗੰਭੀਰ" },
     alertType: {
-      EXTERNAL_DATA_FAILURE: "ਬਾਹਰੀ ਡਾਟਾ ਅਸਫਲਤਾ", INVALID_QR: "ਗਲਤ QR", INVENTORY_MISMATCH: "ਇਨਵੈਂਟਰੀ ਵਿੱਚ ਫ਼ਰਕ", LONG_DELAY: "ਲੰਮੀ ਦੇਰੀ", LOT_RECALLED: "ਲਾਟ ਵਾਪਸ ਮੰਗਵਾਇਆ ਗਿਆ",
+      UNAUTHORIZED_ACTION: "ਗੈਰ-ਮਨਜ਼ੂਰਸ਼ੁਦਾ ਕਾਰਵਾਈ",       EXTERNAL_DATA_FAILURE: "ਬਾਹਰੀ ਡਾਟਾ ਅਸਫਲਤਾ", INVALID_QR: "ਗਲਤ QR", INVENTORY_MISMATCH: "ਇਨਵੈਂਟਰੀ ਵਿੱਚ ਫ਼ਰਕ", LONG_DELAY: "ਲੰਮੀ ਦੇਰੀ", LOT_RECALLED: "ਲਾਟ ਵਾਪਸ ਮੰਗਵਾਇਆ ਗਿਆ",
       LOT_RECALL_CLEARED: "ਵਾਪਸੀ ਰੱਦ", ORDER_ACCEPTED: "ਆਰਡਰ ਮਨਜ਼ੂਰ", ORDER_CANCELLED: "ਆਰਡਰ ਰੱਦ", ORDER_CONFIRMED: "ਆਰਡਰ ਦੀ ਪੁਸ਼ਟੀ", ORDER_DELIVERED: "ਆਰਡਰ ਪਹੁੰਚਾਇਆ ਗਿਆ",
       ORDER_DISPATCHED: "ਆਰਡਰ ਭੇਜਿਆ ਗਿਆ", ORDER_NEW: "ਨਵਾਂ ਆਰਡਰ", ORDER_REJECTED: "ਆਰਡਰ ਇਨਕਾਰ", OVER_ORDER: "ਵੱਧ ਆਰਡਰ", QR_ANOMALY: "ਸੰਭਾਵੀ QR ਬੇਨਿਯਮੀ", QR_DISABLED: "QR ਬੰਦ",
       QR_ENABLED: "QR ਚਾਲੂ", QR_REVOKED: "QR ਰੱਦ", REVIEW_HIDDEN: "ਸਮੀਖਿਆ ਲੁਕਾਈ ਗਈ", REVIEW_RECEIVED: "ਸਮੀਖਿਆ ਮਿਲੀ", REVOKED_QR: "ਰੱਦ QR ਸਕੈਨ ਹੋਇਆ", SPOILAGE_RISK: "ਖਰਾਬੀ ਦਾ ਜੋਖਮ",

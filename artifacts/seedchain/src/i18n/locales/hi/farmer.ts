@@ -62,6 +62,7 @@ const farmer: Farmer = {
       observed: "देखा गया {{time}} · प्राप्त {{ago}}", source: "स्रोत: {{label}}।", lastUpdate: "अंतिम सफल अपडेट", noUpdate: "अभी तक कोई सफल अपडेट नहीं।", attemptFailed: "ताज़ा प्रयास विफल: {{error}}",
     },
     ref: {
+      geography: "भारत (राष्ट्रीय)। FAOSTAT में राज्य या ज़िला स्तर का विवरण नहीं है।",
       current: "ताज़ा", cached: "कैश्ड, अंतिम सिंक विफल", stale: "पुराना", noData: "अभी डेटा नहीं", notIntegrated: "जुड़ा नहीं",
       classExternal: "बाहरी, नियमित रूप से सिंक", classHistorical: "ऐतिहासिक", classReference: "केवल संदर्भ",
       updates: "अपडेट: {{freq}}।", dataPeriod: "डेटा अवधि:", lastSynced: "अंतिम सिंक {{ago}}।", neverSynced: "कभी सिंक नहीं हुआ।",

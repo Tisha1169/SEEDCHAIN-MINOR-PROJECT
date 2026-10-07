@@ -12,7 +12,7 @@ import { Card, Empty, ErrorState, Field, inputCls, Kv, Loading, textareaCls } fr
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, errMsg, uuid } from "@/lib/api";
-import { dateOnly, enumLabel, inr, qty, unitLabel } from "@/lib/format";
+import { cropName, dateOnly, enumLabel, inr, qty, unitLabel } from "@/lib/format";
 
 function ListingCard({ l }: { l: Listing }) {
   const { t } = useTranslation();
@@ -25,7 +25,7 @@ function ListingCard({ l }: { l: Listing }) {
           <div className="absolute bottom-3 right-4 text-right"><div className="text-2xl font-extralight">{inr(l.pricePerUnit)}</div><div className="text-[10px] tracking-[0.18em] text-ink/55">{t("market.perUnit", { unit: unitLabel(l.unit).toUpperCase() })}</div></div>
         </div>
         <div className="flex flex-1 flex-col p-5">
-          <div className="text-xl font-light tracking-tight">{l.productName} <span className="text-ink/50">· {l.variety}</span></div>
+          <div className="text-xl font-light tracking-tight">{cropName(l.productName)} <span className="text-ink/50">· {l.variety}</span></div>
           <div className="mt-2 space-y-1 text-[13px] text-ink/60">
             <div className="flex items-center gap-1.5"><Sprout className="h-3.5 w-3.5" />{l.farmer.publicName}</div>
             <div className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" />{l.origin}</div>
@@ -118,7 +118,7 @@ export function ListingPage() {
       </Frame>
       <div className="grid gap-5 md:grid-cols-5">
         <Card className="p-6 md:col-span-3">
-          <div className="text-4xl font-extralight tracking-tight">{l.productName} <span className="text-ink/50">· {l.variety}</span></div>
+          <div className="text-4xl font-extralight tracking-tight">{cropName(l.productName)} <span className="text-ink/50">· {l.variety}</span></div>
           <div className="mt-1 text-3xl font-extralight text-accent">{inr(l.pricePerUnit)} <span className="text-sm font-normal text-ink/45">{t("market.perUnitLine", { unit: unitLabel(l.unit) })}</span></div>
           <div className="mt-4">
             <Kv k={t("market.available")} v={qty(l.available, l.unit)} />

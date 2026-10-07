@@ -11,7 +11,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, errMsg } from "@/lib/api";
 import { serverText } from "@/lib/server-text";
-import { dateTime, enumLabel, inr, qty, unitLabel } from "@/lib/format";
+import { cropName, dateTime, enumLabel, inr, qty, unitLabel } from "@/lib/format";
 
 export function OrdersList({ base }: { base: "farmer" | "customer" | "admin" }) {
   const { t } = useTranslation();
@@ -85,7 +85,7 @@ export function OrderDetail({ base }: { base: "farmer" | "customer" | "admin" })
             <h3 className="mb-3 eyebrow !text-ink/75">{t("orders.detail.items")}</h3>
             {o.items.map((i) => (
               <div key={i.id} className="flex flex-wrap items-center justify-between gap-2 border-b py-3 last:border-0">
-                <div><div className="font-medium">{i.productName} · {i.variety}</div><div className="font-mono text-xs text-ink/50">{i.lotCode}</div></div>
+                <div><div className="font-medium">{cropName(i.productName)} · {i.variety}</div><div className="font-mono text-xs text-ink/50">{i.lotCode}</div></div>
                 <div className="text-right text-sm"><div>{qty(i.quantity, i.unit)} × {inr(i.unitPrice)}</div><div className="font-medium">{inr(i.lineTotal)}</div></div>
                 {i.publicToken && <Link href={`/trace/${i.publicToken}`} className="text-xs font-medium text-accent">{t("orders.detail.viewTrace")}</Link>}
               </div>

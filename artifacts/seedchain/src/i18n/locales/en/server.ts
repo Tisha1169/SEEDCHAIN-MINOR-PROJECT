@@ -1,5 +1,6 @@
 const server = {
   srv: {
+    alertUnauthorized: "{{role}} attempted {{method}} {{path}}", hintApiKey: "Set DATA_GOV_IN_API_KEY (free key from https://data.gov.in) on the API server",
     reasonOrderPlaced: "Customer order placed; stock reserved", reasonLotRegistered: "Farmer registered a new lot", reasonLotUpdated: "Farmer updated lot details", reasonStorage: "Farmer-managed storage",
     reasonFirstScan: "First verified scan of this QR", reasonHarvest: "Harvest", reasonNoStock: "No remaining available or reserved stock", reasonListed: "Farmer listed produce for customers", reasonPaused: "Farmer paused listing",
     reasonQualityAtHarvest: "Quality grading at harvest", reasonAnomaly: "Potential QR anomaly: {{kind}}",

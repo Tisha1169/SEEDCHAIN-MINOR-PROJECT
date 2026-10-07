@@ -7,7 +7,7 @@ import { CountUp, GlassCard, Magnetic, Reveal } from "@/components/motion";
 import { Logo } from "@/components/layout/navbar";
 import { serverText } from "@/lib/server-text";
 import { currentLocale } from "@/i18n";
-import { enumLabel, timeAgo, unitLabel } from "@/lib/format";
+import { cropName, enumLabel, timeAgo, unitLabel } from "@/lib/format";
 import { dash, Display, Eyebrow, fmtDate, Row, Section, type LandingProps } from "./shared";
 
 /** 07: the farmer's digital passport. */
@@ -38,7 +38,7 @@ export function FarmerPassport({ data }: LandingProps) {
                     <div key={k} className="rounded-2xl bg-white/[0.04] py-3"><div className="text-lg font-light">{v}</div><div className="eyebrow !text-[0.56rem] !tracking-[0.16em]">{k}</div></div>
                   ))}
                 </div>
-                <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-ink/50"><Wheat className="h-3.5 w-3.5" />{f ? `${f.productName} · ${f.variety}` : t("landing.passport.crops")}{s && !s.rating && <span className="ml-auto">{t("landing.passport.noRatings")}</span>}</div>
+                <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-ink/50"><Wheat className="h-3.5 w-3.5" />{f ? `${cropName(f.productName)} · ${f.variety}` : t("landing.passport.crops")}{s && !s.rating && <span className="ml-auto">{t("landing.passport.noRatings")}</span>}</div>
               </GlassCard>
             </div>
           </Frame>
@@ -132,7 +132,7 @@ export function CustomerExperience({ data }: LandingProps) {
             </div>
             <div className="p-6 sm:p-8">
               <div className="flex items-start justify-between gap-4">
-                <div><div className="text-3xl font-extralight tracking-tight">{f?.productName ?? "Potato"}</div><div className="text-ink/55">{f?.variety ?? "Kufri Jyoti"}</div></div>
+                <div><div className="text-3xl font-extralight tracking-tight">{cropName(f?.productName ?? "Potato")}</div><div className="text-ink/55">{f?.variety ?? "Kufri Jyoti"}</div></div>
                 <div className="text-right"><div className="text-3xl font-extralight">{f?.pricePerUnit != null ? `₹${f.pricePerUnit}` : dash}</div><div className="eyebrow !text-[0.6rem]">{t("landing.cust.perUnit", { unit: unitLabel(f?.unit ?? "kg") })}</div></div>
               </div>
               <div className="mt-5 grid grid-cols-2 gap-x-6 text-sm">
@@ -151,7 +151,7 @@ export function CustomerExperience({ data }: LandingProps) {
         <Reveal delay={0.15}>
           <GlassCard className="h-full p-6 sm:p-9">
             <div className="mb-1 flex items-center gap-2 text-accent"><ShieldCheck className="h-5 w-5" strokeWidth={1.4} /><span className="eyebrow !text-accent">{t("landing.cust.passport")}</span></div>
-            <div className="mb-6 mt-2 text-3xl font-extralight tracking-tight">{f ? `${f.productName} · ${f.variety}` : t("landing.cust.identity")}</div>
+            <div className="mb-6 mt-2 text-3xl font-extralight tracking-tight">{f ? `${cropName(f.productName)} · ${f.variety}` : t("landing.cust.identity")}</div>
             <Row k={t("landing.cust.lot")} v={f?.lotCode ?? dash} /><Row k={t("landing.cust.origin")} v={f?.origin ?? dash} /><Row k={t("landing.cust.harvest")} v={fmtDate(f?.harvestDate)} /><Row k={t("landing.cust.quality")} v={f?.qualityGrade ? t("landing.cust.gradeCaps", { g: f.qualityGrade }) : dash} /><Row k={t("landing.cust.status")} v={f ? enumLabel("lotStatus", f.status) : dash} accent />
             <div className="mt-6"><div className="eyebrow mb-3">{t("landing.cust.history")}</div>
               {f ? (<ol className="space-y-3">{f.timeline.slice(-5).map((e, i) => (<li key={`${e.eventType}${i}`} className="flex items-center gap-3 text-[13px] text-ink/75"><span className="h-1.5 w-1.5 rounded-full bg-accent" /><span className="flex-1">{enumLabel("event", e.eventType)}</span><span className="font-mono text-[11px] text-ink/35">{fmtDate(e.eventTime)}</span></li>))}</ol>) : <p className="text-sm text-ink/40">{t("landing.cust.historyEmpty")}</p>}

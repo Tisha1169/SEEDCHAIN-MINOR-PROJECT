@@ -34,7 +34,7 @@ const account = {
   enums: {
     severity: { LOW: "Low", MEDIUM: "Medium", HIGH: "High", CRITICAL: "Critical" },
     alertType: {
-      EXTERNAL_DATA_FAILURE: "External data failure", INVALID_QR: "Invalid QR", INVENTORY_MISMATCH: "Inventory mismatch", LONG_DELAY: "Long delay", LOT_RECALLED: "Lot recalled",
+      UNAUTHORIZED_ACTION: "Unauthorized action",       EXTERNAL_DATA_FAILURE: "External data failure", INVALID_QR: "Invalid QR", INVENTORY_MISMATCH: "Inventory mismatch", LONG_DELAY: "Long delay", LOT_RECALLED: "Lot recalled",
       LOT_RECALL_CLEARED: "Recall cleared", ORDER_ACCEPTED: "Order accepted", ORDER_CANCELLED: "Order cancelled", ORDER_CONFIRMED: "Order confirmed", ORDER_DELIVERED: "Order delivered",
       ORDER_DISPATCHED: "Order dispatched", ORDER_NEW: "New order", ORDER_REJECTED: "Order declined", OVER_ORDER: "Over-order", QR_ANOMALY: "Potential QR anomaly", QR_DISABLED: "QR disabled",
       QR_ENABLED: "QR enabled", QR_REVOKED: "QR revoked", REVIEW_HIDDEN: "Review hidden", REVIEW_RECEIVED: "Review received", REVOKED_QR: "Revoked QR scanned", SPOILAGE_RISK: "Spoilage risk",

@@ -62,6 +62,7 @@ const farmer: Farmer = {
       observed: "ਵੇਖਿਆ ਗਿਆ {{time}} · ਪ੍ਰਾਪਤ {{ago}}", source: "ਸਰੋਤ: {{label}}।", lastUpdate: "ਆਖ਼ਰੀ ਸਫਲ ਅੱਪਡੇਟ", noUpdate: "ਹਾਲੇ ਤੱਕ ਕੋਈ ਸਫਲ ਅੱਪਡੇਟ ਨਹੀਂ।", attemptFailed: "ਤਾਜ਼ਾ ਕੋਸ਼ਿਸ਼ ਅਸਫਲ: {{error}}",
     },
     ref: {
+      geography: "ਭਾਰਤ (ਕੌਮੀ)। FAOSTAT ਵਿੱਚ ਰਾਜ ਜਾਂ ਜ਼ਿਲ੍ਹਾ ਪੱਧਰ ਦਾ ਵੇਰਵਾ ਨਹੀਂ ਹੈ।",
       current: "ਤਾਜ਼ਾ", cached: "ਕੈਸ਼ ਕੀਤਾ, ਆਖ਼ਰੀ ਸਿੰਕ ਅਸਫਲ", stale: "ਪੁਰਾਣਾ", noData: "ਹਾਲੇ ਡਾਟਾ ਨਹੀਂ", notIntegrated: "ਜੁੜਿਆ ਨਹੀਂ",
       classExternal: "ਬਾਹਰੀ, ਨਿਯਮਿਤ ਸਿੰਕ", classHistorical: "ਇਤਿਹਾਸਕ", classReference: "ਸਿਰਫ਼ ਹਵਾਲਾ",
       updates: "ਅੱਪਡੇਟ: {{freq}}।", dataPeriod: "ਡਾਟਾ ਮਿਆਦ:", lastSynced: "ਆਖ਼ਰੀ ਸਿੰਕ {{ago}}।", neverSynced: "ਕਦੇ ਸਿੰਕ ਨਹੀਂ ਹੋਇਆ।",

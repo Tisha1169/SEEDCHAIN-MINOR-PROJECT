@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import { useGetInventory } from "@workspace/api-client-react";
 import { Card, Empty, ErrorState, Loading, LotStatusPill, PageHeader, Stat, Table } from "@/components/app/common";
 import { useAuth } from "@/hooks/use-auth";
-import { qty } from "@/lib/format";
+import { cropName, qty } from "@/lib/format";
 
 /** Live per-lot inventory (harvested − reserved − sold − loss = available). */
 export default function InventoryPage() {
@@ -28,7 +28,7 @@ export default function InventoryPage() {
             return (
               <tr key={l.lotId} className="hover:bg-white/[0.03]">
                 <td className="px-4 py-3"><Link href={`/${base}/lots/${l.lotId}`} className="font-mono text-xs text-accent">{l.lotCode}</Link></td>
-                <td className="px-4 py-3">{l.productName} · {l.variety}</td>
+                <td className="px-4 py-3">{cropName(l.productName)} · {l.variety}</td>
                 {base === "admin" && <td className="px-4 py-3">{l.farmerName}</td>}
                 <td className="px-4 py-3"><LotStatusPill status={l.status} /></td>
                 <td className="w-40 px-4 py-3"><div className="flex h-1.5 overflow-hidden rounded-full bg-white/10" title={t("inventory.availableLabel", { qty: qty(i.available, i.unit) })}><div className="bg-accent" style={{ width: pct(i.available) }} /><div className="bg-amber-300" style={{ width: pct(i.reserved) }} /><div className="bg-indigo-300" style={{ width: pct(i.sold) }} /><div className="bg-rose-400" style={{ width: pct(i.loss) }} /></div></td>

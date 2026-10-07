@@ -15,7 +15,7 @@ export function SourceFooter({ s }: { s: IntegrationStatus }) {
       {t("farmer.market.source", { label: sourceLabel(s.source, s.label) })}{" "}
       {s.lastSuccess ? <>{t("farmer.market.lastUpdate")} <b>{dateTime(s.lastSuccess.finishedAt ?? s.lastSuccess.startedAt)}</b> ({timeAgo(s.lastSuccess.finishedAt ?? s.lastSuccess.startedAt)}).</> : <>{t("farmer.market.noUpdate")}</>}{" "}
       {s.lastRun && s.lastRun.status === "FAILED" && <span className="text-rose-300">{t("farmer.market.attemptFailed", { error: s.lastRun.error })}</span>}
-      {!s.configured && <span className="text-amber-300"> {s.configurationHint}</span>}
+      {!s.configured && <span className="text-amber-300"> {serverText(s.configurationHint)}</span>}
     </div>
   );
 }

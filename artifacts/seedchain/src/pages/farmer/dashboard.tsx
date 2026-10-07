@@ -7,7 +7,7 @@ import { CountUp, GlassCard, Reveal } from "@/components/motion";
 import { Timeline } from "@/components/app/timeline";
 import { useAuth } from "@/hooks/use-auth";
 import { serverText } from "@/lib/server-text";
-import { enumLabel, qty, timeAgo } from "@/lib/format";
+import { cropName, enumLabel, qty, timeAgo } from "@/lib/format";
 
 function Num({ label, value, tone, to }: { label: string; value: number | string; tone?: "warn" | "ok"; to?: string }) {
   const body = (
@@ -95,7 +95,7 @@ export default function FarmerDashboard() {
             <ul className="space-y-2">{lots.data.slice(0, 6).map((l) => (
               <li key={l.id}><Link href={`/farmer/lots/${l.id}`} className="flex items-center gap-3 rounded-2xl bg-white/[0.035] px-4 py-3 transition-colors hover:bg-white/[0.07]">
                 <QrCode className="h-4 w-4 shrink-0 text-accent" strokeWidth={1.5} />
-                <div className="min-w-0 flex-1"><div className="truncate text-sm">{l.productName} · {l.variety}</div><div className="font-mono text-[11px] text-ink/40">{l.lotCode}</div></div>
+                <div className="min-w-0 flex-1"><div className="truncate text-sm">{cropName(l.productName)} · {l.variety}</div><div className="font-mono text-[11px] text-ink/40">{l.lotCode}</div></div>
                 <LotStatusPill status={l.status} />{l.activeQr && <Pill className="bg-accent/15 text-accent">{t("farmer.dash.qrVersion", { v: l.activeQr.version })}</Pill>}
               </Link></li>))}</ul>
           ) : <p className="text-sm text-ink/45">{t("farmer.dash.noLots")}</p>}

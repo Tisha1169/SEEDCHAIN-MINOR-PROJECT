@@ -15,6 +15,8 @@ const shared: Shared = {
     FORBIDDEN: "ਤੁਹਾਨੂੰ ਇਹ ਕਰਨ ਦੀ ਇਜਾਜ਼ਤ ਨਹੀਂ ਹੈ",
   },
   enums: {
+    crop: { potato: "ਆਲੂ", tomato: "ਟਮਾਟਰ", onion: "ਪਿਆਜ਼", wheat: "ਕਣਕ", rice: "ਚੌਲ", maize: "ਮੱਕੀ", sugarcane: "ਗੰਨਾ", cauliflower: "ਫੁੱਲ ਗੋਭੀ", peas: "ਮਟਰ" },
+    eventSource: { web: "ਵੈੱਬ", offline_sync: "ਆਫ਼ਲਾਈਨ ਸਿੰਕ", pilot_seed: "ਪਾਇਲਟ ਡਾਟਾ", anomaly_detector: "ਬੇਨਿਯਮੀ ਪਛਾਣ", open_meteo_current: "Open-Meteo", camera_link: "ਫ਼ੋਨ ਕੈਮਰਾ ਲਿੰਕ", in_app_scanner: "ਐਪ ਸਕੈਨਰ", manual_entry: "ਹੱਥੀਂ ਦਰਜ" },
     unit: { kg: "ਕਿਲੋ", quintal: "ਕੁਇੰਟਲ", tonne: "ਟਨ", t: "ਟਨ" },
     orderStatus: { PENDING: "ਬਕਾਇਆ", ACCEPTED: "ਮਨਜ਼ੂਰ", PREPARING: "ਤਿਆਰ ਹੋ ਰਿਹਾ ਹੈ", READY: "ਤਿਆਰ", DISPATCHED: "ਭੇਜਿਆ ਗਿਆ", DELIVERED: "ਪਹੁੰਚਾਇਆ ਗਿਆ", CUSTOMER_CONFIRMED: "ਪ੍ਰਾਪਤੀ ਦੀ ਪੁਸ਼ਟੀ", REJECTED: "ਇਨਕਾਰ", CANCELLED: "ਰੱਦ" },
     lotStatus: { CREATED: "ਬਣਾਇਆ ਗਿਆ", GROWING: "ਉੱਗ ਰਿਹਾ ਹੈ", HARVESTED: "ਵਾਢੀ ਹੋ ਚੁੱਕੀ", AVAILABLE: "ਉਪਲਬਧ", RESERVED: "ਰਾਖਵਾਂ", PARTIALLY_SOLD: "ਅੰਸ਼ਕ ਤੌਰ ’ਤੇ ਵਿਕਿਆ", SOLD_OUT: "ਵਿਕ ਚੁੱਕਾ", RECALLED: "ਵਾਪਸ ਮੰਗਵਾਇਆ ਗਿਆ" },

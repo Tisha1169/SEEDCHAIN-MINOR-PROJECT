@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, Empty, ErrorState, Field, inputCls, Loading, PageHeader } from "@/components/app/common";
 import { useToast } from "@/hooks/use-toast";
 import { errMsg } from "@/lib/api";
-import { unitLabel } from "@/lib/format";
+import { cropName, unitLabel } from "@/lib/format";
 
 export default function FarmsPage() {
   const { t } = useTranslation();
@@ -62,7 +62,7 @@ export default function FarmsPage() {
         </div>
         <div className="space-y-4">
           <h3 className="eyebrow !text-ink/75">{t("farmer.farms.myProducts")}</h3>
-          {products.isLoading ? <Loading /> : products.data?.length ? products.data.map((x) => <Card key={x.id} className="p-4"><div className="font-medium">{x.name} · {x.variety}</div><div className="text-xs text-ink/50">{t("farmer.farms.soldPer", { unit: unitLabel(x.unit) })}</div></Card>) : <Empty title={t("farmer.farms.noProducts")} />}
+          {products.isLoading ? <Loading /> : products.data?.length ? products.data.map((x) => <Card key={x.id} className="p-4"><div className="font-medium">{cropName(x.name)} · {x.variety}</div><div className="text-xs text-ink/50">{t("farmer.farms.soldPer", { unit: unitLabel(x.unit) })}</div></Card>) : <Empty title={t("farmer.farms.noProducts")} />}
           <Card className="p-5">
             <h4 className="mb-3 font-medium">{t("farmer.farms.registerCrop")}</h4>
             <form className="space-y-3" onSubmit={async (e) => {

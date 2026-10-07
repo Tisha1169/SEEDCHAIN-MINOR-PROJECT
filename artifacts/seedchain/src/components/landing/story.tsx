@@ -5,7 +5,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { ArrowRight, Check, Circle, Sprout, Store, User, Wheat } from "lucide-react";
 import { Frame, FieldScene, PotatoScene } from "@/components/art";
 import { GlassCard, Reveal } from "@/components/motion";
-import { enumLabel } from "@/lib/format";
+import { cropName, enumLabel } from "@/lib/format";
 import { dash, Display, Eyebrow, fmtDate, Row, Section, type LandingProps } from "./shared";
 
 /** 03: one lot, one identity. */
@@ -17,7 +17,7 @@ export function Identity({ data, loading }: LandingProps) {
       <div className="grid items-center gap-14 lg:grid-cols-2 lg:gap-24">
         <Reveal y={50}>
           <Frame src="/media/potato.webp" alt={t("landing.identity.alt")} art={<PotatoScene seed={3} />} ratio="aspect-[4/5]">
-            <div className="absolute left-5 top-5 z-10 glass-strong rounded-full px-4 py-2 text-[11px] tracking-[0.18em] text-ink/80">{f ? `${f.productName.toUpperCase()} · ${f.variety.toUpperCase()}` : t("landing.identity.potato")}</div>
+            <div className="absolute left-5 top-5 z-10 glass-strong rounded-full px-4 py-2 text-[11px] tracking-[0.18em] text-ink/80">{f ? `${cropName(f.productName).toUpperCase()} · ${f.variety.toUpperCase()}` : t("landing.identity.potato")}</div>
           </Frame>
         </Reveal>
         <div>
@@ -110,7 +110,7 @@ export function QrScene({ data }: LandingProps) {
                   <div className="text-[9px] tracking-[0.25em] text-accent">{t("landing.qr.verified")}</div>
                   <div className="font-mono text-[13px]">{f?.lotCode ?? t("landing.qr.liveRecord")}</div>
                 </div>
-                <div className="mt-3 text-xl font-light">{f?.productName ?? "Potato"}</div>
+                <div className="mt-3 text-xl font-light">{cropName(f?.productName ?? "Potato")}</div>
                 <div className="text-xs text-ink/55">{f ? `${f.variety} · ${f.farmerPublicName}` : t("landing.qr.opens")}</div>
                 <div className="mt-4 space-y-2.5">
                   {(f?.timeline.slice(-3).map((e) => ({ key: e.eventType + e.eventTime, label: enumLabel("event", e.eventType) })) ?? [{ key: "a", label: t("landing.qr.s1") }, { key: "b", label: t("landing.qr.s2") }, { key: "c", label: t("landing.qr.s3") }]).map((e) => (

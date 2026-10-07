@@ -4,7 +4,7 @@ import { useGetCustomerOverview } from "@workspace/api-client-react";
 import { ScanLine, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, Empty, ErrorState, Loading, OrderStatusPill, PageHeader, Stat } from "@/components/app/common";
-import { dateTime, inr } from "@/lib/format";
+import { cropName, dateTime, inr } from "@/lib/format";
 
 export default function CustomerDashboard() {
   const { t } = useTranslation();
@@ -21,7 +21,7 @@ export default function CustomerDashboard() {
           {d.recentOrders.length ? <div className="space-y-2">{d.recentOrders.map((o) => <Link key={o.id} href={`/customer/orders/${o.id}`}><Card className="flex cursor-pointer items-center justify-between p-4 hover:shadow-md"><div><div className="font-mono text-xs">{o.orderCode}</div><div className="text-sm">{o.items.map((i) => i.variety).join(", ")} · {inr(o.totalAmount)}</div></div><OrderStatusPill status={o.status} /></Card></Link>)}</div> : <Empty title={t("customer.noOrders")} />}
         </div>
         <div><h3 className="mb-3 eyebrow !text-ink/75">{t("customer.recentLots")}</h3>
-          {d.recentScans.length ? <div className="space-y-2">{d.recentScans.map((s) => <Link key={s.publicToken} href={`/trace/${s.publicToken}`}><Card className="cursor-pointer p-4 hover:shadow-md"><div className="font-medium">{s.productName} · {s.variety}</div><div className="text-xs text-ink/50"><span className="font-mono">{s.lotCode}</span> · {t("customer.scanned", { time: dateTime(s.scannedAt) })}</div></Card></Link>)}</div> : <Empty title={t("customer.noScans")} hint={t("customer.noScansHint")} />}
+          {d.recentScans.length ? <div className="space-y-2">{d.recentScans.map((s) => <Link key={s.publicToken} href={`/trace/${s.publicToken}`}><Card className="cursor-pointer p-4 hover:shadow-md"><div className="font-medium">{cropName(s.productName)} · {s.variety}</div><div className="text-xs text-ink/50"><span className="font-mono">{s.lotCode}</span> · {t("customer.scanned", { time: dateTime(s.scannedAt) })}</div></Card></Link>)}</div> : <Empty title={t("customer.noScans")} hint={t("customer.noScansHint")} />}
         </div>
       </div>
     </>
