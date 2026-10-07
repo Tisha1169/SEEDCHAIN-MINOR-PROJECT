@@ -1,147 +1,90 @@
-import { motion } from "framer-motion";
-import { Package, Truck, Users, Warehouse, TrendingUp, ArrowUpRight, ArrowDownRight, Loader } from "lucide-react";
-import { useListBatches } from "@lib/api-client-react";
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, BarChart, Bar, PieChart, Pie, Cell } from "recharts";
 import { Link } from "wouter";
+import { useGetAdminOverview } from "@workspace/api-client-react";
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { AlertTriangle } from "lucide-react";
+import { BigNumber, Card, ErrorState, Loading, PageHeader } from "@/components/app/common";
+import { CountUp, GlassCard, Reveal } from "@/components/motion";
+import { qty } from "@/lib/format";
+import { DataHealth } from "@/components/app/reference-data";
 
-const revenueData = [
-  { month: "Jan", revenue: 120000 }, { month: "Feb", revenue: 185000 }, { month: "Mar", revenue: 240000 },
-  { month: "Apr", revenue: 320000 }, { month: "May", revenue: 280000 }, { month: "Jun", revenue: 360000 },
-  { month: "Jul", revenue: 337000 },
-];
+const COLORS = ["#86d6a0", "#4fa874", "#c8e6b0", "#7fb2d9", "#d9b86b", "#9a8fd1", "#6b7f74"];
+const RISK_COLORS: Record<string, string> = { LOW: "#86d6a0", MEDIUM: "#e0c36a", HIGH: "#e89a5a", CRITICAL: "#e5736a" };
+const axis = { tickLine: false, axisLine: false, tick: { fill: "rgba(233,238,232,0.42)", fontSize: 10 } } as const;
+const tooltip = { contentStyle: { background: "rgba(8,16,11,0.92)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 14, color: "#e9eee8", fontSize: 12, backdropFilter: "blur(12px)" }, cursor: { stroke: "rgba(255,255,255,0.15)" }, itemStyle: { color: "#e9eee8" }, labelStyle: { color: "rgba(233,238,232,0.6)" } } as const;
+const grid = <CartesianGrid stroke="rgba(255,255,255,0.06)" vertical={false} />;
 
-const statusDistribution = [
-  { name: "In Transit", value: 8, color: "#F59E0B" },
-  { name: "Stored", value: 14, color: "#3B82F6" },
-  { name: "Delivered", value: 22, color: "#3FAF5E" },
-  { name: "Harvested", value: 4, color: "#8B5CF6" },
-];
+function Big({ label, value, hint, tone }: { label: string; value: number | string; hint?: string; tone?: "warn" }) {
+  return (
+    <GlassCard className="p-5 sm:p-6">
+      <div className="eyebrow">{label}</div>
+      <div className={`mt-3 text-[2.6rem] font-extralight leading-none tracking-tight ${tone === "warn" ? "text-amber-300" : ""}`}>{typeof value === "number" ? <CountUp value={value} /> : <BigNumber value={value} />}</div>
+      {hint && <div className="mt-2 text-[11px] text-ink/40">{hint}</div>}
+    </GlassCard>
+  );
+}
+
+function Chart({ title, subtitle, children, empty }: { title: string; subtitle?: string; children: React.ReactElement; empty?: boolean }) {
+  return (
+    <Card className="p-5 sm:p-6">
+      <div className="mb-1 eyebrow">{title}</div>
+      {subtitle && <div className="mb-3 text-[11px] text-ink/35">{subtitle}</div>}
+      <div className="mt-3 h-56">{empty ? <div className="flex h-full items-center justify-center text-sm text-ink/35">No data yet</div> : <ResponsiveContainer width="100%" height="100%">{children}</ResponsiveContainer>}</div>
+    </Card>
+  );
+}
+
+const areaChart = (data: Array<{ label: string; value: number }>, color: string, id: string) => (
+  <AreaChart data={data} margin={{ left: -18, right: 6, top: 6 }}>
+    <defs><linearGradient id={id} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={color} stopOpacity={0.35} /><stop offset="100%" stopColor={color} stopOpacity={0} /></linearGradient></defs>
+    {grid}<XAxis dataKey="label" {...axis} minTickGap={24} tickFormatter={(v: string) => v.slice(5)} /><YAxis {...axis} allowDecimals={false} /><Tooltip {...tooltip} />
+    <Area type="monotone" dataKey="value" stroke={color} strokeWidth={1.8} fill={`url(#${id})`} isAnimationActive animationDuration={1200} />
+  </AreaChart>
+);
 
 export default function AdminDashboard() {
-  const { data: batches = [], isLoading } = useListBatches();
-  
-  const metrics = [
-    { label: "Total Batches", value: String(batches.length), change: "+8", positive: true, gradient: "from-[#3FAF5E] to-[#8FD14F]", icon: Package },
-    { label: "Active Deliveries", value: "12", change: "+3", positive: true, gradient: "from-[#F59E0B] to-[#FBBF24]", icon: Truck },
-    { label: "Total Farmers", value: "24", change: "+5", positive: true, gradient: "from-[#3B82F6] to-[#60A5FA]", icon: Users },
-    { label: "Storage Usage", value: "68%", change: "-4%", positive: false, gradient: "from-[#8B5CF6] to-[#A78BFA]", icon: Warehouse },
-  ];
-
+  const q = useGetAdminOverview();
+  if (q.isLoading) return <Loading />;
+  if (q.error || !q.data) return <ErrorState error={q.error} onRetry={() => void q.refetch()} />;
+  const d = q.data;
   return (
-    <div className="space-y-5">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {metrics.map((m, i) => (
-          <motion.div key={m.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
-            whileHover={{ y: -4 }}
-            className="bg-white rounded-[24px] p-5 shadow-sm border border-[#E8E6E1]/60">
-            <div className="flex items-center justify-between mb-3">
-              <div className={`w-11 h-11 rounded-2xl bg-gradient-to-br ${m.gradient} flex items-center justify-center`}>
-                <m.icon className="w-5 h-5 text-white" />
-              </div>
-              <span className={`text-xs font-semibold flex items-center gap-0.5 ${m.positive ? "text-[#3FAF5E]" : "text-red-500"}`}>
-                {m.positive ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}{m.change}
-              </span>
-            </div>
-            <div className="text-2xl font-bold text-[#1A1A1A]">{m.value}</div>
-            <div className="text-xs text-[#1A1A1A]/40">{m.label}</div>
-          </motion.div>
-        ))}
+    <>
+      <PageHeader title="Command center" subtitle={`Live database values · generated ${new Date(d.generatedAt).toLocaleTimeString()}`} />
+      {d.pendingFarmers > 0 && (
+        <Link href="/admin/users"><Card className="mb-6 flex cursor-pointer items-center gap-3 !border-amber-400/25 p-4 text-sm text-amber-100"><AlertTriangle className="h-4 w-4" />{d.pendingFarmers} farmer application(s) waiting for approval →</Card></Link>
+      )}
+      <Reveal>
+        <div className="mb-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Big label="Farmers" value={d.totalFarmers} hint={`${d.verifiedFarmers} verified`} />
+          <Big label="Active lots" value={d.activeLots} />
+          <Big label="QR scans today" value={d.qrScansToday} />
+          <Big label="Orders today" value={d.ordersToday} hint={`${d.completedOrders} completed overall`} />
+          <Big label="Available" value={qty(d.availableQuantity)} />
+          <Big label="Reserved" value={qty(d.reservedQuantity)} />
+          <Big label="Sold" value={qty(d.soldQuantity)} hint={`Loss rate ${d.lossRatePct}%`} />
+          <Big label="Customers" value={d.totalCustomers} />
+          <Big label="Trace events" value={d.traceEvents} />
+          <Big label="Open alerts" value={d.openAlerts} tone={d.openAlerts ? "warn" : undefined} />
+          <Big label="High-risk lots" value={d.highRiskLots} tone={d.highRiskLots ? "warn" : undefined} hint="Transparent rules, not AI" />
+          <Big label="Pending farmers" value={d.pendingFarmers} tone={d.pendingFarmers ? "warn" : undefined} />
+        </div>
+      </Reveal>
+      <div className="grid gap-5 lg:grid-cols-2">
+        <Chart title="Orders" subtitle="Last 14 days" empty={!d.ordersOverTime.some((p) => p.value > 0)}>{areaChart(d.ordersOverTime, "#86d6a0", "ord")}</Chart>
+        <Chart title="QR scans" subtitle="Last 14 days" empty={!d.scansOverTime.some((p) => p.value > 0)}>{areaChart(d.scansOverTime, "#7fb2d9", "scn")}</Chart>
+        <Chart title="Inventory by farmer" subtitle="Top 10 · available / reserved / sold" empty={!d.inventoryByFarmer.length}>
+          <BarChart data={d.inventoryByFarmer} margin={{ left: -10, right: 6 }}>{grid}<XAxis dataKey="farmer" {...axis} /><YAxis {...axis} /><Tooltip {...tooltip} />
+            <Bar dataKey="available" stackId="a" fill="#86d6a0" radius={[0, 0, 0, 0]} /><Bar dataKey="reserved" stackId="a" fill="#e0c36a" /><Bar dataKey="sold" stackId="a" fill="#9a8fd1" radius={[6, 6, 0, 0]} /></BarChart>
+        </Chart>
+        <Chart title="Lots by status" empty={!d.lotsByStatus.length}>
+          <PieChart><Pie data={d.lotsByStatus} dataKey="value" nameKey="label" innerRadius={52} outerRadius={82} paddingAngle={3} stroke="none" label={(e) => `${e.label} ${e.value}`}>{d.lotsByStatus.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}</Pie><Tooltip {...tooltip} /></PieChart>
+        </Chart>
+        <Chart title="Risk distribution" subtitle="Rule-based (rules-v1)" empty={d.riskDistribution.every((r) => r.value === 0)}>
+          <BarChart data={d.riskDistribution} margin={{ left: -18 }}>{grid}<XAxis dataKey="label" {...axis} /><YAxis {...axis} allowDecimals={false} /><Tooltip {...tooltip} /><Bar dataKey="value" radius={[8, 8, 0, 0]}>{d.riskDistribution.map((r) => <Cell key={r.label} fill={RISK_COLORS[r.label]} />)}</Bar></BarChart>
+        </Chart>
+        <Chart title="Potato modal price" subtitle="INR / quintal · external, data.gov.in" empty={!d.marketTrend.length}>{areaChart(d.marketTrend, "#d9b86b", "mkt")}</Chart>
       </div>
-
-      {/* Revenue + Pie */}
-      <div className="grid lg:grid-cols-3 gap-4">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
-          className="lg:col-span-2 bg-white rounded-[24px] p-6 shadow-sm border border-[#E8E6E1]/60">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="font-bold text-[#1A1A1A]">Platform Revenue</h3>
-              <p className="text-xs text-[#1A1A1A]/40">Monthly revenue trend</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <DollarSign className="w-4 h-4 text-[#3FAF5E]" />
-              <span className="text-lg font-bold text-[#1A1A1A]">₹{(adminStats.totalRevenue / 100000).toFixed(1)}L</span>
-            </div>
-          </div>
-          <ResponsiveContainer width="100%" height={200}>
-            <AreaChart data={revenueData}>
-              <defs>
-                <linearGradient id="aRev" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#3FAF5E" stopOpacity={0.25}/><stop offset="95%" stopColor="#3FAF5E" stopOpacity={0}/></linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="month" tick={{ fontSize: 11 }} stroke="#ccc" />
-              <YAxis tick={{ fontSize: 11 }} stroke="#ccc" tickFormatter={v => `${v / 1000}k`} />
-              <Tooltip formatter={(v: number) => `₹${v.toLocaleString()}`} />
-              <Area type="monotone" dataKey="revenue" stroke="#3FAF5E" strokeWidth={2.5} fill="url(#aRev)" />
-            </AreaChart>
-          </ResponsiveContainer>
-        </motion.div>
-
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
-          className="bg-white rounded-[24px] p-6 shadow-sm border border-[#E8E6E1]/60">
-          <h3 className="font-bold text-[#1A1A1A] mb-4">Batch Status</h3>
-          <ResponsiveContainer width="100%" height={180}>
-            <PieChart>
-              <Pie data={statusDistribution} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={4} dataKey="value">
-                {statusDistribution.map(entry => <Cell key={entry.name} fill={entry.color} />)}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="flex flex-wrap gap-3 justify-center mt-2">
-            {statusDistribution.map(s => (
-              <div key={s.name} className="flex items-center gap-1.5 text-[10px]">
-                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }} />
-                <span className="text-[#1A1A1A]/50">{s.name}</span>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-      </div>
-
-      {/* Supply Chain Map placeholder + Active Shipments */}
-      <div className="grid lg:grid-cols-2 gap-4">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
-          className="bg-gradient-to-br from-[#3FAF5E]/[0.04] via-[#3B82F6]/[0.04] to-[#8FD14F]/[0.04] rounded-[24px] p-6 border border-[#E8E6E1]/60 relative overflow-hidden min-h-[250px] flex items-center justify-center">
-          <div className="absolute inset-0 opacity-[0.06]" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%233FAF5E' fill-opacity='1'%3E%3Cpath d='M0 0h1v1H0V0zm20 20h1v1h-1v-1z'/%3E%3C/g%3E%3C/svg%3E")` }} />
-          <div className="text-center relative z-10">
-            <h3 className="font-bold text-[#1A1A1A] mb-2">Supply Chain Map</h3>
-            <p className="text-xs text-[#1A1A1A]/40 mb-4">Live visualization of all shipment routes</p>
-            <div className="flex flex-wrap gap-3 justify-center">
-              {allShipments.map(s => (
-                <Link key={s.trackingId} href={`/tracking/${s.trackingId}`}>
-                  <div className="bg-white rounded-xl px-3 py-2 shadow-sm border border-[#E8E6E1]/60 text-xs hover:shadow-md transition-all cursor-pointer">
-                    <span className="font-mono font-medium text-[#1A1A1A]">{s.trackingId}</span>
-                    <span className={`ml-2 text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${s.status === "in-transit" ? "bg-[#F59E0B]/10 text-[#F59E0B]" : s.status === "delivered" ? "bg-[#3FAF5E]/10 text-[#3FAF5E]" : "bg-[#3B82F6]/10 text-[#3B82F6]"}`}>
-                      {s.status.replace("-", " ")}
-                    </span>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </motion.div>
-
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55 }}
-          className="bg-white rounded-[24px] p-6 shadow-sm border border-[#E8E6E1]/60">
-          <h3 className="font-bold text-[#1A1A1A] mb-4">Quick Navigation</h3>
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { label: "Users", href: "/admin/users", emoji: "👥" },
-              { label: "All Batches", href: "/admin/batches", emoji: "🌱" },
-              { label: "Storage", href: "/admin/storage", emoji: "❄️" },
-              { label: "Analytics", href: "/admin/supply-chain-map", emoji: "📊" },
-            ].map(a => (
-              <Link key={a.label} href={a.href}>
-                <motion.div whileHover={{ y: -3 }}
-                  className="rounded-[18px] p-4 border border-[#E8E6E1]/60 hover:border-[#3FAF5E]/30 transition-all cursor-pointer text-center">
-                  <span className="text-2xl block mb-1">{a.emoji}</span>
-                  <span className="text-xs font-medium text-[#1A1A1A]">{a.label}</span>
-                </motion.div>
-              </Link>
-            ))}
-          </div>
-        </motion.div>
-      </div>
-    </div>
+      <div className="eyebrow mb-3 mt-8">Data health: every external source</div>
+      <DataHealth />
+    </>
   );
 }

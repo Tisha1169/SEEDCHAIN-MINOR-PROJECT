@@ -1,102 +1,66 @@
-import { motion, AnimatePresence } from "framer-motion";
-import { Search, Shield, User as UserIcon, MoreVertical, ChevronDown } from "lucide-react";
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useListUsers, type CurrentUser } from "@workspace/api-client-react";
+import { BadgeCheck } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ErrorState, Loading, PageHeader, Pill, Table, textareaCls } from "@/components/app/common";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, errMsg } from "@/lib/api";
+import { dateOnly, titleCase } from "@/lib/format";
 
-interface UserRow { id: string; name: string; email: string; role: string; status: "active" | "suspended"; joined: string }
-
-const users: UserRow[] = [
-  { id: "U001", name: "Rajesh Kumar", email: "rajesh@farmer.com", role: "farmer", status: "active", joined: "2024-12-01" },
-  { id: "U002", name: "CoolStore Admin", email: "storage@coolstore.com", role: "storage", status: "active", joined: "2024-11-15" },
-  { id: "U003", name: "FastTrack Logistics", email: "logistics@fasttrack.com", role: "logistics", status: "active", joined: "2024-10-20" },
-  { id: "U004", name: "GreenMart Buyer", email: "buyer@greenmart.com", role: "buyer", status: "active", joined: "2024-11-28" },
-  { id: "U005", name: "Meena Patel", email: "meena@farmer.com", role: "farmer", status: "active", joined: "2025-01-05" },
-  { id: "U006", name: "Old Warehouse", email: "old@warehouse.com", role: "storage", status: "suspended", joined: "2024-06-10" },
-];
-
-const roleBadge: Record<string, string> = {
-  farmer: "bg-[#3FAF5E]/10 text-[#3FAF5E]",
-  storage: "bg-[#3B82F6]/10 text-[#3B82F6]",
-  logistics: "bg-[#F59E0B]/10 text-[#F59E0B]",
-  buyer: "bg-[#8B5CF6]/10 text-[#8B5CF6]",
-  admin: "bg-[#EF4444]/10 text-[#EF4444]",
-};
+const STATUS: Record<string, string> = { pending: "bg-amber-400/15 text-amber-300", active: "bg-emerald-400/15 text-emerald-300", rejected: "bg-rose-400/15 text-rose-300", suspended: "bg-zinc-400/15 text-zinc-300" };
 
 export default function AdminUsers() {
-  const [search, setSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState("all");
-  const filtered = users.filter(u =>
-    (roleFilter === "all" || u.role === roleFilter) &&
-    (u.name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase()))
-  );
+  const [role, setRole] = useState("");
+  const q = useListUsers(role ? { role: role as never } : undefined);
+  const qc = useQueryClient();
+  const { toast } = useToast();
+  const [target, setTarget] = useState<{ u: CurrentUser; action: "approve" | "reject" | "suspend" | "reactivate" } | null>(null);
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function run() {
+    if (!target) return;
+    setBusy(true);
+    try {
+      await apiRequest({ url: `/api/admin/users/${target.u.id}/${target.action}`, method: "POST", body: note ? { note } : {} });
+      toast({ title: `${titleCase(target.action)} done` });
+      setTarget(null); setNote("");
+      await qc.invalidateQueries();
+    } catch (err) { toast({ title: "Failed", description: errMsg(err), variant: "destructive" }); }
+    finally { setBusy(false); }
+  }
+  const btn = (u: CurrentUser, action: "approve" | "reject" | "suspend" | "reactivate", label: string) => <Button key={action} size="sm" variant="outline" className="mr-1 rounded-full" onClick={() => setTarget({ u, action })}>{label}</Button>;
 
   return (
-    <div className="space-y-5">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-[24px] p-6 shadow-sm border border-[#E8E6E1]/60">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-5">
-          <div>
-            <h2 className="text-lg font-bold text-[#1A1A1A]">User Management</h2>
-            <p className="text-xs text-[#1A1A1A]/40">{users.length} registered users</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center bg-[#F7F7F7] rounded-xl px-3 py-2 gap-2 text-sm">
-              <Search className="w-4 h-4 text-[#1A1A1A]/30" />
-              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search users…" className="bg-transparent outline-none w-40 text-sm placeholder:text-[#1A1A1A]/30" />
-            </div>
-            <select value={roleFilter} onChange={e => setRoleFilter(e.target.value)}
-              className="bg-[#F7F7F7] rounded-xl px-3 py-2 text-sm text-[#1A1A1A] border-0 outline-none">
-              <option value="all">All Roles</option>
-              <option value="farmer">Farmer</option>
-              <option value="storage">Storage</option>
-              <option value="logistics">Logistics</option>
-              <option value="buyer">Buyer</option>
-            </select>
-          </div>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-[#1A1A1A]/40 text-xs">
-                <th className="text-left pb-3 font-medium">User</th>
-                <th className="text-left pb-3 font-medium">Role</th>
-                <th className="text-left pb-3 font-medium">Status</th>
-                <th className="text-left pb-3 font-medium">Joined</th>
-              </tr>
-            </thead>
-            <tbody>
-              <AnimatePresence>
-                {filtered.map((u, i) => (
-                  <motion.tr key={u.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                    transition={{ delay: i * 0.04 }}
-                    className="border-t border-[#E8E6E1]/40 hover:bg-[#F7F7F7]/50 transition-colors">
-                    <td className="py-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#3FAF5E]/20 to-[#8FD14F]/20 flex items-center justify-center">
-                          <UserIcon className="w-4 h-4 text-[#3FAF5E]" />
-                        </div>
-                        <div>
-                          <div className="font-medium text-[#1A1A1A]">{u.name}</div>
-                          <div className="text-[10px] text-[#1A1A1A]/40">{u.email}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-3">
-                      <span className={`text-[10px] font-semibold px-2 py-1 rounded-full capitalize ${roleBadge[u.role] || ""}`}>{u.role}</span>
-                    </td>
-                    <td className="py-3">
-                      <span className={`text-[10px] font-semibold px-2 py-1 rounded-full ${u.status === "active" ? "bg-[#3FAF5E]/10 text-[#3FAF5E]" : "bg-red-100 text-red-500"}`}>
-                        {u.status}
-                      </span>
-                    </td>
-                    <td className="py-3 text-xs text-[#1A1A1A]/50">{new Date(u.joined).toLocaleDateString()}</td>
-                  </motion.tr>
-                ))}
-              </AnimatePresence>
-            </tbody>
-          </table>
-        </div>
-      </motion.div>
-    </div>
+    <>
+      <PageHeader title="Users & farmers" subtitle="Approve farmers before they can create lots and QR codes." actions={<select className="h-10 rounded-full border bg-glass-2 px-4 text-sm" value={role} onChange={(e) => setRole(e.target.value)}><option value="">All roles</option><option value="farmer">Farmers</option><option value="customer">Customers</option><option value="admin">Admins</option></select>} />
+      {q.isLoading ? <Loading /> : q.error ? <ErrorState error={q.error} onRetry={() => void q.refetch()} /> : (
+        <Table head={["Name", "Email", "Role", "Status", "Location / public profile", "Joined", ""]}>
+          {q.data?.map((u) => (
+            <tr key={u.id}>
+              <td className="px-4 py-3 font-medium">{u.name}</td><td className="px-4 py-3">{u.email}</td><td className="px-4 py-3 capitalize">{u.role}</td>
+              <td className="px-4 py-3"><Pill className={STATUS[u.status]}>{u.status}</Pill></td>
+              <td className="px-4 py-3 text-xs">{u.farmerProfile ? <span className="inline-flex items-center gap-1">{u.farmerProfile.publicName} · {[u.farmerProfile.district, u.farmerProfile.state].filter(Boolean).join(", ")}{u.farmerProfile.verifiedAt && <BadgeCheck className="h-3.5 w-3.5 text-accent" />}</span> : u.location ?? "—"}</td>
+              <td className="px-4 py-3 text-xs">{dateOnly(u.createdAt)}</td>
+              <td className="px-4 py-3 whitespace-nowrap">
+                {u.role === "farmer" && u.status !== "active" && u.status !== "suspended" && btn(u, "approve", "Approve")}
+                {u.role === "farmer" && u.status === "pending" && btn(u, "reject", "Reject")}
+                {u.role !== "admin" && u.status === "active" && btn(u, "suspend", "Suspend")}
+                {u.status === "suspended" && btn(u, "reactivate", "Reactivate")}
+              </td>
+            </tr>
+          ))}
+        </Table>
+      )}
+      <Dialog open={!!target} onOpenChange={(o) => !o && setTarget(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{target && `${titleCase(target.action)} ${target.u.name}`}</DialogTitle><DialogDescription>Recorded in the audit log.</DialogDescription></DialogHeader>
+          <textarea className={textareaCls} rows={3} placeholder={target?.action === "reject" || target?.action === "suspend" ? "Reason (required)" : "Verification note (optional)"} value={note} onChange={(e) => setNote(e.target.value)} />
+          <DialogFooter><Button variant="ghost" onClick={() => setTarget(null)}>Cancel</Button><Button disabled={busy || ((target?.action === "reject" || target?.action === "suspend") && !note.trim())} onClick={() => void run()}>Confirm</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

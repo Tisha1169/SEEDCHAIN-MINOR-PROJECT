@@ -1,0 +1,1 @@
+ALTER TABLE "traceability_events" ALTER COLUMN "recorded_at" SET DEFAULT clock_timestamp();

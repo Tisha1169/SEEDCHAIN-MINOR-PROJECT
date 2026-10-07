@@ -1,173 +1,145 @@
+import { useState, useSyncExternalStore, type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
-import { useAuth } from "@/hooks/use-auth";
-import { Button } from "@/components/ui/button";
-import { PageTransition } from "@/components/page-transition";
-import { 
-  LayoutDashboard, 
-  Sprout, 
-  Warehouse, 
-  Truck, 
-  ShoppingBag, 
-  Users, 
-  LogOut,
-  Menu,
-  X,
-  Package,
-  MapPin,
-  Navigation,
-  Settings,
-  Bell,
-  Search,
-  BarChart3
+import {
+  AlertTriangle, BarChart3, ClipboardList, CloudOff, History, LayoutDashboard, Leaf, LogOut, Menu, Package, QrCode, RefreshCw,
+  ScanLine, ShoppingBag, Sprout, Users, X, Plug, Wifi, WifiOff, Landmark, Boxes, UserCog, Plus,
 } from "lucide-react";
-import { useState } from "react";
-import { ReactNode } from "react";
+import { useAuth } from "@/hooks/use-auth";
+import { useRealtimeMode } from "@/hooks/use-realtime";
+import { dismissAction, queueSnapshot, subscribeQueue, syncQueue } from "@/lib/offline-queue";
+import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Logo } from "./navbar";
 
-interface DashboardLayoutProps {
-  children: ReactNode;
+const NAV = {
+  farmer: [
+    { name: "Dashboard", href: "/farmer", icon: LayoutDashboard },
+    { name: "Farms & products", href: "/farmer/farms", icon: Sprout },
+    { name: "My lots", href: "/farmer/lots", icon: Package },
+    { name: "Inventory", href: "/farmer/inventory", icon: Boxes },
+    { name: "Orders", href: "/farmer/orders", icon: ClipboardList },
+    { name: "Market & weather", href: "/farmer/market", icon: Landmark },
+    { name: "Alerts", href: "/farmer/alerts", icon: AlertTriangle },
+    { name: "Scan a QR", href: "/scan", icon: ScanLine },
+    { name: "Account", href: "/account", icon: UserCog },
+  ],
+  customer: [
+    { name: "Dashboard", href: "/customer", icon: LayoutDashboard },
+    { name: "Browse produce", href: "/marketplace", icon: ShoppingBag },
+    { name: "My orders", href: "/customer/orders", icon: ClipboardList },
+    { name: "Scan a QR", href: "/scan", icon: ScanLine },
+    { name: "Account", href: "/account", icon: UserCog },
+  ],
+  admin: [
+    { name: "Command center", href: "/admin", icon: BarChart3 },
+    { name: "Users & farmers", href: "/admin/users", icon: Users },
+    { name: "Lots & QR codes", href: "/admin/lots", icon: QrCode },
+    { name: "Orders", href: "/admin/orders", icon: ClipboardList },
+    { name: "Trace events", href: "/admin/events", icon: History },
+    { name: "Alerts", href: "/admin/alerts", icon: AlertTriangle },
+    { name: "Data sources", href: "/admin/integrations", icon: Plug },
+    { name: "Inventory", href: "/admin/inventory", icon: Boxes },
+    { name: "Audit log", href: "/admin/audit", icon: Leaf },
+    { name: "Account", href: "/account", icon: UserCog },
+  ],
+} as const;
+
+function SyncStatus() {
+  const items = useSyncExternalStore(subscribeQueue, () => JSON.stringify(queueSnapshot()));
+  const queue = JSON.parse(items) as ReturnType<typeof queueSnapshot>;
+  const { toast } = useToast();
+  const [busy, setBusy] = useState(false);
+  if (!queue.length) return null;
+  const pending = queue.filter((q) => q.status === "PENDING");
+  const conflicts = queue.filter((q) => q.status === "SYNC_CONFLICT");
+  return (
+    <div className="mb-4 rounded-2xl border border-amber-400/25 bg-amber-400/10 p-4 text-sm" role="status">
+      <div className="flex flex-wrap items-center gap-3">
+        <CloudOff className="h-5 w-5 text-amber-300" />
+        <div className="flex-1">
+          {pending.length > 0 && <div className="font-medium text-amber-300">Saved offline: {pending.length} action(s) waiting for synchronization.</div>}
+          {conflicts.length > 0 && <div className="font-medium text-rose-300">SYNC_CONFLICT: {conflicts.length} action(s) were rejected by the server and need your review.</div>}
+        </div>
+        {pending.length > 0 && (
+          <Button size="sm" variant="outline" disabled={busy} className="rounded-full" onClick={async () => {
+            setBusy(true);
+            const n = await syncQueue();
+            setBusy(false);
+            toast({ title: n ? `${n} action(s) synchronized` : "Still offline or nothing to sync" });
+          }}>
+            <RefreshCw className={`mr-2 h-4 w-4 ${busy ? "animate-spin" : ""}`} />Sync now
+          </Button>
+        )}
+      </div>
+      {conflicts.map((c) => (
+        <div key={c.id} className="mt-3 flex items-start justify-between gap-3 rounded-xl bg-glass-2 p-3">
+          <div>
+            <div className="font-medium">{c.label}</div>
+            <div className="text-xs text-rose-300">Rejected: {c.error}</div>
+            <div className="text-xs text-ink/50">Nothing was overwritten. Review the record and re-enter the action if it is still valid.</div>
+          </div>
+          <Button size="sm" variant="ghost" onClick={() => dismissAction(c.id)}>Dismiss</Button>
+        </div>
+      ))}
+    </div>
+  );
 }
 
-export function DashboardLayout({ children }: DashboardLayoutProps) {
+export function DashboardLayout({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
   const [location] = useLocation();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
+  const [open, setOpen] = useState(false);
+  const mode = useRealtimeMode();
   if (!user) return null;
-
-  const roleNavItems = {
-    farmer: [
-      { name: "Dashboard", href: "/farmer", icon: LayoutDashboard },
-      { name: "Seed Batches", href: "/farmer/batches", icon: Sprout },
-      { name: "Harvests", href: "/farmer/harvests", icon: Package },
-      { name: "Send to Storage", href: "/farmer/send-to-storage", icon: Warehouse },
-      { name: "Marketplace", href: "/farmer/marketplace", icon: ShoppingBag },
-      { name: "Shipments", href: "/farmer/shipments", icon: Truck },
-    ],
-    storage: [
-      { name: "Dashboard", href: "/storage", icon: LayoutDashboard },
-      { name: "Inventory", href: "/storage/inventory", icon: Warehouse },
-      { name: "Incoming", href: "/storage/incoming", icon: Truck },
-      { name: "Outgoing", href: "/storage/outgoing", icon: Package },
-    ],
-    logistics: [
-      { name: "Dashboard", href: "/logistics", icon: LayoutDashboard },
-      { name: "Deliveries", href: "/logistics/deliveries", icon: Truck },
-      { name: "Tracking", href: "/logistics/tracking", icon: Navigation },
-      { name: "Update Location", href: "/logistics/update-location", icon: MapPin },
-    ],
-    buyer: [
-      { name: "Dashboard", href: "/buyer", icon: LayoutDashboard },
-      { name: "Marketplace", href: "/buyer/marketplace", icon: ShoppingBag },
-      { name: "My Orders", href: "/buyer/orders", icon: Package },
-    ],
-    admin: [
-      { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
-      { name: "Users", href: "/admin/users", icon: Users },
-      { name: "All Batches", href: "/admin/batches", icon: Sprout },
-      { name: "Storage", href: "/admin/storage", icon: Warehouse },
-      { name: "Analytics", href: "/admin/supply-chain-map", icon: BarChart3 },
-    ]
-  };
-
-  const navItems = roleNavItems[user.role as keyof typeof roleNavItems] || [];
+  const items = NAV[user.role];
 
   return (
-    <div className="min-h-screen bg-[#F4F4F8] flex">
-      {/* Mobile Menu Button */}
-      <button 
-        className="md:hidden fixed top-4 right-4 z-50 p-2.5 bg-white rounded-xl shadow-lg border border-border/50"
-        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-      >
-        {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+    <div className="relative min-h-screen">
+      <button className="glass-strong fixed right-4 top-4 z-50 rounded-full p-3 md:hidden" onClick={() => setOpen(!open)} aria-label={open ? "Close menu" : "Open menu"} aria-expanded={open}>
+        {open ? <X size={20} /> : <Menu size={20} />}
       </button>
-
-      {/* Left Sidebar — Matching reference image 2 */}
-      <aside className={`
-        fixed inset-y-0 left-0 z-40 w-[72px] bg-white border-r border-border/50 flex flex-col items-center py-6 transform transition-transform duration-200 ease-in-out md:translate-x-0 shadow-sm
-        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
-      `}>
-        {/* Logo */}
-        <Link href="/" className="mb-8">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#3FAF5E] to-[#8FD14F] flex items-center justify-center shadow-md">
-            <span className="text-white font-bold text-lg">S</span>
-          </div>
-        </Link>
-
-        {/* Nav icons */}
-        <nav className="flex-1 flex flex-col gap-1">
-          {navItems.map((item) => {
-            const isActive = location === item.href;
+      <aside className={`glass-strong fixed inset-y-3 left-3 z-40 flex w-[248px] flex-col rounded-[28px] p-4 transition-transform duration-500 ease-out md:translate-x-0 ${open ? "translate-x-0" : "-translate-x-[120%]"}`} aria-label="Workspace navigation">
+        <Link href="/" className="mb-6 px-2 pt-1"><Logo /></Link>
+        {user.role === "farmer" && user.status === "active" && (
+          <Link href="/farmer/lots/new" onClick={() => setOpen(false)} className="mb-5 flex items-center justify-center gap-2 rounded-full bg-white py-3 text-sm font-medium text-neutral-950 transition-shadow hover:shadow-[0_0_34px_-6px_rgba(255,255,255,0.55)]"><Plus className="h-4 w-4" />New lot</Link>
+        )}
+        <nav className="flex-1 space-y-0.5 overflow-y-auto">
+          {items.map((n) => {
+            const active = location === n.href || (n.href !== `/${user.role}` && n.href !== "/scan" && location.startsWith(`${n.href}/`));
             return (
-              <Link key={item.href} href={item.href}>
-                <div className={`
-                  w-11 h-11 rounded-xl flex items-center justify-center cursor-pointer transition-all group relative
-                  ${isActive 
-                    ? 'bg-gradient-to-br from-[#3FAF5E] to-[#8FD14F] text-white shadow-lg shadow-[#3FAF5E]/25' 
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'}
-                `}>
-                  <item.icon size={20} />
-                  {/* Tooltip */}
-                  <div className="absolute left-14 bg-[#1A1A1A] text-white text-xs px-2.5 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
-                    {item.name}
-                  </div>
+              <Link key={n.href} href={n.href} onClick={() => setOpen(false)} aria-current={active ? "page" : undefined}>
+                <div className={`group flex cursor-pointer items-center gap-3 rounded-2xl px-3.5 py-2.5 text-[13px] transition-colors ${active ? "bg-white/10 text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]" : "text-ink/55 hover:bg-white/[0.05] hover:text-ink"}`}>
+                  <n.icon size={17} strokeWidth={1.5} className={active ? "text-accent" : ""} /> {n.name}
+                  {active && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-accent shadow-[0_0_10px_2px_rgba(134,214,160,0.6)]" />}
                 </div>
               </Link>
             );
           })}
         </nav>
-
-        {/* Bottom actions */}
-        <div className="flex flex-col gap-1 mt-auto">
-          <button className="w-11 h-11 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-all">
-            <Settings size={20} />
-          </button>
-          <button 
-            onClick={logout}
-            className="w-11 h-11 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-red-50 hover:text-red-500 transition-all"
-          >
-            <LogOut size={20} />
-          </button>
+        <div className="mt-3 border-t border-white/[0.08] pt-3">
+          <div className="mb-3 flex items-center gap-2 px-2 text-[11px] text-ink/45" title="Updates arrive over a server-sent event stream; if unavailable the app polls every 20 s">
+            {mode === "live" ? <Wifi size={13} className="text-accent" /> : <WifiOff size={13} className="text-amber-300" />}
+            {mode === "live" ? "Live updates connected" : mode === "polling" ? "Refreshing every 20 s" : "You are offline"}
+          </div>
+          <div className="flex items-center gap-3 px-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-accent/15 text-sm text-accent">{user.name[0]?.toUpperCase()}</div>
+            <div className="min-w-0 flex-1"><div className="truncate text-[13px]">{user.name}</div><div className="text-[10px] uppercase tracking-[0.16em] text-ink/40">{user.role}</div></div>
+            <button onClick={() => void logout()} className="rounded-full p-2 text-ink/50 transition-colors hover:bg-white/10 hover:text-ink" aria-label="Sign out"><LogOut size={16} /></button>
+          </div>
         </div>
       </aside>
-
-      {/* Main Content Area */}
-      <main className="flex-1 md:pl-[72px]">
-        {/* Top Bar */}
-        <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-border/50 px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <h1 className="text-xl font-bold text-[#1A1A1A] capitalize">{user.role} Dashboard</h1>
-            <span className="text-xs px-2.5 py-1 rounded-full bg-[#3FAF5E]/10 text-[#3FAF5E] font-medium capitalize">{user.role}</span>
-          </div>
-          <div className="flex items-center gap-3">
-            {/* Search */}
-            <div className="hidden md:flex items-center gap-2 bg-muted/50 rounded-xl px-3 py-2">
-              <Search size={16} className="text-muted-foreground" />
-              <input type="text" placeholder="Search..." className="bg-transparent outline-none text-sm w-40" />
+      {open && <div className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm md:hidden" onClick={() => setOpen(false)} />}
+      <main id="main" tabIndex={-1} className="relative z-[2] min-w-0 outline-none md:pl-[272px]">
+        <div className="mx-auto max-w-[1280px] p-4 pt-20 md:p-10 md:pt-10">
+          {user.role === "farmer" && user.status === "pending" && (
+            <div className="mb-6 rounded-3xl border border-amber-400/25 bg-amber-400/10 p-4 text-sm text-amber-100">
+              <b className="font-medium">Awaiting admin approval.</b> You can complete your profile now; creating farms, lots and QR codes unlocks once an admin verifies your account.
             </div>
-            {/* Notifications */}
-            <button className="w-10 h-10 rounded-xl bg-muted/50 flex items-center justify-center text-muted-foreground hover:bg-muted transition-all relative">
-              <Bell size={18} />
-              <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-[#3FAF5E] rounded-full border-2 border-white" />
-            </button>
-            {/* User avatar */}
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#3FAF5E] to-[#8FD14F] flex items-center justify-center shadow-sm">
-              <span className="text-white font-bold text-sm">{user.name?.[0]?.toUpperCase() || "U"}</span>
-            </div>
-          </div>
-        </header>
-
-        {/* Page Content */}
-        <div className="p-6 md:p-8 max-w-[1400px] mx-auto">
-          <PageTransition>
-            {children}
-          </PageTransition>
+          )}
+          <SyncStatus />
+          {children}
         </div>
       </main>
-
-      {/* Mobile overlay */}
-      {isMobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-30 bg-black/50" onClick={() => setIsMobileMenuOpen(false)} />
-      )}
     </div>
   );
 }

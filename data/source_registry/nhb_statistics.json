@@ -1,0 +1,16 @@
+{
+  "id": "nhb_statistics",
+  "name": "National Horticulture Board: horticulture statistics",
+  "organization": "National Horticulture Board (NHB), Ministry of Agriculture & Farmers Welfare",
+  "url": "https://www.nhb.gov.in/",
+  "dataset": "Horticulture area and production statistics (annual reports and PDFs)",
+  "geography": "India: state level",
+  "frequency": "Annual",
+  "units": "Per publication",
+  "licence": "See NHB terms",
+  "usageNotes": "The statistics pages are navigation plus PDF annual reports; there is no machine-readable table to ingest. Year, state, crop and unit must be verified manually before any figure is imported.",
+  "dataClass": "historical",
+  "integration": "reference_only",
+  "staleAfterHours": null,
+  "integrationNote": "Reachable (HTTP 200). Not integrated."
+}

@@ -15,26 +15,11 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
-    ...(process.env.NODE_ENV !== "production" &&
-    process.env.REPL_ID !== undefined
-      ? [
-          (await import("@replit/vite-plugin-runtime-error-modal")).default(),
-          await import("@replit/vite-plugin-cartographer").then((m) =>
-            m.cartographer({
-              root: path.resolve(import.meta.dirname, ".."),
-            }),
-          ),
-          await import("@replit/vite-plugin-dev-banner").then((m) =>
-            m.devBanner(),
-          ),
-        ]
-      : []),
   ],
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "src"),
-      "@lib": path.resolve(import.meta.dirname, "..", "..", "lib"),
-      "@assets": path.resolve(import.meta.dirname, "..", "..", "attached_assets"),
+      
     },
     dedupe: ["react", "react-dom"],
   },
@@ -42,6 +27,19 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks: (id: string) => {
+          if (!id.includes("node_modules")) return undefined;
+          if (id.includes("recharts") || id.includes("/d3-")) return "charts";
+          if (id.includes("@zxing")) return "scanner";
+          if (id.includes("framer-motion") || id.includes("/motion")) return "motion";
+          if (id.includes("@radix-ui")) return "radix";
+          if (id.includes("react-dom") || id.includes("/react/") || id.includes("scheduler")) return "react";
+          return undefined;
+        },
+      },
+    },
   },
   server: {
     port,
@@ -49,7 +47,7 @@ export default defineConfig({
     allowedHosts: true,
     proxy: {
       "/api": {
-        target: "http://localhost:8080",
+        target: process.env.API_PROXY_TARGET ?? "http://localhost:8080",
         changeOrigin: true,
       },
     },

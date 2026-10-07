@@ -1,27 +1,40 @@
 import "dotenv/config";
 
+import { pool } from "@workspace/db";
+import { runMigrations } from "@workspace/db/migrate";
 import app from "./app";
+import { assertProductionConfig, config } from "./config";
 import { logger } from "./lib/logger";
+import { startRealtime, stopRealtime } from "./services/realtime";
+import { syncRegistry } from "./services/external/registry";
+import { startScheduler, stopScheduler } from "./services/scheduler";
 
-const rawPort = process.env["PORT"];
-
-if (!rawPort) {
-  throw new Error(
-    "PORT environment variable is required but was not provided.",
-  );
-}
-
-const port = Number(rawPort);
-
-if (Number.isNaN(port) || port <= 0) {
-  throw new Error(`Invalid PORT value: "${rawPort}"`);
-}
-
-app.listen(port, (err) => {
-  if (err) {
-    logger.error({ err }, "Error listening on port");
-    process.exit(1);
+async function main() {
+  assertProductionConfig();
+  if (config.runMigrationsOnStart) {
+    await runMigrations(pool, (m) => logger.info(m));
   }
+  await syncRegistry();
+  const server = app.listen(config.port, () => {
+    logger.info({ port: config.port, traceBase: config.publicTraceBaseUrl }, "Server listening");
+  });
+  await startRealtime();
+  startScheduler();
 
-  logger.info({ port }, "Server listening");
+  const shutdown = async (signal: string) => {
+    logger.info({ signal }, "Shutting down");
+    stopScheduler();
+    await stopRealtime();
+    server.close(() => {
+      void pool.end().finally(() => process.exit(0));
+    });
+    setTimeout(() => process.exit(1), 10_000).unref();
+  };
+  process.on("SIGTERM", () => void shutdown("SIGTERM"));
+  process.on("SIGINT", () => void shutdown("SIGINT"));
+}
+
+main().catch((err) => {
+  logger.fatal({ err }, "Startup failed");
+  process.exit(1);
 });

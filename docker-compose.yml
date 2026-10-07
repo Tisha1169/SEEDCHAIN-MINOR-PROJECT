@@ -1,0 +1,31 @@
+# Local production-like stack: PostgreSQL 16 + the SeedChain image.
+#   AUTH_SECRET=$(openssl rand -base64 48) docker compose up --build
+# Production uses a MANAGED PostgreSQL instead of the `db` service (see docs/DEPLOYMENT.md).
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: seedchain
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-seedchain-local}
+      POSTGRES_DB: seedchain
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U seedchain"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+  app:
+    build: .
+    depends_on:
+      db: { condition: service_healthy }
+    ports: ["8080:8080"]
+    environment:
+      DATABASE_URL: postgres://seedchain:${POSTGRES_PASSWORD:-seedchain-local}@db:5432/seedchain
+      AUTH_SECRET: ${AUTH_SECRET:?set AUTH_SECRET (openssl rand -base64 48)}
+      PUBLIC_TRACE_BASE_URL: ${PUBLIC_TRACE_BASE_URL:-http://localhost:8080}
+      # Plain-HTTP local testing only. Never set false behind a real domain.
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      ALLOW_INSECURE_LOCAL: ${ALLOW_INSECURE_LOCAL:-true}
+      DATA_GOV_IN_API_KEY: ${DATA_GOV_IN_API_KEY:-}
+volumes:
+  pgdata:

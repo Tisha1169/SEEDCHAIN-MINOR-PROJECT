@@ -1,0 +1,16 @@
+{
+  "id": "pau_potato_punjab",
+  "name": "Potato cultivation in Punjab (district area, production, yield)",
+  "organization": "Punjab Agricultural University (PAU), Ludhiana",
+  "url": "https://www.pau.edu/potato/Potato_cult.php",
+  "dataset": "Table 'Area and Production of Potato Crop in major potato growing districts of Punjab' (latest published year; the page cites the Department of Horticulture, Punjab) plus the page's short statements on major districts and varieties",
+  "geography": "Punjab, India: district and state level",
+  "frequency": "Annual (whenever PAU updates the page); checked weekly",
+  "units": "Area: hectares; production: metric tonnes; yield: quintals per hectare",
+  "licence": "Not stated on the page. Only factual figures and short attributed excerpts are stored; always shown with source and year.",
+  "usageNotes": "The URL originally given for this resource, web3.pau.edu/potato/Potato_cult.php, no longer resolves (DNS). The same page is served at www.pau.edu/potato/. The figures are the Punjab Department of Horticulture's, republished by PAU; they are not SeedChain observations.",
+  "dataClass": "historical",
+  "integration": "automated",
+  "staleAfterHours": 9600,
+  "integrationNote": "Verified live on 2026-10-07: HTTP 200; HTML table parsed and cross-checked (yield = production / area)."
+}

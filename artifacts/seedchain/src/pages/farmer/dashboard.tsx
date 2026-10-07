@@ -1,198 +1,102 @@
-import { motion } from "framer-motion";
-import { Sprout, Package, Warehouse, TrendingUp, ArrowUpRight, ArrowDownRight, Loader } from "lucide-react";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
-import { QRCodeSVG } from "qrcode.react";
 import { Link } from "wouter";
-import { useListBatches } from "@lib/api-client-react";
+import { useGetFarmerOverview, useGetMarketPrices, useGetWeather, useListFarms, useListLots } from "@workspace/api-client-react";
+import { ArrowRight, Cloud, Landmark, Plus, QrCode } from "lucide-react";
+import { BigNumber, Card, ErrorState, Loading, LotStatusPill, PageHeader, Pill } from "@/components/app/common";
+import { CountUp, GlassCard, Reveal } from "@/components/motion";
+import { Timeline } from "@/components/app/timeline";
+import { useAuth } from "@/hooks/use-auth";
+import { qty, timeAgo, titleCase } from "@/lib/format";
 
-const harvestData = [
-  { month: "Jan", qty: 1200 }, { month: "Feb", qty: 1800 }, { month: "Mar", qty: 2400 },
-  { month: "Apr", qty: 3200 }, { month: "May", qty: 2800 }, { month: "Jun", qty: 3600 },
-  { month: "Jul", qty: 4100 },
-];
+function Num({ label, value, tone, to }: { label: string; value: number | string; tone?: "warn" | "ok"; to?: string }) {
+  const body = (
+    <GlassCard className="p-5">
+      <div className="eyebrow">{label}</div>
+      <div className={`mt-2.5 text-[2.2rem] font-extralight leading-none tracking-tight ${tone === "warn" ? "text-amber-300" : tone === "ok" ? "text-accent" : ""}`}>{typeof value === "number" ? <CountUp value={value} /> : <BigNumber value={value} />}</div>
+    </GlassCard>
+  );
+  return to ? <Link href={to}>{body}</Link> : body;
+}
 
-const batchData = [
-  { name: "Jyoti", value: 35 }, { name: "Pukhraj", value: 28 }, { name: "Badshah", value: 20 },
-  { name: "Chipsona", value: 17 },
-];
+function Glance() {
+  const farms = useListFarms();
+  const gps = farms.data?.find((f) => f.latitude != null);
+  const weather = useGetWeather({ farmId: gps?.id ?? "" }, { query: { queryKey: ["/api/weather", gps?.id], enabled: !!gps } });
+  const prices = useGetMarketPrices({ days: 14 });
+  const w = weather.data?.observation;
+  const p = prices.data?.observations.find((o) => o.modalPrice != null);
+  return (
+    <div className="grid gap-4 sm:grid-cols-2">
+      <Link href="/farmer/market"><GlassCard className="h-full p-5">
+        <div className="flex items-center justify-between"><span className="eyebrow">Market</span><Landmark className="h-4 w-4 text-accent/80" strokeWidth={1.5} /></div>
+        <div className="mt-3 text-3xl font-extralight">{p ? `₹${Math.round(((p.modalPrice ?? 0) / 100) * 100) / 100}/kg` : "—"}</div>
+        <div className="mt-1 text-[11px] text-ink/40">{p ? `${p.market}, ${p.state} · modal price · external` : "No market data yet"}</div>
+      </GlassCard></Link>
+      <Link href="/farmer/market"><GlassCard className="h-full p-5">
+        <div className="flex items-center justify-between"><span className="eyebrow">Weather</span><Cloud className="h-4 w-4 text-accent/80" strokeWidth={1.5} /></div>
+        <div className="mt-3 text-3xl font-extralight">{w?.temperatureC != null ? `${Math.round(w.temperatureC)}°C` : "—"}</div>
+        <div className="mt-1 text-[11px] text-ink/40">{w ? `${w.condition ?? ""} · ${timeAgo(w.observationTime)}` : gps ? "Weather data temporarily unavailable" : "Add GPS to a farm to see weather"}</div>
+      </GlassCard></Link>
+    </div>
+  );
+}
 
 export default function FarmerDashboard() {
-  const { data: batches = [], isLoading } = useListBatches();
-  
-  // Calculate metrics from batches
-  const activeBatches = batches.filter((b: any) => b.status === "planted" || b.status === "growing").length;
-  const totalQuantity = batches.reduce((sum: number, b: any) => sum + (b.quantityKg || 0), 0);
-  const inStorage = batches.filter((b: any) => b.status === "in_storage").reduce((sum: number, b: any) => sum + (b.quantityKg || 0), 0);
-
-  const metrics = [
-    { label: "Active Crops", value: String(activeBatches), change: "+3", positive: true, icon: Sprout, gradient: "from-[#3FAF5E] to-[#8FD14F]" },
-    { label: "Total Harvest", value: `${(totalQuantity / 1000).toFixed(1)}t`, change: "+18.7%", positive: true, icon: Package, gradient: "from-[#3B82F6] to-[#60A5FA]" },
-    { label: "In Storage", value: `${(inStorage / 1000).toFixed(1)}t`, change: "-2.1%", positive: false, icon: Warehouse, gradient: "from-[#F59E0B] to-[#FBBF24]" },
-    { label: "Revenue", value: "₹4.2L", change: "+24.5%", positive: true, icon: TrendingUp, gradient: "from-[#8B5CF6] to-[#A78BFA]" },
-  ];
+  const { user } = useAuth();
+  const q = useGetFarmerOverview();
+  const lots = useListLots();
+  if (q.isLoading) return <Loading />;
+  if (q.error || !q.data) return <ErrorState error={q.error} onRetry={() => void q.refetch()} />;
+  const d = q.data;
+  const approved = user?.status === "active";
   return (
-    <div className="space-y-5">
-      {/* Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {metrics.map((m, i) => (
-          <motion.div
-            key={m.label}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.08 }}
-            whileHover={{ y: -4 }}
-            className="bg-white rounded-[24px] p-5 shadow-sm border border-[#E8E6E1]/60 cursor-pointer transition-all"
-          >
-            <div className="flex items-center justify-between mb-3">
-              <div className={`w-11 h-11 rounded-2xl bg-gradient-to-br ${m.gradient} flex items-center justify-center shadow-sm`}>
-                <m.icon className="w-5 h-5 text-white" />
-              </div>
-              <div className={`flex items-center gap-1 text-xs font-semibold ${m.positive ? "text-[#3FAF5E]" : "text-red-500"}`}>
-                {m.positive ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-                {m.change}
-              </div>
-            </div>
-            <div className="text-2xl font-bold text-[#1A1A1A]">{m.value}</div>
-            <div className="text-xs text-[#1A1A1A]/40 mt-0.5">{m.label}</div>
-          </motion.div>
-        ))}
-      </div>
+    <>
+      <PageHeader title="Your farm, on the record" subtitle="Live figures from your lots and orders." />
 
-      {/* Charts row */}
-      <div className="grid lg:grid-cols-3 gap-4">
-        {/* Gauge card */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
-          className="bg-gradient-to-br from-[#3FAF5E] to-[#2D8A45] rounded-[24px] p-6 text-white shadow-sm">
-          <div className="flex items-center justify-between mb-6">
-            <span className="text-sm font-medium text-white/70">Storage Capacity</span>
-            <span className="text-[10px] bg-white/15 px-2.5 py-1 rounded-full">This Month</span>
-          </div>
-          <div className="relative w-36 h-36 mx-auto mb-4">
-            <svg viewBox="0 0 120 120" className="w-full h-full -rotate-90">
-              <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="12" />
-              <circle cx="60" cy="60" r="50" fill="none" stroke="white" strokeWidth="12" strokeLinecap="round" strokeDasharray={`${0.45 * 314} ${314}`} />
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-3xl font-bold">45%</span>
-              <span className="text-xs text-white/60">Used</span>
+      <Reveal>
+        <div className="mb-6 grid gap-4 md:grid-cols-2">
+          <Link href={approved ? "/farmer/lots/new" : "/farmer"} aria-disabled={!approved}>
+            <div className={`glass-strong lift group flex h-full items-center gap-5 rounded-[28px] p-7 ${approved ? "" : "opacity-50"}`}>
+              <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-white text-neutral-950 transition-transform group-hover:scale-105"><Plus className="h-7 w-7" strokeWidth={1.6} /></span>
+              <div><div className="text-2xl font-light tracking-tight">Create new lot</div><div className="mt-1 text-sm text-ink/50">Record a harvest. Its QR is created automatically.</div></div>
+              <ArrowRight className="ml-auto h-5 w-5 text-ink/30 transition-transform group-hover:translate-x-1" />
             </div>
-          </div>
-          <div className="text-center">
-            <div className="text-xl font-bold">8,200 kg</div>
-            <div className="text-sm text-white/60">of 18,400 kg capacity</div>
-          </div>
-        </motion.div>
-
-        {/* Harvest volume */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
-          className="lg:col-span-2 bg-white rounded-[24px] p-6 shadow-sm border border-[#E8E6E1]/60">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="font-bold text-[#1A1A1A]">Harvest Volume</h3>
-              <p className="text-xs text-[#1A1A1A]/40">Last 7 months trend</p>
+          </Link>
+          <Link href="/farmer/lots">
+            <div className="glass-strong lift group flex h-full items-center gap-5 rounded-[28px] p-7">
+              <span className="glass flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-accent"><QrCode className="h-7 w-7" strokeWidth={1.4} /></span>
+              <div><div className="text-2xl font-light tracking-tight">Generate QR</div><div className="mt-1 text-sm text-ink/50">Print or replace the label of any lot.</div></div>
+              <ArrowRight className="ml-auto h-5 w-5 text-ink/30 transition-transform group-hover:translate-x-1" />
             </div>
-            <div className="flex gap-1.5">
-              {["7D", "1M", "6M"].map((p) => (
-                <button key={p} className={`text-[11px] px-3 py-1.5 rounded-xl font-medium ${p === "6M" ? "bg-[#3FAF5E]/10 text-[#3FAF5E]" : "text-[#1A1A1A]/35 hover:bg-[#F4F4F4]"}`}>
-                  {p}
-                </button>
-              ))}
-            </div>
-          </div>
-          <ResponsiveContainer width="100%" height={200}>
-            <AreaChart data={harvestData}>
-              <defs>
-                <linearGradient id="fHarvest" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3FAF5E" stopOpacity={0.25} />
-                  <stop offset="95%" stopColor="#3FAF5E" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="month" tick={{ fontSize: 11 }} stroke="#ccc" />
-              <YAxis tick={{ fontSize: 11 }} stroke="#ccc" />
-              <Tooltip />
-              <Area type="monotone" dataKey="qty" stroke="#3FAF5E" strokeWidth={2.5} fillOpacity={1} fill="url(#fHarvest)" />
-            </AreaChart>
-          </ResponsiveContainer>
-        </motion.div>
-      </div>
-
-      {/* Batches with QR codes */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
-        className="bg-white rounded-[24px] p-6 shadow-sm border border-[#E8E6E1]/60">
-        <div className="flex items-center justify-between mb-5">
-          <h3 className="font-bold text-[#1A1A1A]">My Batches</h3>
-          <Link href="/farmer/batches" className="text-xs text-[#3FAF5E] font-medium hover:underline">View All</Link>
+          </Link>
         </div>
-        
-        {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader className="w-6 h-6 text-[#3FAF5E] animate-spin" />
-          </div>
-        ) : batches.length === 0 ? (
-          <div className="text-center py-8 text-[#1A1A1A]/40">
-            <p>No batches yet. Create your first batch to get started!</p>
-          </div>
-        ) : (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {batches.slice(0, 4).map((b: any) => (
-              <motion.div key={b.id} whileHover={{ y: -3 }}
-                className="rounded-[20px] border border-[#E8E6E1]/60 p-4 hover:shadow-md transition-all cursor-pointer">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <span className="text-xs font-mono text-[#1A1A1A]/35 block">{b.batchCode}</span>
-                    <span className="text-sm font-bold text-[#1A1A1A]">{b.variety}</span>
-                  </div>
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${b.qualityGrade === "A" ? "bg-[#3FAF5E]/10 text-[#3FAF5E]" : "bg-[#F59E0B]/10 text-[#F59E0B]"}`}>
-                    Grade {b.qualityGrade || "N/A"}
-                  </span>
-                </div>
-                <div className="flex items-center justify-center bg-[#F7F7F7] rounded-2xl p-3 mb-3">
-                  <QRCodeSVG value={JSON.stringify({ batchCode: b.batchCode, variety: b.variety })} size={80} level="M" bgColor="#F7F7F7" fgColor="#1A1A1A" />
-                </div>
-                <div className="space-y-1 text-[11px]">
-                  <div className="flex justify-between"><span className="text-[#1A1A1A]/40">Quantity</span><span className="font-medium text-[#1A1A1A]">{b.quantityKg} kg</span></div>
-                  <div className="flex justify-between"><span className="text-[#1A1A1A]/40">Harvest</span><span className="font-medium text-[#1A1A1A]">{b.expectedHarvestDate?.split("T")[0]}</span></div>
-                  <div className="flex justify-between"><span className="text-[#1A1A1A]/40">Status</span><span className="font-medium capitalize">{b.status.replace(/_/g, " ")}</span></div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        )}
-      </motion.div>
+      </Reveal>
 
-      {/* Bottom: Varieties chart + Quick actions */}
-      <div className="grid lg:grid-cols-3 gap-4">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55 }}
-          className="bg-white rounded-[24px] p-6 shadow-sm border border-[#E8E6E1]/60">
-          <h3 className="font-bold text-[#1A1A1A] mb-4">Batch Varieties</h3>
-          <ResponsiveContainer width="100%" height={180}>
-            <BarChart data={batchData} layout="vertical">
-              <XAxis type="number" hide />
-              <YAxis dataKey="name" type="category" tick={{ fontSize: 12 }} width={70} />
-              <Bar dataKey="value" fill="#3FAF5E" radius={[0, 10, 10, 0]} barSize={18} />
-            </BarChart>
-          </ResponsiveContainer>
-        </motion.div>
+      {d.pendingOrders > 0 && <Link href="/farmer/orders"><Card className="mb-6 cursor-pointer !border-amber-400/30 p-4 text-sm font-medium text-amber-100">{d.pendingOrders} order(s) waiting for your decision →</Card></Link>}
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}
-          className="lg:col-span-2 grid grid-cols-2 md:grid-cols-4 gap-3 content-start">
-          {[
-            { label: "Register Crop", href: "/farmer/register-crop", emoji: "🌱" },
-            { label: "Record Harvest", href: "/farmer/record-harvest", emoji: "🌾" },
-            { label: "Send to Storage", href: "/farmer/send-to-storage", emoji: "📦" },
-            { label: "List on Market", href: "/farmer/marketplace", emoji: "🛒" },
-          ].map((a) => (
-            <Link key={a.label} href={a.href}>
-              <motion.div whileHover={{ y: -3 }}
-                className="bg-white rounded-[20px] p-5 shadow-sm border border-[#E8E6E1]/60 text-center hover:border-[#3FAF5E]/30 transition-all cursor-pointer h-full flex flex-col items-center justify-center">
-                <span className="text-2xl mb-2 block">{a.emoji}</span>
-                <span className="text-sm font-medium text-[#1A1A1A]">{a.label}</span>
-              </motion.div>
-            </Link>
-          ))}
-        </motion.div>
+      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Num label="Available" value={qty(d.available)} tone="ok" to="/farmer/inventory" /><Num label="Reserved" value={qty(d.reserved)} to="/farmer/inventory" /><Num label="Sold" value={qty(d.sold)} to="/farmer/inventory" /><Num label="Active lots" value={d.activeLots} to="/farmer/lots" />
+        <Num label="Pending orders" value={d.pendingOrders} tone={d.pendingOrders ? "warn" : undefined} to="/farmer/orders" /><Num label="In progress" value={d.activeOrders} to="/farmer/orders" /><Num label="Completed" value={d.completedOrders} to="/farmer/orders" /><Num label="Open alerts" value={d.openAlerts} tone={d.openAlerts ? "warn" : undefined} to="/farmer/alerts" />
       </div>
-    </div>
+
+      <div className="mb-6"><Glance /></div>
+
+      <div className="grid gap-5 lg:grid-cols-[1.1fr_1fr]">
+        <Card className="p-6">
+          <div className="eyebrow mb-5">Recent traceability</div>
+          {d.recentEvents.length ? <Timeline items={d.recentEvents.slice(0, 8).map((e) => ({ key: e.id, label: titleCase(e.eventType), time: e.eventTime, detail: e.reason, meta: e.lotCode }))} /> : <p className="text-sm text-ink/45">No events yet. Create your first lot to begin.</p>}
+        </Card>
+        <Card className="p-6">
+          <div className="mb-4 flex items-center justify-between"><span className="eyebrow">My lots · QR</span><Link href="/farmer/lots" className="text-xs text-accent">All lots</Link></div>
+          {lots.data?.length ? (
+            <ul className="space-y-2">{lots.data.slice(0, 6).map((l) => (
+              <li key={l.id}><Link href={`/farmer/lots/${l.id}`} className="flex items-center gap-3 rounded-2xl bg-white/[0.035] px-4 py-3 transition-colors hover:bg-white/[0.07]">
+                <QrCode className="h-4 w-4 shrink-0 text-accent" strokeWidth={1.5} />
+                <div className="min-w-0 flex-1"><div className="truncate text-sm">{l.productName} · {l.variety}</div><div className="font-mono text-[11px] text-ink/40">{l.lotCode}</div></div>
+                <LotStatusPill status={l.status} />{l.activeQr && <Pill className="bg-accent/15 text-accent">QR v{l.activeQr.version}</Pill>}
+              </Link></li>))}</ul>
+          ) : <p className="text-sm text-ink/45">No lots yet.</p>}
+        </Card>
+      </div>
+    </>
   );
 }

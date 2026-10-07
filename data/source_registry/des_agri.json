@@ -1,0 +1,16 @@
+{
+  "id": "des_agri",
+  "name": "Directorate of Economics & Statistics: agricultural statistics",
+  "organization": "Government of India: Ministry of Agriculture & Farmers Welfare, DES",
+  "url": "https://data.desagri.gov.in/",
+  "dataset": "Crop area, production and yield statistics",
+  "geography": "India: state / district",
+  "frequency": "Annual",
+  "units": "Per dataset",
+  "licence": "See portal terms",
+  "usageNotes": "Not integrated; nothing from this source is displayed.",
+  "dataClass": "historical",
+  "integration": "reference_only",
+  "staleAfterHours": null,
+  "integrationNote": "Unreachable on 2026-10-07 (connection timeout from the build network)."
+}

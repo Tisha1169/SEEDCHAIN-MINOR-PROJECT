@@ -1,0 +1,16 @@
+{
+  "id": "icar_cpri_jalandhar",
+  "name": "ICAR-Central Potato Research Institute, Regional Station Jalandhar",
+  "organization": "Indian Council of Agricultural Research (ICAR)",
+  "url": "https://www.icar.gov.in/",
+  "dataset": "Institutional reference for the Jalandhar potato research and seed ecosystem (not farmer or farm data)",
+  "geography": "Jalandhar, Punjab",
+  "frequency": "n/a",
+  "units": "n/a",
+  "licence": "See ICAR terms",
+  "usageNotes": "Institutional information is not individual farmer data; no farms or farmer names are derived from it. No figures are taken from this source.",
+  "dataClass": "reference",
+  "integration": "reference_only",
+  "staleAfterHours": null,
+  "integrationNote": "Not retrievable on 2026-10-07: www.icar.gov.in serves an expired TLS certificate (certificate verification is not disabled) and cpri.icar.gov.in does not resolve."
+}
