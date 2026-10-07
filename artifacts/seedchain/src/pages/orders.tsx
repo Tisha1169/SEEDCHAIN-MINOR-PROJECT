@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, errMsg } from "@/lib/api";
+import { serverText } from "@/lib/server-text";
 import { dateTime, enumLabel, inr, qty, unitLabel } from "@/lib/format";
 
 export function OrdersList({ base }: { base: "farmer" | "customer" | "admin" }) {
@@ -94,7 +95,7 @@ export function OrderDetail({ base }: { base: "farmer" | "customer" | "admin" })
           {o.allowedActions.length > 0 && <Card className="p-5"><h3 className="mb-3 eyebrow !text-ink/75">{t("orders.detail.next")}</h3><OrderActions order={o} /></Card>}
           <Card className="p-5">
             <h3 className="mb-4 eyebrow !text-ink/75">{t("orders.detail.history")}</h3>
-            <Timeline items={(o.events ?? []).map((e) => ({ key: e.id, label: enumLabel("orderEvent", e.eventType), time: e.eventTime, detail: e.reason, meta: `${e.actorName ?? t("orders.detail.system")}${e.actorRole ? ` (${enumLabel("role", e.actorRole)})` : ""}` }))} />
+            <Timeline items={(o.events ?? []).map((e) => ({ key: e.id, label: enumLabel("orderEvent", e.eventType), time: e.eventTime, detail: serverText(e.reason), meta: `${e.actorName ?? t("orders.detail.system")}${e.actorRole ? ` (${enumLabel("role", e.actorRole)})` : ""}` }))} />
           </Card>
           {user?.role === "customer" && o.status === "CUSTOMER_CONFIRMED" && !o.feedback && <FeedbackForm order={o} />}
           {o.feedback && <Card className="p-5"><h3 className="eyebrow !text-ink/75">{t("orders.feedback.customerFeedback")}</h3><div className="text-amber-400">{"★".repeat(o.feedback.rating)}</div>{o.feedback.comment && <p className="text-sm">{o.feedback.comment}</p>}</Card>}

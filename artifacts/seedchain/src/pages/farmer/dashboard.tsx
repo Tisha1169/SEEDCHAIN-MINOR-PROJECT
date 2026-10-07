@@ -6,6 +6,7 @@ import { BigNumber, Card, ErrorState, Loading, LotStatusPill, PageHeader, Pill }
 import { CountUp, GlassCard, Reveal } from "@/components/motion";
 import { Timeline } from "@/components/app/timeline";
 import { useAuth } from "@/hooks/use-auth";
+import { serverText } from "@/lib/server-text";
 import { enumLabel, qty, timeAgo } from "@/lib/format";
 
 function Num({ label, value, tone, to }: { label: string; value: number | string; tone?: "warn" | "ok"; to?: string }) {
@@ -36,7 +37,7 @@ function Glance() {
       <Link href="/farmer/market"><GlassCard className="h-full p-5">
         <div className="flex items-center justify-between"><span className="eyebrow">{t("farmer.dash.weather")}</span><Cloud className="h-4 w-4 text-accent/80" strokeWidth={1.5} /></div>
         <div className="mt-3 text-3xl font-extralight">{w?.temperatureC != null ? `${Math.round(w.temperatureC)}°C` : "—"}</div>
-        <div className="mt-1 text-[11px] text-ink/40">{w ? `${w.condition ?? ""} · ${timeAgo(w.observationTime)}` : gps ? t("farmer.dash.weatherUnavailable") : t("farmer.dash.addGps")}</div>
+        <div className="mt-1 text-[11px] text-ink/40">{w ? `${serverText(w.condition)} · ${timeAgo(w.observationTime)}` : gps ? t("farmer.dash.weatherUnavailable") : t("farmer.dash.addGps")}</div>
       </GlassCard></Link>
     </div>
   );
@@ -86,7 +87,7 @@ export default function FarmerDashboard() {
       <div className="grid gap-5 lg:grid-cols-[1.1fr_1fr]">
         <Card className="p-6">
           <div className="eyebrow mb-5">{t("farmer.dash.recent")}</div>
-          {d.recentEvents.length ? <Timeline items={d.recentEvents.slice(0, 8).map((e) => ({ key: e.id, label: enumLabel("event", e.eventType), time: e.eventTime, detail: e.reason, meta: e.lotCode }))} /> : <p className="text-sm text-ink/45">{t("farmer.dash.noEvents")}</p>}
+          {d.recentEvents.length ? <Timeline items={d.recentEvents.slice(0, 8).map((e) => ({ key: e.id, label: enumLabel("event", e.eventType), time: e.eventTime, detail: serverText(e.reason), meta: e.lotCode }))} /> : <p className="text-sm text-ink/45">{t("farmer.dash.noEvents")}</p>}
         </Card>
         <Card className="p-6">
           <div className="mb-4 flex items-center justify-between"><span className="eyebrow">{t("farmer.dash.myLotsQr")}</span><Link href="/farmer/lots" className="text-xs text-accent">{t("farmer.dash.allLots")}</Link></div>

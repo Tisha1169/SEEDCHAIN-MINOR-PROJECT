@@ -24,6 +24,7 @@ const app = {
       rejected: "Rejected: {{error}}", nothingOverwritten: "Nothing was overwritten. Review the record and re-enter the action if it is still valid.", dismiss: "Dismiss",
     },
   },
+  misc: { primaryNav: "Primary", home: "SeedChain home", artPotatoes: "Illustration of harvested potatoes on dark soil", artRows: "Illustration of crop rows at dawn", adminLotsTitle: "Lots & QR codes", adminLotsSub: "All lots across farmers." },
   authShell: { brand: "SeedChain", line1: "Every harvest", line2: "has a story." },
 };
 export default app;

@@ -67,10 +67,10 @@ export function Navbar() {
     <header className="fixed inset-x-0 top-0 z-50 flex justify-center px-3 pt-3 sm:px-6 sm:pt-4">
       <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-6 focus:top-5 focus:z-[60] focus:rounded-full focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:text-neutral-950">{t("nav.skip")}</a>
       <nav
-        aria-label="Primary"
+        aria-label={t("misc.primaryNav")}
         className={`glass-strong flex w-full max-w-[1060px] items-center justify-between rounded-full transition-all duration-500 ease-out ${scrolled ? "px-3 py-1.5 sm:px-4 !bg-black/50 !backdrop-blur-2xl" : "px-4 py-2.5 sm:px-5"}`}
       >
-        <Link href="/" aria-label="SeedChain home"><Logo /></Link>
+        <Link href="/" aria-label={t("misc.home")}><Logo /></Link>
 
         <div className="hidden items-center md:flex">
           {links.map((l) =>

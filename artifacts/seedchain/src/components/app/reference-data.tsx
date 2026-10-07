@@ -5,7 +5,8 @@ import { useGetFaostatIndia, useGetPunjabPotato, useListDataSources } from "@wor
 import type { SourceInfo } from "@workspace/api-client-react";
 import { Card, Empty, ErrorState, Loading, Pill } from "@/components/app/common";
 import { currentLocale } from "@/i18n";
-import { timeAgo, unitLabel } from "@/lib/format";
+import { sourceFrequency, sourceLabel, sourceNote } from "@/lib/server-text";
+import { dateOnly, timeAgo, unitLabel } from "@/lib/format";
 
 const FRESH: Record<string, { key: string; cls: string }> = {
   CURRENT: { key: "current", cls: "bg-emerald-400/15 text-emerald-300" },
@@ -23,7 +24,7 @@ export function FreshnessChip({ value }: { value: string }) {
 }
 
 /** Source, observation date and last sync: shown with every external figure. */
-export function SourceLine({ s }: { s: Pick<SourceInfo, "label" | "organization" | "url" | "frequency" | "freshness" | "observationDate" | "lastSyncAt" | "dataClass"> }) {
+export function SourceLine({ s }: { s: Pick<SourceInfo, "source" | "label" | "organization" | "url" | "frequency" | "freshness" | "observationDate" | "lastSyncAt" | "dataClass"> }) {
   const { t } = useTranslation();
   return (
     <div className="mt-3 space-y-1 text-xs text-ink/50">
@@ -33,7 +34,7 @@ export function SourceLine({ s }: { s: Pick<SourceInfo, "label" | "organization"
         <a href={s.url} target="_blank" rel="noreferrer noopener" className="inline-flex items-center gap-1 text-accent hover:underline">{s.organization}<ExternalLink className="h-3 w-3" /></a>
       </div>
       <div>
-        {s.label}. {t("farmer.ref.updates", { freq: s.frequency })}{" "}
+        {sourceLabel(s.source, s.label)}. {t("farmer.ref.updates", { freq: sourceFrequency(s.source, s.frequency) })}{" "}
         {s.observationDate ? <>{t("farmer.ref.dataPeriod")} <b>{s.observationDate}</b>. </> : null}
         {s.lastSyncAt ? <>{t("farmer.ref.lastSynced", { ago: timeAgo(s.lastSyncAt) })}</> : <>{t("farmer.ref.neverSynced")}</>}
       </div>
@@ -68,7 +69,7 @@ export function PunjabPotatoCard() {
         </div>
       )}
       <SourceLine s={d.source} />
-      {d.citation && <div className="mt-2 text-[11px] text-ink/35">{d.citation} {t("farmer.ref.tableSource", { attr: d.attribution })}</div>}
+      {d.citation && <div className="mt-2 text-[11px] text-ink/35">{t("farmer.ref.punjabCitation", { url: d.source.url, period: d.period ?? "", date: d.source.lastSyncAt ? dateOnly(d.source.lastSyncAt) : "" })}</div>}
     </Card>
   );
 }
@@ -98,7 +99,7 @@ export function FaostatCard() {
         </div>
       ) : <Empty title={t("farmer.ref.noFao")} />}
       <SourceLine s={d.source} />
-      {d.citation && <div className="mt-2 text-[11px] text-ink/35">{d.citation}</div>}
+      <div className="mt-2 text-[11px] text-ink/35">{t("farmer.ref.faoCitation")}</div>
     </Card>
   );
 }
@@ -113,15 +114,15 @@ export function DataHealth() {
     <div className="grid gap-3 md:grid-cols-2">
       {q.data.map((s) => (
         <Card key={s.source} className="p-4">
-          <div className="flex items-start justify-between gap-2"><div className="text-sm font-medium">{s.label}</div><FreshnessChip value={s.freshness} /></div>
-          <div className="mt-1 text-xs text-ink/50">{s.organization} · {s.frequency}</div>
+          <div className="flex items-start justify-between gap-2"><div className="text-sm font-medium">{sourceLabel(s.source, s.label)}</div><FreshnessChip value={s.freshness} /></div>
+          <div className="mt-1 text-xs text-ink/50">{s.organization} · {sourceFrequency(s.source, s.frequency)}</div>
           {s.integration === "automated" ? (
             <div className="mt-2 text-xs text-ink/55">
               {s.lastSuccess ? <>{t("farmer.ref.lastSuccess", { ago: timeAgo(s.lastSuccess.finishedAt ?? s.lastSuccess.startedAt), n: s.lastSuccess.recordCount, period: s.observationDate ? t("farmer.ref.period", { p: s.observationDate }) : "" })}</> : t("farmer.ref.noSync")}
               {s.lastRun?.status === "FAILED" && <div className="mt-1 text-rose-300">{t("farmer.ref.failed", { error: s.lastRun.error })}</div>}
               {!s.configured && <div className="mt-1 text-amber-300">{s.configurationHint}</div>}
             </div>
-          ) : <div className="mt-2 text-xs text-ink/45">{s.integrationNote ?? t("farmer.ref.referenceOnly")}</div>}
+          ) : <div className="mt-2 text-xs text-ink/45">{sourceNote(s.source, s.integrationNote) || t("farmer.ref.referenceOnly")}</div>}
         </Card>
       ))}
     </div>

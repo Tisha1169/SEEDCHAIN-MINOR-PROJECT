@@ -5,6 +5,7 @@ import { ArrowRight, BadgeCheck, Cloud, Gauge, Package, ShieldCheck, Star, Trend
 import { FieldScene, Frame, ProduceTile } from "@/components/art";
 import { CountUp, GlassCard, Magnetic, Reveal } from "@/components/motion";
 import { Logo } from "@/components/layout/navbar";
+import { serverText } from "@/lib/server-text";
 import { currentLocale } from "@/i18n";
 import { enumLabel, timeAgo, unitLabel } from "@/lib/format";
 import { dash, Display, Eyebrow, fmtDate, Row, Section, type LandingProps } from "./shared";
@@ -65,7 +66,7 @@ export function Intelligence({ data, loading }: LandingProps) {
   const w = data?.featured?.weather;
   const cards: Array<{ k: string; v: string; sub: string; icon: typeof Gauge }> = [
     { k: t("landing.intel.market"), v: m ? t("landing.intel.perKg", { price: m.pricePerKg }) : dash, sub: m ? t("landing.intel.marketSub", { market: m.market, state: m.state, date: fmtDate(m.observationDate), source: m.source }) : t("landing.intel.noMarket"), icon: TrendingUp },
-    { k: t("landing.intel.weather"), v: w?.temperatureC != null ? `${Math.round(w.temperatureC)}°C${w.condition ? ` · ${w.condition}` : ""}` : dash, sub: w ? t("landing.intel.weatherSub", { ago: timeAgo(w.observationTime) }) : t("landing.intel.noWeather"), icon: Cloud },
+    { k: t("landing.intel.weather"), v: w?.temperatureC != null ? `${Math.round(w.temperatureC)}°C${w.condition ? ` · ${serverText(w.condition)}` : ""}` : dash, sub: w ? t("landing.intel.weatherSub", { ago: timeAgo(w.observationTime) }) : t("landing.intel.noWeather"), icon: Cloud },
     { k: t("landing.intel.inventory"), v: data ? t("landing.intel.kg", { n: data.availableKg.toLocaleString(currentLocale()) }) : dash, sub: t("landing.intel.invSub"), icon: Package },
     { k: t("landing.intel.demand"), v: data ? String(data.ordersLast30Days) : dash, sub: t("landing.intel.demandSub"), icon: Gauge },
     { k: t("landing.intel.traceability"), v: cov != null ? `${cov}%` : dash, sub: data ? t("landing.intel.traceSub", { n: data.traceabilityCoverage.lotsCounted }) : "", icon: ShieldCheck },

@@ -25,6 +25,7 @@ const app: App = {
       rejected: "अस्वीकृत: {{error}}", nothingOverwritten: "कुछ भी ओवरराइट नहीं हुआ। रिकॉर्ड देखें और मान्य हो तो कार्य दोबारा दर्ज करें।", dismiss: "हटाएँ",
     },
   },
+  misc: { primaryNav: "मुख्य", home: "SeedChain होम", artPotatoes: "गहरी मिट्टी पर कटे आलुओं का चित्र", artRows: "भोर में फ़सल की क्यारियों का चित्र", adminLotsTitle: "लॉट और QR कोड", adminLotsSub: "सभी किसानों के सभी लॉट।" },
   authShell: { brand: "SeedChain", line1: "हर फ़सल की", line2: "एक कहानी है।" },
 };
 export default app;

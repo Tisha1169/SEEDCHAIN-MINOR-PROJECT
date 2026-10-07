@@ -66,7 +66,7 @@ const farmer: Farmer = {
       classExternal: "बाहरी, नियमित रूप से सिंक", classHistorical: "ऐतिहासिक", classReference: "केवल संदर्भ",
       updates: "अपडेट: {{freq}}।", dataPeriod: "डेटा अवधि:", lastSynced: "अंतिम सिंक {{ago}}।", neverSynced: "कभी सिंक नहीं हुआ।",
       punjabTitle: "ज़िलेवार पंजाब में आलू", stateLine: "राज्य: {{area}} हेक्टेयर पर {{prod}} टन", noDistrict: "अभी ज़िला डेटा नहीं", noDistrictHint: "PAU स्रोत से पहली सफल सिंक के बाद यह भरेगा। कुछ भी अनुमानित नहीं है।",
-      tableSource: "तालिका स्रोत: {{attr}}", indiaTitle: "भारत में आलू उत्पादन, ऐतिहासिक", indiaNote: "वार्षिक राष्ट्रीय आँकड़े; लाइव नहीं और पंजाब के लिए नहीं।", noFao: "अभी FAOSTAT डेटा नहीं",
+      punjabCitation: "PAU, “पंजाब में आलू की खेती” ({{url}}), {{period}} की तालिका; तालिका स्रोत: बागवानी विभाग, पंजाब, पंजाब कृषि विश्वविद्यालय द्वारा पुनः प्रकाशित। प्राप्त: {{date}}।", faoCitation: "FAOSTAT, फ़सलें और पशुधन उत्पाद (QCL); CC BY 4.0, FAO। हर मान के साथ पंक्ति-वार उद्धरण संग्रहीत हैं।", tableSource: "तालिका स्रोत: {{attr}}", indiaTitle: "भारत में आलू उत्पादन, ऐतिहासिक", indiaNote: "वार्षिक राष्ट्रीय आँकड़े; लाइव नहीं और पंजाब के लिए नहीं।", noFao: "अभी FAOSTAT डेटा नहीं",
       million: "{{v}} मिलियन टन", production: "उत्पादन", lastSuccess: "अंतिम सफलता {{ago}} ({{n}} रिकॉर्ड{{period}})।", period: ", अवधि {{p}}", noSync: "अभी तक कोई सफल सिंक नहीं।", failed: "ताज़ा प्रयास विफल: {{error}}",
       referenceOnly: "केवल संदर्भ; कुछ भी लिया नहीं जाता।", sourceHealth: "डेटा स्वास्थ्य: हर बाहरी स्रोत",
     },

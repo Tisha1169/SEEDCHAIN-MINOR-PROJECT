@@ -54,8 +54,3 @@ export const RISK_STYLE: Record<string, string> = {
   CRITICAL: "bg-rose-400/15 text-rose-300",
 };
 
-export const FULFILLMENT_LABEL: Record<string, string> = {
-  CUSTOMER_PICKUP: "Customer pickup",
-  FARMER_DELIVERY: "Farmer delivery",
-  THIRD_PARTY_DELIVERY: "Third-party delivery (recorded by farmer)",
-};

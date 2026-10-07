@@ -64,7 +64,10 @@ function ProtectedAny({ component: C }: { component: ComponentType }) {
 }
 const P = (role: Role, C: ComponentType) => () => <Protected role={role} component={C} />;
 
-const AdminLots = () => (<><PageHeader title="Lots & QR codes" subtitle="All lots across farmers." /><LotsTable base="admin" /></>);
+const AdminLots = () => {
+  const { t } = useTranslation();
+  return <><PageHeader title={t("misc.adminLotsTitle")} subtitle={t("misc.adminLotsSub")} /><LotsTable base="admin" /></>;
+};
 
 function Router() {
   return (

@@ -1,4 +1,5 @@
 import { useId, useRef, useState, type ReactNode } from "react";
+import i18n from "@/i18n";
 import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
 
 /* ---------------------------------------------------------------------------
@@ -48,7 +49,7 @@ export function PotatoScene({ seed = 7, glow = true, className = "" }: { seed?: 
     return { x, h, lean, w: 46 + rnd() * 26 };
   });
   return (
-    <svg viewBox="0 0 800 520" preserveAspectRatio="xMidYMid slice" className={className} role="img" aria-label="Illustration of harvested potatoes on dark soil">
+    <svg viewBox="0 0 800 520" preserveAspectRatio="xMidYMid slice" className={className} role="img" aria-label={i18n.t("misc.artPotatoes")}>
       <defs>
         <radialGradient id={`${id}bg`} cx="50%" cy="38%" r="75%"><stop offset="0%" stopColor="#12351f" /><stop offset="55%" stopColor="#08170f" /><stop offset="100%" stopColor="#030705" /></radialGradient>
         <radialGradient id={`${id}rim`} cx="50%" cy="20%" r="60%"><stop offset="0%" stopColor="#bfe9c8" stopOpacity="0.28" /><stop offset="100%" stopColor="#bfe9c8" stopOpacity="0" /></radialGradient>
@@ -86,7 +87,7 @@ export function FieldScene({ className = "" }: { className?: string }) {
   const id = useId().replace(/:/g, "");
   const rows = Array.from({ length: 15 }, (_, i) => i - 7);
   return (
-    <svg viewBox="0 0 800 520" preserveAspectRatio="xMidYMid slice" className={className} role="img" aria-label="Illustration of crop rows at dawn">
+    <svg viewBox="0 0 800 520" preserveAspectRatio="xMidYMid slice" className={className} role="img" aria-label={i18n.t("misc.artRows")}>
       <defs>
         <linearGradient id={`${id}sky`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#0a1c12" /><stop offset="50%" stopColor="#1d5233" /><stop offset="100%" stopColor="#4c9a6a" /></linearGradient>
         <radialGradient id={`${id}sun`} cx="50%" cy="50%" r="50%"><stop offset="0%" stopColor="#f3f6c8" stopOpacity="0.95" /><stop offset="35%" stopColor="#bfe9a8" stopOpacity="0.35" /><stop offset="100%" stopColor="#bfe9a8" stopOpacity="0" /></radialGradient>

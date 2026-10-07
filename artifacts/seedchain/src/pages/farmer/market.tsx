@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useGetMarketPrices, useGetWeather, useListFarms } from "@workspace/api-client-react";
 import { Cloud, Droplets, Thermometer } from "lucide-react";
 import { Card, Empty, ErrorState, Loading, PageHeader, Pill, Table } from "@/components/app/common";
+import { serverText, sourceLabel } from "@/lib/server-text";
 import { dateOnly, dateTime, timeAgo } from "@/lib/format";
 import type { IntegrationStatus } from "@workspace/api-client-react";
 import { FaostatCard, PunjabPotatoCard } from "@/components/app/reference-data";
@@ -11,7 +12,7 @@ export function SourceFooter({ s }: { s: IntegrationStatus }) {
   const { t } = useTranslation();
   return (
     <div className="mt-3 text-xs text-ink/50">
-      {t("farmer.market.source", { label: s.label })}{" "}
+      {t("farmer.market.source", { label: sourceLabel(s.source, s.label) })}{" "}
       {s.lastSuccess ? <>{t("farmer.market.lastUpdate")} <b>{dateTime(s.lastSuccess.finishedAt ?? s.lastSuccess.startedAt)}</b> ({timeAgo(s.lastSuccess.finishedAt ?? s.lastSuccess.startedAt)}).</> : <>{t("farmer.market.noUpdate")}</>}{" "}
       {s.lastRun && s.lastRun.status === "FAILED" && <span className="text-rose-300">{t("farmer.market.attemptFailed", { error: s.lastRun.error })}</span>}
       {!s.configured && <span className="text-amber-300"> {s.configurationHint}</span>}
@@ -31,7 +32,7 @@ function Weather({ farmId, name }: { farmId: string; name: string }) {
       {!q.data.hasCoordinates ? <p className="text-sm text-ink/55">{t("farmer.market.addGpsFarm")}</p>
         : !w ? <p className="text-sm text-ink/55">{t("farmer.market.weatherUnavailable")}</p>
         : (<div className="grid grid-cols-3 gap-3 text-center">
-            <div><Thermometer className="mx-auto h-5 w-5 text-orange-500" /><div className="text-xl font-medium">{w.temperatureC ?? "—"}°C</div><div className="text-xs text-ink/50">{w.condition ?? ""}</div></div>
+            <div><Thermometer className="mx-auto h-5 w-5 text-orange-500" /><div className="text-xl font-medium">{w.temperatureC ?? "—"}°C</div><div className="text-xs text-ink/50">{serverText(w.condition)}</div></div>
             <div><Droplets className="mx-auto h-5 w-5 text-sky-500" /><div className="text-xl font-medium">{w.humidityPct ?? "—"}%</div><div className="text-xs text-ink/50">{t("farmer.market.humidityLabel")}</div></div>
             <div><Cloud className="mx-auto h-5 w-5 text-zinc-500" /><div className="text-xl font-medium">{w.precipitationMm ?? "—"} mm</div><div className="text-xs text-ink/50">{t("farmer.market.precipitation")}</div></div>
           </div>)}

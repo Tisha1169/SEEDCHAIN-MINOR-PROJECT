@@ -66,7 +66,7 @@ const farmer: Farmer = {
       classExternal: "ਬਾਹਰੀ, ਨਿਯਮਿਤ ਸਿੰਕ", classHistorical: "ਇਤਿਹਾਸਕ", classReference: "ਸਿਰਫ਼ ਹਵਾਲਾ",
       updates: "ਅੱਪਡੇਟ: {{freq}}।", dataPeriod: "ਡਾਟਾ ਮਿਆਦ:", lastSynced: "ਆਖ਼ਰੀ ਸਿੰਕ {{ago}}।", neverSynced: "ਕਦੇ ਸਿੰਕ ਨਹੀਂ ਹੋਇਆ।",
       punjabTitle: "ਜ਼ਿਲ੍ਹਿਆਂ ਮੁਤਾਬਕ ਪੰਜਾਬ ਵਿੱਚ ਆਲੂ", stateLine: "ਰਾਜ: {{area}} ਹੈਕਟੇਅਰ ’ਤੇ {{prod}} ਟਨ", noDistrict: "ਹਾਲੇ ਜ਼ਿਲ੍ਹਾ ਡਾਟਾ ਨਹੀਂ", noDistrictHint: "PAU ਸਰੋਤ ਤੋਂ ਪਹਿਲੀ ਸਫਲ ਸਿੰਕ ਤੋਂ ਬਾਅਦ ਇਹ ਭਰੇਗਾ। ਕੁਝ ਵੀ ਅੰਦਾਜ਼ੇ ਨਾਲ ਨਹੀਂ ਹੈ।",
-      tableSource: "ਸਾਰਣੀ ਦਾ ਸਰੋਤ: {{attr}}", indiaTitle: "ਭਾਰਤ ਵਿੱਚ ਆਲੂ ਉਤਪਾਦਨ, ਇਤਿਹਾਸਕ", indiaNote: "ਸਾਲਾਨਾ ਕੌਮੀ ਅੰਕੜੇ; ਲਾਈਵ ਨਹੀਂ ਅਤੇ ਪੰਜਾਬ ਲਈ ਨਹੀਂ।", noFao: "ਹਾਲੇ FAOSTAT ਡਾਟਾ ਨਹੀਂ",
+      punjabCitation: "PAU, “ਪੰਜਾਬ ਵਿੱਚ ਆਲੂ ਦੀ ਖੇਤੀ” ({{url}}), {{period}} ਦੀ ਸਾਰਣੀ; ਸਾਰਣੀ ਦਾ ਸਰੋਤ: ਬਾਗਬਾਨੀ ਵਿਭਾਗ, ਪੰਜਾਬ, ਪੰਜਾਬ ਖੇਤੀਬਾੜੀ ਯੂਨੀਵਰਸਿਟੀ ਵੱਲੋਂ ਮੁੜ ਛਾਪੀ ਗਈ। ਪ੍ਰਾਪਤ: {{date}}।", faoCitation: "FAOSTAT, ਫ਼ਸਲਾਂ ਅਤੇ ਪਸ਼ੂ ਧਨ ਉਤਪਾਦ (QCL); CC BY 4.0, FAO। ਹਰ ਮੁੱਲ ਨਾਲ ਕਤਾਰ-ਵਾਰ ਹਵਾਲੇ ਸੰਭਾਲੇ ਹਨ।", tableSource: "ਸਾਰਣੀ ਦਾ ਸਰੋਤ: {{attr}}", indiaTitle: "ਭਾਰਤ ਵਿੱਚ ਆਲੂ ਉਤਪਾਦਨ, ਇਤਿਹਾਸਕ", indiaNote: "ਸਾਲਾਨਾ ਕੌਮੀ ਅੰਕੜੇ; ਲਾਈਵ ਨਹੀਂ ਅਤੇ ਪੰਜਾਬ ਲਈ ਨਹੀਂ।", noFao: "ਹਾਲੇ FAOSTAT ਡਾਟਾ ਨਹੀਂ",
       million: "{{v}} ਮਿਲੀਅਨ ਟਨ", production: "ਉਤਪਾਦਨ", lastSuccess: "ਆਖ਼ਰੀ ਸਫਲਤਾ {{ago}} ({{n}} ਰਿਕਾਰਡ{{period}})।", period: ", ਮਿਆਦ {{p}}", noSync: "ਹਾਲੇ ਤੱਕ ਕੋਈ ਸਫਲ ਸਿੰਕ ਨਹੀਂ।", failed: "ਤਾਜ਼ਾ ਕੋਸ਼ਿਸ਼ ਅਸਫਲ: {{error}}",
       referenceOnly: "ਸਿਰਫ਼ ਹਵਾਲਾ; ਕੁਝ ਵੀ ਲਿਆ ਨਹੀਂ ਜਾਂਦਾ।", sourceHealth: "ਡਾਟਾ ਸਿਹਤ: ਹਰ ਬਾਹਰੀ ਸਰੋਤ",
     },

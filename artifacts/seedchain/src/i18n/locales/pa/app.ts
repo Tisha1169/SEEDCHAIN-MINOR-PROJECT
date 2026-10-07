@@ -25,6 +25,7 @@ const app: App = {
       rejected: "ਰੱਦ: {{error}}", nothingOverwritten: "ਕੁਝ ਵੀ ਓਵਰਰਾਈਟ ਨਹੀਂ ਹੋਇਆ। ਰਿਕਾਰਡ ਵੇਖੋ ਅਤੇ ਜੇ ਜਾਇਜ਼ ਹੈ ਤਾਂ ਕਾਰਵਾਈ ਦੁਬਾਰਾ ਦਰਜ ਕਰੋ।", dismiss: "ਹਟਾਓ",
     },
   },
+  misc: { primaryNav: "ਮੁੱਖ", home: "SeedChain ਮੁੱਖ ਪੰਨਾ", artPotatoes: "ਗੂੜ੍ਹੀ ਮਿੱਟੀ ’ਤੇ ਵੱਢੇ ਆਲੂਆਂ ਦੀ ਤਸਵੀਰ", artRows: "ਸਵੇਰ ਵੇਲੇ ਫ਼ਸਲ ਦੀਆਂ ਕਤਾਰਾਂ ਦੀ ਤਸਵੀਰ", adminLotsTitle: "ਲਾਟ ਅਤੇ QR ਕੋਡ", adminLotsSub: "ਸਾਰੇ ਕਿਸਾਨਾਂ ਦੇ ਸਾਰੇ ਲਾਟ।" },
   authShell: { brand: "SeedChain", line1: "ਹਰ ਫ਼ਸਲ ਦੀ", line2: "ਇੱਕ ਕਹਾਣੀ ਹੈ।" },
 };
 export default app;

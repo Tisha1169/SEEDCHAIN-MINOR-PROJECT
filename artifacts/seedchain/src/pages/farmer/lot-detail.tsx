@@ -12,6 +12,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, errMsg, uuid } from "@/lib/api";
 import { submitOrQueue } from "@/lib/offline-queue";
+import { serverText } from "@/lib/server-text";
 import { dateOnly, dateTime, enumLabel, inr, qty, unitLabel } from "@/lib/format";
 
 type EventKind = "HARVEST_RECORDED" | "QUALITY_RECORDED" | "STORAGE_RECORDED" | "LOSS_RECORDED" | "SPOILAGE_RECORDED" | "GROWING_RECORDED" | "CORRECTION_RECORDED";
@@ -108,7 +109,7 @@ export default function LotDetailPage({ base }: { base: "farmer" | "admin" }) {
           </Card>
           <Card className="p-5"><h3 className="mb-2 flex items-center gap-2 eyebrow !text-ink/75">{t("farmer.detail.risk")} <RiskPill level={lot.risk.level} /></h3>
             <p className="mb-2 text-xs text-ink/45">{t("farmer.detail.riskLine", { engine: lot.risk.engine, score: lot.risk.score })}</p>
-            <ul className="list-disc space-y-1 pl-5 text-sm">{lot.risk.reasons.map((r) => <li key={r}>{r}</li>)}</ul>
+            <ul className="list-disc space-y-1 pl-5 text-sm">{lot.risk.reasons.map((r) => <li key={r}>{serverText(r)}</li>)}</ul>
           </Card>
           {isFarmer && (
             <Card className="space-y-4 p-5">
@@ -131,7 +132,7 @@ export default function LotDetailPage({ base }: { base: "farmer" | "admin" }) {
             {storage.data?.length ? storage.data.map((s) => <div key={s.id} className="border-b py-2 text-sm last:border-0"><b>{t("farmer.detail.storageAt", { type: enumLabel("storageKind", s.storageType), place: s.storageLocation })}</b><div className="text-xs text-ink/55">{dateTime(s.storageStart)} → {s.storageEnd ? dateTime(s.storageEnd) : t("farmer.detail.ongoing")}{s.temperatureC != null && ` · ${s.temperatureC}°C`}{s.humidityPct != null && ` · ${t("farmer.detail.rh", { n: s.humidityPct })}`}{s.storageCondition && ` · ${s.storageCondition}`}</div></div>) : <p className="text-sm text-ink/50">{t("farmer.detail.noStorage")}</p>}
           </Card>
           <Card className="p-5"><h3 className="mb-4 eyebrow !text-ink/75">{t("farmer.detail.history")}</h3>
-            {events.isLoading ? <Loading /> : <Timeline items={(events.data ?? []).map((e) => ({ key: e.id, label: enumLabel("event", e.eventType), time: e.eventTime, detail: [e.quantityChange != null && `${e.quantityChange > 0 ? "+" : ""}${e.quantityChange} ${unitLabel(unit)}`, e.quantityAfter != null && t("farmer.detail.availableAfter", { n: e.quantityAfter }), e.reason].filter(Boolean).join(" · "), meta: `${e.actorName ?? t("farmer.detail.system")}${e.actorRole ? ` (${enumLabel("role", e.actorRole)})` : ""}${e.source !== "web" ? ` · ${t("farmer.detail.via", { source: e.source })}` : ""}` }))} />}
+            {events.isLoading ? <Loading /> : <Timeline items={(events.data ?? []).map((e) => ({ key: e.id, label: enumLabel("event", e.eventType), time: e.eventTime, detail: [e.quantityChange != null && `${e.quantityChange > 0 ? "+" : ""}${e.quantityChange} ${unitLabel(unit)}`, e.quantityAfter != null && t("farmer.detail.availableAfter", { n: e.quantityAfter }), serverText(e.reason)].filter(Boolean).join(" · "), meta: `${e.actorName ?? t("farmer.detail.system")}${e.actorRole ? ` (${enumLabel("role", e.actorRole)})` : ""}${e.source !== "web" ? ` · ${t("farmer.detail.via", { source: e.source })}` : ""}` }))} />}
           </Card>
         </div>
         <div className="space-y-5">

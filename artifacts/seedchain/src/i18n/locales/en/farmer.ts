@@ -65,7 +65,7 @@ const farmer = {
       classExternal: "External, regularly synced", classHistorical: "Historical", classReference: "Reference only",
       updates: "Updates: {{freq}}.", dataPeriod: "Data period:", lastSynced: "Last synced {{ago}}.", neverSynced: "Never synced.",
       punjabTitle: "Potato in Punjab by district", stateLine: "State: {{prod}} t on {{area}} ha", noDistrict: "No district data yet", noDistrictHint: "This fills after the first successful sync from the PAU source. Nothing is estimated.",
-      tableSource: "Table source: {{attr}}", indiaTitle: "India potato production, historical", indiaNote: "Annual national figures, not live and not for Punjab.", noFao: "No FAOSTAT data yet",
+      punjabCitation: "PAU, “Potato Cultivation in Punjab” ({{url}}), table for {{period}}; table source: Department of Horticulture, Punjab, republished by Punjab Agricultural University. Retrieved {{date}}.", faoCitation: "FAOSTAT, Crops and livestock products (QCL); CC BY 4.0, FAO. Per-row citations are stored with each value.", tableSource: "Table source: {{attr}}", indiaTitle: "India potato production, historical", indiaNote: "Annual national figures, not live and not for Punjab.", noFao: "No FAOSTAT data yet",
       million: "{{v}} million tonnes", production: "Production", lastSuccess: "Last success {{ago}} ({{n}} records{{period}}).", period: ", period {{p}}", noSync: "No successful sync yet.", failed: "Latest attempt failed: {{error}}",
       referenceOnly: "Reference only; nothing is ingested.", sourceHealth: "Data health: every external source",
     },

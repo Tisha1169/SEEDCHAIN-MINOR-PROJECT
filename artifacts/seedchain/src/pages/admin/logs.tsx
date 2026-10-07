@@ -8,6 +8,7 @@ import { Card, ErrorState, Loading, PageHeader, Pill, Table } from "@/components
 import { SourceFooter } from "@/pages/farmer/market";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, errMsg } from "@/lib/api";
+import { serverText, sourceLabel } from "@/lib/server-text";
 import { dateTime, enumLabel } from "@/lib/format";
 
 export function AdminEvents() {
@@ -20,7 +21,7 @@ export function AdminEvents() {
       <PageHeader title={t("admin.events.title")} subtitle={t("admin.events.subtitle")} actions={<input className="h-10 rounded-full border bg-glass-2 px-4 text-sm" placeholder={t("admin.events.filter")} value={type} onChange={(e) => setType(e.target.value.toUpperCase())} />} />
       {q.isLoading ? <Loading /> : q.error ? <ErrorState error={q.error} onRetry={() => void q.refetch()} /> : (
         <Table head={[t("admin.events.cols.recorded"), t("admin.events.cols.lot"), t("admin.events.cols.event"), t("admin.events.cols.who"), t("admin.events.cols.qty"), t("admin.events.cols.reason"), t("admin.events.cols.source")]}>
-          {q.data?.map((e) => <tr key={e.id}><td className="px-4 py-2 text-xs">{dateTime(e.recordedAt)}</td><td className="px-4 py-2 font-mono text-xs">{e.lotCode}</td><td className="px-4 py-2 font-medium">{enumLabel("event", e.eventType)}</td><td className="px-4 py-2 text-xs">{e.actorName ?? t("admin.events.system")} {e.actorRole && `(${enumLabel("role", e.actorRole)})`}</td><td className="px-4 py-2">{e.quantityChange ?? "—"}</td><td className="px-4 py-2 text-xs">{e.reason ?? "—"}</td><td className="px-4 py-2 text-xs">{e.source}</td></tr>)}
+          {q.data?.map((e) => <tr key={e.id}><td className="px-4 py-2 text-xs">{dateTime(e.recordedAt)}</td><td className="px-4 py-2 font-mono text-xs">{e.lotCode}</td><td className="px-4 py-2 font-medium">{enumLabel("event", e.eventType)}</td><td className="px-4 py-2 text-xs">{e.actorName ?? t("admin.events.system")} {e.actorRole && `(${enumLabel("role", e.actorRole)})`}</td><td className="px-4 py-2">{e.quantityChange ?? "—"}</td><td className="px-4 py-2 text-xs">{e.reason ? serverText(e.reason) : "—"}</td><td className="px-4 py-2 text-xs">{e.source}</td></tr>)}
         </Table>
       )}
       <h3 className="mb-3 mt-8 eyebrow !text-ink/75">{t("admin.events.latestScans")}</h3>
@@ -61,7 +62,7 @@ export function AdminIntegrations() {
       {q.isLoading ? <Loading /> : q.error ? <ErrorState error={q.error} /> : (
         <div className="space-y-5">{q.data?.map((s) => (
           <Card key={s.source} className="p-5">
-            <div className="flex flex-wrap items-center justify-between gap-3"><div><div className="font-medium">{s.label}</div><SourceFooter s={s} /></div><Button disabled={busy === s.source} variant="outline" className="rounded-full" onClick={() => void run(s.source)}><RefreshCw className={`mr-2 h-4 w-4 ${busy === s.source ? "animate-spin" : ""}`} />{t("admin.sources.runNow")}</Button></div>
+            <div className="flex flex-wrap items-center justify-between gap-3"><div><div className="font-medium">{sourceLabel(s.source, s.label)}</div><SourceFooter s={s} /></div><Button disabled={busy === s.source} variant="outline" className="rounded-full" onClick={() => void run(s.source)}><RefreshCw className={`mr-2 h-4 w-4 ${busy === s.source ? "animate-spin" : ""}`} />{t("admin.sources.runNow")}</Button></div>
             <div className="mt-4 overflow-x-auto"><table className="w-full text-xs"><thead><tr className="text-left text-ink/45"><th className="py-1">{t("admin.sources.cols.started")}</th><th>{t("admin.sources.cols.status")}</th><th>{t("admin.sources.cols.records")}</th><th>{t("admin.sources.cols.version")}</th><th>{t("admin.sources.cols.endpoint")}</th><th>{t("admin.sources.cols.error")}</th></tr></thead><tbody>{s.recentRuns.map((r) => <tr key={r.id} className="border-t"><td className="py-1.5">{dateTime(r.startedAt)}</td><td><Pill className={r.status === "SUCCESS" ? "bg-emerald-400/15 text-emerald-300" : r.status === "FAILED" ? "bg-rose-400/15 text-rose-300" : "bg-zinc-400/15 text-zinc-300"}>{enumLabel("runStatus", r.status)}</Pill></td><td>{r.recordCount}</td><td>{r.processingVersion}</td><td className="max-w-[260px] truncate font-mono">{r.sourceEndpoint}</td><td className="text-rose-300">{r.error}</td></tr>)}</tbody></table></div>
           </Card>))}</div>
       )}
