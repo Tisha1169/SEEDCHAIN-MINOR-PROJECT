@@ -62,3 +62,20 @@ AUTH_SECRET=$(openssl rand -base64 48) docker compose up --build   # http://loca
 ## Observability
 
 Structured Pino JSON logs with a request id on every line (`X-Request-Id` is echoed to clients; every trace event stores the request id in metadata). Alerts cover integrity, delays, scans and external-data health. Add your platform's log shipping and uptime monitor on `/ready`.
+
+## Render (what is deployed now)
+
+`render.yaml` defines one Docker web service (`seedchain-tisha`) and one PostgreSQL database (`seedchain-db`). Live URL: **https://seedchain-tisha.onrender.com** (also the `PUBLIC_TRACE_BASE_URL`, so every QR points there).
+
+* **Free plans are for testing.** The free web service sleeps when idle (first request can take about 50 s) and the free database is **deleted after 30 days**. Switch both `plan:` values in `render.yaml` to a paid plan before real farmers use it, and take backups.
+* Created from the public repo URL, so pushes do **not** auto-deploy: use *Manual Deploy → Deploy latest commit* in the Render dashboard (or connect the GitHub account to Render to enable auto-deploy).
+* Free Render has no shell. Create an admin by running the CLI locally against the database's *External Database URL*:
+  `DATABASE_URL='<external url>?sslmode=require' DATABASE_SSL=require ADMIN_EMAIL=… ADMIN_NAME=… ADMIN_PASSWORD=… node artifacts/api-server/dist/cli/create-admin.mjs`
+* PAU (pau.edu) answers **403 to Render's network**. Its weekly check will therefore fail (the last good data stays visible as *Cached* with an alert). Refresh it from a machine that can reach PAU:
+  `DATABASE_URL='<external url>?sslmode=require' DATABASE_SSL=require node artifacts/api-server/dist/cli/run-source.mjs pau_potato_punjab`
+* FAOSTAT works from Render. Mandi prices need `DATA_GOV_IN_API_KEY` set in the service's environment; weather needs farms with coordinates.
+* The Vercel project hosts only the static frontend with no API, so it cannot sign anyone in. Use the Render URL.
+
+### Verified on production (2026-10-08)
+28 of 29 automated checks pass against the live URL: readiness, SPA, admin login, FAOSTAT ingestion from Render, farmer registration, admin approval, farm/lot/listing, QR URL on the production host, public trace with no private data leaked, scan recording, customer order with stock reservation, order transitions to delivered, role-based blocking, bad-login rejection, security headers. The 29th is the PAU 403 above.
+Data from that run is labelled `[E2E TEST]` (accounts `e2e-*@e2e.seedchain.test`); remove it before onboarding real farmers.
