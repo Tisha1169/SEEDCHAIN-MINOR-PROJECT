@@ -1,3 +1,4 @@
+import i18n from "@/i18n";
 import { createContext, useContext, type ReactNode } from "react";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
@@ -32,7 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logoutM = useLogoutUser();
 
   const unauthenticated = me.error instanceof ApiError && me.error.status === 401;
-  const serviceError = me.error && !unauthenticated ? "The SeedChain service is temporarily unavailable." : null;
+  const serviceError = me.error && !unauthenticated ? i18n.t("auth.serviceDown") : null;
   const user = me.data ?? null;
 
   const value: AuthContextType = {

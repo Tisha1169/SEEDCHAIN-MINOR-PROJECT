@@ -2,7 +2,8 @@ import type { ReactNode } from "react";
 import { AlertTriangle, Inbox, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { errMsg } from "@/lib/api";
-import { LOT_STATUS_STYLE, ORDER_STATUS_STYLE, RISK_STYLE, titleCase } from "@/lib/format";
+import { useTranslation } from "react-i18next";
+import { LOT_STATUS_STYLE, ORDER_STATUS_STYLE, RISK_STYLE, enumLabel } from "@/lib/format";
 
 export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
   return <div className={`glass rounded-[28px] ${className}`}>{children}</div>;
@@ -23,7 +24,7 @@ export function PageHeader({ title, subtitle, actions }: { title: string; subtit
 /** Large figure with its unit set small beside it ("850" + "kg"), never wrapping. */
 export function BigNumber({ value, className = "" }: { value: ReactNode; className?: string }) {
   if (typeof value === "string") {
-    const m = value.match(/^([\d.,]+)\s*([A-Za-z%]+)$/);
+    const m = value.match(/^([\d.,]+)\s*([\p{L}%][\p{L}\p{M}%]*)$/u);
     if (m) return <span className={`whitespace-nowrap ${className}`}>{m[1]}<span className="ml-1 text-[0.42em] font-light text-ink/45">{m[2]}</span></span>;
   }
   return <span className={`whitespace-nowrap ${className}`}>{value}</span>;
@@ -42,28 +43,33 @@ export function Stat({ label, value, hint, tone }: { label: string; value: React
 export function Pill({ children, className = "bg-zinc-400/15 text-zinc-300" }: { children: ReactNode; className?: string }) {
   return <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium tracking-wide ${className}`}>{children}</span>;
 }
-export const OrderStatusPill = ({ status }: { status: string }) => <Pill className={ORDER_STATUS_STYLE[status]}>{titleCase(status)}</Pill>;
-export const LotStatusPill = ({ status }: { status: string }) => <Pill className={LOT_STATUS_STYLE[status]}>{titleCase(status)}</Pill>;
-export const RiskPill = ({ level }: { level: string }) => <Pill className={RISK_STYLE[level]}>{level} risk</Pill>;
+export const OrderStatusPill = ({ status }: { status: string }) => <Pill className={ORDER_STATUS_STYLE[status]}>{enumLabel("orderStatus", status)}</Pill>;
+export const LotStatusPill = ({ status }: { status: string }) => <Pill className={LOT_STATUS_STYLE[status]}>{enumLabel("lotStatus", status)}</Pill>;
+export const RiskPill = ({ level }: { level: string }) => {
+  const { t } = useTranslation();
+  return <Pill className={RISK_STYLE[level]}>{t("common.riskLevel", { level: enumLabel("risk", level) })}</Pill>;
+};
 
-export function Loading({ label = "Loading…" }: { label?: string }) {
+export function Loading({ label }: { label?: string }) {
+  const { t } = useTranslation();
   return (
     <div className="flex items-center justify-center gap-2 py-16 text-ink/50" role="status">
-      <Loader2 className="h-5 w-5 animate-spin" /> {label}
+      <Loader2 className="h-5 w-5 animate-spin" /> {label ?? t("common.loading")}
     </div>
   );
 }
 
 /** Real error state. Never substitutes sample data. */
 export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
+  const { t } = useTranslation();
   return (
     <Card className="mx-auto my-8 max-w-lg p-8 text-center" >
       <AlertTriangle className="mx-auto mb-3 h-10 w-10 text-amber-500" />
-      <h3 className="text-lg eyebrow !text-ink/75">Service unavailable</h3>
+      <h3 className="text-lg eyebrow !text-ink/75">{t("common.unavailable")}</h3>
       <p className="mt-1 text-sm text-ink/60">{errMsg(error)}</p>
       {onRetry && (
         <Button onClick={onRetry} variant="outline" className="mt-4 rounded-full">
-          <RefreshCw className="mr-2 h-4 w-4" /> Try again
+          <RefreshCw className="mr-2 h-4 w-4" /> {t("common.tryAgain")}
         </Button>
       )}
     </Card>

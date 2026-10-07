@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useRef } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Download, Printer } from "lucide-react";
@@ -20,6 +21,7 @@ const H = 520;
  * small or slightly damaged. The label is plain SVG so print is vector-sharp.
  */
 export function QrLabel({ traceUrl, lotCode, productName, variety, origin }: QrLabelProps) {
+  const { t } = useTranslation();
   const ref = useRef<SVGSVGElement>(null);
 
   const serialize = () => {
@@ -65,7 +67,7 @@ export function QrLabel({ traceUrl, lotCode, productName, variety, origin }: QrL
 
   return (
     <div className="flex flex-col items-center gap-4">
-      <svg ref={ref} viewBox={`0 0 ${W} ${H}`} className="h-auto w-full max-w-[360px] rounded-2xl border border-white/10 bg-white shadow-[0_20px_60px_-20px_rgba(0,0,0,0.8)]" role="img" aria-label={`QR label for ${lotCode}`}>
+      <svg ref={ref} viewBox={`0 0 ${W} ${H}`} className="h-auto w-full max-w-[360px] rounded-2xl border border-white/10 bg-white shadow-[0_20px_60px_-20px_rgba(0,0,0,0.8)]" role="img" aria-label={t("farmer.qr.ariaLabel", { code: lotCode })}>
         <rect width={W} height={H} fill="#fff" />
         <text x={W / 2} y="46" textAnchor="middle" fontFamily="Inter,Arial,sans-serif" fontWeight="800" fontSize="28" letterSpacing="4" fill="#1A1A1A">SEEDCHAIN</text>
         <rect x="20" y="62" width={W - 40} height="3" fill="#3FAF5E" />
@@ -78,11 +80,11 @@ export function QrLabel({ traceUrl, lotCode, productName, variety, origin }: QrL
         <text x={W / 2} y="512" textAnchor="middle" fontFamily="Inter,Arial,sans-serif" fontSize="11" fill="#555">Scan to verify traceability</text>
       </svg>
       <div className="flex flex-wrap justify-center gap-2">
-        <Button onClick={downloadPng} variant="outline"><Download className="mr-2 h-4 w-4" />PNG</Button>
-        <Button onClick={downloadSvg} variant="outline"><Download className="mr-2 h-4 w-4" />SVG</Button>
-        <Button onClick={print}><Printer className="mr-2 h-4 w-4" />Print</Button>
+        <Button onClick={downloadPng} variant="outline"><Download className="mr-2 h-4 w-4" />{t("farmer.qr.png")}</Button>
+        <Button onClick={downloadSvg} variant="outline"><Download className="mr-2 h-4 w-4" />{t("farmer.qr.svg")}</Button>
+        <Button onClick={print}><Printer className="mr-2 h-4 w-4" />{t("farmer.qr.print")}</Button>
       </div>
-      <p className="max-w-xs break-all text-center text-[11px] text-ink/40">QR content: {traceUrl}</p>
+      <p className="max-w-xs break-all text-center text-[11px] text-ink/40">{t("farmer.qr.content", { url: traceUrl })}</p>
     </div>
   );
 }
