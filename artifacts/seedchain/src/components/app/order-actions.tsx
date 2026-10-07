@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Order, OrderAction } from "@workspace/api-client-react";
@@ -9,16 +10,6 @@ import { submitOrQueue } from "@/lib/offline-queue";
 import { Field, inputCls, textareaCls } from "./common";
 import { useAuth } from "@/hooks/use-auth";
 
-const LABEL: Record<OrderAction, string> = {
-  accept: "Accept order",
-  reject: "Reject",
-  prepare: "Start preparing",
-  ready: "Mark ready",
-  dispatch: "Record dispatch",
-  complete: "Record delivery / handover",
-  cancel: "Cancel order",
-  "confirm-receipt": "Confirm I received it",
-};
 const DANGER = new Set<OrderAction>(["reject", "cancel"]);
 
 /**
@@ -27,6 +18,8 @@ const DANGER = new Set<OrderAction>(["reject", "cancel"]);
  * the backend would refuse it anyway.
  */
 export function OrderActions({ order }: { order: Order }) {
+  const { t } = useTranslation();
+  const LABEL = (a: OrderAction) => t(`orders.actions.${a}`);
   const { user } = useAuth();
   const qc = useQueryClient();
   const { toast } = useToast();
@@ -61,15 +54,15 @@ export function OrderActions({ order }: { order: Order }) {
       };
       const r = await submitOrQueue<Order>(
         { url: `/api/orders/${order.id}/${action}`, method: "POST", body, headers: { "Idempotency-Key": clientEventId } },
-        `${LABEL[action]} — ${order.orderCode}`,
+        `${LABEL(action)} — ${order.orderCode}`,
         clientEventId,
       );
-      if (r.queued) toast({ title: "Saved offline — waiting for synchronization." });
-      else toast({ title: "Order updated" });
+      if (r.queued) toast({ title: t("orders.dialog.savedOffline") });
+      else toast({ title: t("orders.dialog.updated") });
       setDialog(null);
       await qc.invalidateQueries();
     } catch (err) {
-      toast({ title: "Could not update order", description: errMsg(err), variant: "destructive" });
+      toast({ title: t("orders.dialog.fail"), description: errMsg(err), variant: "destructive" });
     } finally {
       setBusy(false);
     }
@@ -86,19 +79,19 @@ export function OrderActions({ order }: { order: Order }) {
             className={DANGER.has(a) ? "rounded-full border-rose-400/25 text-rose-300 hover:bg-rose-400/10" : "rounded-full"}
             onClick={() => (needsDialog(a) ? setDialog(a) : void run(a))}
           >
-            {LABEL[a]}
+            {LABEL(a)}
           </Button>
         ))}
       </div>
       <Dialog open={!!dialog} onOpenChange={(o) => !o && setDialog(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{dialog && LABEL[dialog]}</DialogTitle>
-            <DialogDescription>Order {order.orderCode}. This is recorded permanently in the lot's traceability history.</DialogDescription>
+            <DialogTitle>{dialog && LABEL(dialog)}</DialogTitle>
+            <DialogDescription>{t("orders.dialog.desc", { code: order.orderCode })}</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             {(dialog === "reject" || dialog === "cancel" || (dialog === "confirm-receipt" && user?.role === "admin")) && (
-              <Field label={dialog === "reject" ? "Reason (shown to customer)" : "Reason"}>
+              <Field label={dialog === "reject" ? t("orders.dialog.reasonCustomer") : t("orders.dialog.reason")}>
                 <textarea className={textareaCls} rows={3} value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} />
               </Field>
             )}
@@ -106,39 +99,39 @@ export function OrderActions({ order }: { order: Order }) {
               <>
                 {order.fulfillmentMethod === "THIRD_PARTY_DELIVERY" && (
                   <>
-                    <Field label="Courier / transporter name" hint="Recorded for reference only. They do not get a SeedChain account.">
+                    <Field label={t("orders.dialog.courierName")} hint={t("orders.dialog.courierHint")}>
                       <input className={inputCls} value={form.thirdPartyName} onChange={(e) => setForm({ ...form, thirdPartyName: e.target.value })} />
                     </Field>
-                    <Field label="Consignment / vehicle reference (optional)">
+                    <Field label={t("orders.dialog.consignment")}>
                       <input className={inputCls} value={form.thirdPartyReference} onChange={(e) => setForm({ ...form, thirdPartyReference: e.target.value })} />
                     </Field>
                   </>
                 )}
-                <Field label="Delivery notes (optional)">
+                <Field label={t("orders.dialog.deliveryNotes")}>
                   <textarea className={textareaCls} rows={2} value={form.deliveryNotes} onChange={(e) => setForm({ ...form, deliveryNotes: e.target.value })} />
                 </Field>
               </>
             )}
             {dialog === "complete" && (
               <>
-                <Field label={order.fulfillmentMethod === "CUSTOMER_PICKUP" ? "Pickup location" : "Delivery location"}>
+                <Field label={order.fulfillmentMethod === "CUSTOMER_PICKUP" ? t("orders.dialog.pickupLocation") : t("orders.dialog.deliveryLocation")}>
                   <input className={inputCls} value={form.deliveryLocation} onChange={(e) => setForm({ ...form, deliveryLocation: e.target.value })} />
                 </Field>
                 <label className="flex items-center gap-2 text-sm">
                   <input type="checkbox" checked={form.gps} onChange={(e) => setForm({ ...form, gps: e.target.checked })} />
-                  Attach my current GPS position (asks for permission; never stored publicly)
+                  {t("orders.dialog.gps")}
                 </label>
               </>
             )}
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setDialog(null)}>Back</Button>
+            <Button variant="ghost" onClick={() => setDialog(null)}>{t("orders.dialog.back")}</Button>
             <Button
               disabled={busy || (dialog === "dispatch" && order.fulfillmentMethod === "THIRD_PARTY_DELIVERY" && !form.thirdPartyName.trim()) || ((dialog === "reject" || dialog === "cancel" || (dialog === "confirm-receipt" && user?.role === "admin")) && user?.role !== "customer" && !form.reason.trim())}
              
               onClick={() => dialog && void run(dialog)}
             >
-              {busy ? "Saving…" : "Confirm"}
+              {busy ? t("orders.dialog.saving") : t("orders.dialog.confirm")}
             </Button>
           </DialogFooter>
         </DialogContent>
