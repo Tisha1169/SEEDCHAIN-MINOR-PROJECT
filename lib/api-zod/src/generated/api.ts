@@ -321,6 +321,327 @@ export const ListQrScansResponseItem = zod.object({
 export const ListQrScansResponse = zod.array(ListQrScansResponseItem)
 
 
+export const GetPaymentConfigResponse = zod.object({
+  "enabled": zod.boolean(),
+  "keyId": zod.string().nullish().describe('Razorpay public key id only. The key secret never leaves the server.'),
+  "mode": zod.union([zod.literal('test'),zod.literal('live'),zod.literal(null)]).nullish(),
+  "currency": zod.string(),
+  "holdMinutes": zod.number(),
+  "merchantName": zod.string()
+})
+
+
+/**
+ * Customer only. Validates the cart, holds stock, computes the total on the server and creates the Razorpay order.
+ */
+export const startCheckoutHeaderIdempotencyKeyMin = 8;
+export const startCheckoutHeaderIdempotencyKeyMax = 100;
+
+
+
+export const StartCheckoutHeader = zod.object({
+  "Idempotency-Key": zod.string().min(startCheckoutHeaderIdempotencyKeyMin).max(startCheckoutHeaderIdempotencyKeyMax)
+})
+
+export const startCheckoutBodyItemsItemQuantityExclusiveMin = 0;
+export const startCheckoutBodyItemsItemQuantityMax = 100000000;
+
+export const startCheckoutBodyItemsMax = 20;
+
+export const startCheckoutBodyDeliveryAddressMax = 500;
+
+export const startCheckoutBodyCustomerNotesMax = 1000;
+
+
+
+export const StartCheckoutBody = zod.object({
+  "items": zod.array(zod.object({
+  "lotId": zod.string().uuid(),
+  "quantity": zod.number().gt(startCheckoutBodyItemsItemQuantityExclusiveMin).max(startCheckoutBodyItemsItemQuantityMax)
+})).min(1).max(startCheckoutBodyItemsMax),
+  "fulfillmentMethod": zod.enum(['CUSTOMER_PICKUP', 'FARMER_DELIVERY', 'THIRD_PARTY_DELIVERY']),
+  "deliveryAddress": zod.string().max(startCheckoutBodyDeliveryAddressMax).optional(),
+  "customerNotes": zod.string().max(startCheckoutBodyCustomerNotesMax).optional()
+})
+
+
+export const GetCheckoutSessionParams = zod.object({
+  "orderId": zod.coerce.string().uuid()
+})
+
+export const GetCheckoutSessionResponse = zod.object({
+  "orderId": zod.string().uuid(),
+  "orderCode": zod.string(),
+  "razorpayOrderId": zod.string(),
+  "amountPaise": zod.number().describe('Computed on the server from lot prices'),
+  "currency": zod.enum(['INR']),
+  "keyId": zod.string(),
+  "mode": zod.enum(['test', 'live']),
+  "expiresAt": zod.coerce.date().describe('When the stock hold ends'),
+  "merchantName": zod.string(),
+  "description": zod.string(),
+  "prefill": zod.object({
+  "name": zod.string(),
+  "email": zod.string(),
+  "contact": zod.string().optional()
+})
+})
+
+
+/**
+ * The server checks the Razorpay signature against the Razorpay order id it stored. The browser's claim of success is never trusted.
+ */
+export const VerifyCheckoutBody = zod.object({
+  "orderId": zod.string().uuid(),
+  "razorpay_order_id": zod.string(),
+  "razorpay_payment_id": zod.string(),
+  "razorpay_signature": zod.string()
+})
+
+export const VerifyCheckoutResponse = zod.object({
+  "outcome": zod.enum(['APPLIED', 'DUPLICATE_STATE', 'LATE_PAYMENT']),
+  "order": zod.object({
+  "id": zod.string().uuid(),
+  "orderCode": zod.string(),
+  "status": zod.enum(['PENDING', 'ACCEPTED', 'REJECTED', 'PREPARING', 'READY', 'DISPATCHED', 'DELIVERED', 'CUSTOMER_CONFIRMED', 'CANCELLED']),
+  "paymentStatus": zod.enum(['UNPAID', 'PAYMENT_PENDING', 'PAYMENT_PROCESSING', 'PAID', 'PAYMENT_FAILED', 'PAYMENT_CANCELLED', 'REFUND_PENDING', 'REFUNDED']).describe('Payment lifecycle of an order. UNPAID means no online payment was involved.'),
+  "paymentDueAt": zod.coerce.date().nullish().describe('End of the stock hold while payment is pending'),
+  "payment": zod.union([zod.object({
+  "status": zod.enum(['CREATED', 'PROCESSING', 'PAID', 'FAILED', 'CANCELLED', 'REFUND_PENDING', 'REFUNDED']),
+  "method": zod.string().nullish(),
+  "mode": zod.string(),
+  "amountPaise": zod.number(),
+  "currency": zod.string(),
+  "paidAt": zod.coerce.date().nullish(),
+  "failureReason": zod.string().nullish(),
+  "razorpayPaymentId": zod.string().nullish().describe('Visible to the payer and admins only'),
+  "razorpayOrderId": zod.string().nullish(),
+  "signatureVerified": zod.boolean().nullish().describe('Admin only'),
+  "webhookVerified": zod.boolean().nullish().describe('Admin only')
+}),zod.null()]).optional(),
+  "fulfillmentMethod": zod.enum(['CUSTOMER_PICKUP', 'FARMER_DELIVERY', 'THIRD_PARTY_DELIVERY']),
+  "totalAmount": zod.number(),
+  "deliveryAddress": zod.string().nullish(),
+  "customerNotes": zod.string().nullish(),
+  "rejectionReason": zod.string().nullish(),
+  "cancelReason": zod.string().nullish(),
+  "deliveryLocation": zod.string().nullish(),
+  "deliveryNotes": zod.string().nullish(),
+  "thirdPartyName": zod.string().nullish(),
+  "thirdPartyReference": zod.string().nullish(),
+  "acceptedAt": zod.coerce.date().nullish(),
+  "preparedAt": zod.coerce.date().nullish(),
+  "readyAt": zod.coerce.date().nullish(),
+  "dispatchedAt": zod.coerce.date().nullish(),
+  "deliveredAt": zod.coerce.date().nullish(),
+  "confirmedAt": zod.coerce.date().nullish(),
+  "cancelledAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date(),
+  "customer": zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "phone": zod.string().nullish().describe('Visible to the order\'s farmer and admin only')
+}),
+  "farmer": zod.object({
+  "id": zod.string().uuid(),
+  "publicName": zod.string()
+}),
+  "items": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "lotId": zod.string().uuid(),
+  "lotCode": zod.string(),
+  "productName": zod.string(),
+  "variety": zod.string(),
+  "unit": zod.string(),
+  "quantity": zod.number(),
+  "unitPrice": zod.number(),
+  "lineTotal": zod.number(),
+  "publicToken": zod.string().nullish()
+})),
+  "allowedActions": zod.array(zod.enum(['accept', 'reject', 'prepare', 'ready', 'dispatch', 'complete', 'cancel', 'confirm-receipt'])).describe('Actions the current caller may perform now (computed by the backend state machine)'),
+  "events": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "lotId": zod.string().uuid(),
+  "lotCode": zod.string().optional(),
+  "orderId": zod.string().nullish(),
+  "eventType": zod.string(),
+  "eventTime": zod.coerce.date(),
+  "recordedAt": zod.coerce.date(),
+  "actorUserId": zod.string().nullish(),
+  "actorName": zod.string().nullish(),
+  "actorRole": zod.string().nullish(),
+  "location": zod.string().nullish(),
+  "latitude": zod.number().nullish(),
+  "longitude": zod.number().nullish(),
+  "quantityBefore": zod.number().nullish(),
+  "quantityChange": zod.number().nullish(),
+  "quantityAfter": zod.number().nullish(),
+  "status": zod.string().nullish(),
+  "reason": zod.string().nullish(),
+  "source": zod.string(),
+  "clientEventId": zod.string().nullish(),
+  "previousEventId": zod.string().nullish(),
+  "correctsEventId": zod.string().nullish(),
+  "isPublic": zod.boolean().optional(),
+  "metadata": zod.record(zod.string(), zod.unknown())
+})).optional(),
+  "feedback": zod.union([zod.object({
+  "rating": zod.number(),
+  "freshnessRating": zod.number().nullish(),
+  "qualityRating": zod.number().nullish(),
+  "comment": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+}),zod.null()]).optional()
+})
+})
+
+
+export const ListPaymentsResponseItem = zod.object({
+  "id": zod.string().uuid(),
+  "orderId": zod.string().uuid(),
+  "orderCode": zod.string(),
+  "orderStatus": zod.string().optional(),
+  "customerName": zod.string().optional(),
+  "razorpayOrderId": zod.string(),
+  "razorpayPaymentId": zod.string().nullish(),
+  "amountPaise": zod.number(),
+  "currency": zod.string(),
+  "status": zod.string(),
+  "method": zod.string().nullish(),
+  "mode": zod.string(),
+  "signatureVerified": zod.boolean(),
+  "webhookVerified": zod.boolean(),
+  "failureReason": zod.string().nullish(),
+  "refundId": zod.string().nullish(),
+  "paidAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date()
+})
+export const ListPaymentsResponse = zod.array(ListPaymentsResponseItem)
+
+
+export const RefundPaymentParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const refundPaymentBodyReasonMin = 5;
+export const refundPaymentBodyReasonMax = 300;
+
+
+
+export const RefundPaymentBody = zod.object({
+  "reason": zod.string().min(refundPaymentBodyReasonMin).max(refundPaymentBodyReasonMax)
+})
+
+export const RefundPaymentResponse = zod.object({
+  "alreadyRefunded": zod.boolean().optional(),
+  "refundId": zod.string().nullish(),
+  "pending": zod.boolean().optional()
+})
+
+
+export const ListLotPackagesParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const ListLotPackagesResponseItem = zod.object({
+  "id": zod.string().uuid(),
+  "lotId": zod.string().uuid(),
+  "packageNumber": zod.number(),
+  "label": zod.string().describe('e.g. PKG-001'),
+  "quantity": zod.number(),
+  "sealId": zod.string(),
+  "sealStatus": zod.enum(['ASSIGNED', 'DISPATCH_VERIFIED', 'INTACT', 'BROKEN', 'REPORTED', 'REPLACED']),
+  "integrityStatus": zod.enum(['NOT_CHECKED', 'OK', 'EXCEPTION']),
+  "publicToken": zod.string().describe('This package\'s own QR token. Owner and admin only.'),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date(),
+  "history": zod.array(zod.object({
+  "eventType": zod.string(),
+  "from": zod.string().nullish(),
+  "to": zod.string().nullish(),
+  "actorRole": zod.string().nullish(),
+  "note": zod.string().nullish(),
+  "at": zod.coerce.date()
+})).optional()
+})
+export const ListLotPackagesResponse = zod.array(ListLotPackagesResponseItem)
+
+
+export const CreateLotPackagesParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const createLotPackagesBodyQuantitiesItemExclusiveMin = 0;
+
+export const createLotPackagesBodyQuantitiesMax = 200;
+
+export const createLotPackagesBodyCountMax = 200;
+
+export const createLotPackagesBodyQuantityEachExclusiveMin = 0;
+
+
+
+export const CreateLotPackagesBody = zod.object({
+  "quantities": zod.array(zod.number().gt(createLotPackagesBodyQuantitiesItemExclusiveMin)).min(1).max(createLotPackagesBodyQuantitiesMax).optional(),
+  "count": zod.number().min(1).max(createLotPackagesBodyCountMax).optional(),
+  "quantityEach": zod.number().gt(createLotPackagesBodyQuantityEachExclusiveMin).optional()
+})
+
+
+export const SetPackageSealParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const setPackageSealBodyNoteMax = 300;
+
+
+
+export const SetPackageSealBody = zod.object({
+  "status": zod.enum(['DISPATCH_VERIFIED', 'INTACT', 'BROKEN', 'REPORTED', 'REPLACED']),
+  "note": zod.string().max(setPackageSealBodyNoteMax).optional()
+})
+
+export const SetPackageSealResponse = zod.object({
+  "id": zod.string().uuid(),
+  "lotId": zod.string().uuid(),
+  "packageNumber": zod.number(),
+  "label": zod.string().describe('e.g. PKG-001'),
+  "quantity": zod.number(),
+  "sealId": zod.string(),
+  "sealStatus": zod.enum(['ASSIGNED', 'DISPATCH_VERIFIED', 'INTACT', 'BROKEN', 'REPORTED', 'REPLACED']),
+  "integrityStatus": zod.enum(['NOT_CHECKED', 'OK', 'EXCEPTION']),
+  "publicToken": zod.string().describe('This package\'s own QR token. Owner and admin only.'),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date(),
+  "history": zod.array(zod.object({
+  "eventType": zod.string(),
+  "from": zod.string().nullish(),
+  "to": zod.string().nullish(),
+  "actorRole": zod.string().nullish(),
+  "note": zod.string().nullish(),
+  "at": zod.coerce.date()
+})).optional()
+})
+
+
+/**
+ * Public. Report a seal or packaging problem; records an exception for review, never concludes tampering.
+ */
+export const ReportSealIssueParams = zod.object({
+  "publicToken": zod.coerce.string()
+})
+
+export const reportSealIssueBodyNoteMax = 300;
+
+
+
+export const ReportSealIssueBody = zod.object({
+  "kind": zod.enum(['SEAL_BROKEN', 'SEAL_MISSING', 'SEAL_MISMATCH', 'OTHER']),
+  "note": zod.string().max(reportSealIssueBodyNoteMax).optional()
+})
+
+
 /**
  * Admin only. OK scans that shared a coarse location, grouped into 0.5-degree cells (about 55 km). Never exact points.
  */
@@ -1214,6 +1535,29 @@ export const getPublicTraceResponseCompletenessPercentMax = 100;
 
 
 export const GetPublicTraceResponse = zod.object({
+  "scope": zod.enum(['LOT', 'PACKAGE']).describe('Whether the scanned QR was the lot\'s or one package\'s'),
+  "digitalIdentity": zod.object({
+  "qrValid": zod.boolean(),
+  "lotRegistered": zod.boolean(),
+  "farmerVerified": zod.boolean(),
+  "quality": zod.enum(['NONE', 'RECORDED_BY_FARMER', 'INSPECTED'])
+}),
+  "physicalIntegrity": zod.object({
+  "scope": zod.enum(['LOT', 'PACKAGE']),
+  "state": zod.enum(['NO_SEALS', 'NOT_VERIFIED', 'INTACT', 'EXCEPTION']),
+  "packagesTotal": zod.number(),
+  "counts": zod.object({
+  "NOT_CHECKED": zod.number(),
+  "OK": zod.number(),
+  "EXCEPTION": zod.number()
+}),
+  "package": zod.object({
+  "label": zod.string().optional(),
+  "sealId": zod.string().optional(),
+  "sealStatus": zod.enum(['ASSIGNED', 'DISPATCH_VERIFIED', 'INTACT', 'BROKEN', 'REPORTED', 'REPLACED']).optional(),
+  "quantity": zod.number().optional()
+}).nullish()
+}),
   "verification": zod.enum(['VERIFIED', 'UNVERIFIED_FARMER']),
   "lotCode": zod.string(),
   "lotId": zod.string().uuid().optional(),
@@ -1553,6 +1897,21 @@ export const ListOrdersResponseItem = zod.object({
   "id": zod.string().uuid(),
   "orderCode": zod.string(),
   "status": zod.enum(['PENDING', 'ACCEPTED', 'REJECTED', 'PREPARING', 'READY', 'DISPATCHED', 'DELIVERED', 'CUSTOMER_CONFIRMED', 'CANCELLED']),
+  "paymentStatus": zod.enum(['UNPAID', 'PAYMENT_PENDING', 'PAYMENT_PROCESSING', 'PAID', 'PAYMENT_FAILED', 'PAYMENT_CANCELLED', 'REFUND_PENDING', 'REFUNDED']).describe('Payment lifecycle of an order. UNPAID means no online payment was involved.'),
+  "paymentDueAt": zod.coerce.date().nullish().describe('End of the stock hold while payment is pending'),
+  "payment": zod.union([zod.object({
+  "status": zod.enum(['CREATED', 'PROCESSING', 'PAID', 'FAILED', 'CANCELLED', 'REFUND_PENDING', 'REFUNDED']),
+  "method": zod.string().nullish(),
+  "mode": zod.string(),
+  "amountPaise": zod.number(),
+  "currency": zod.string(),
+  "paidAt": zod.coerce.date().nullish(),
+  "failureReason": zod.string().nullish(),
+  "razorpayPaymentId": zod.string().nullish().describe('Visible to the payer and admins only'),
+  "razorpayOrderId": zod.string().nullish(),
+  "signatureVerified": zod.boolean().nullish().describe('Admin only'),
+  "webhookVerified": zod.boolean().nullish().describe('Admin only')
+}),zod.null()]).optional(),
   "fulfillmentMethod": zod.enum(['CUSTOMER_PICKUP', 'FARMER_DELIVERY', 'THIRD_PARTY_DELIVERY']),
   "totalAmount": zod.number(),
   "deliveryAddress": zod.string().nullish(),
@@ -1668,6 +2027,21 @@ export const CreateOrderResponse = zod.object({
   "id": zod.string().uuid(),
   "orderCode": zod.string(),
   "status": zod.enum(['PENDING', 'ACCEPTED', 'REJECTED', 'PREPARING', 'READY', 'DISPATCHED', 'DELIVERED', 'CUSTOMER_CONFIRMED', 'CANCELLED']),
+  "paymentStatus": zod.enum(['UNPAID', 'PAYMENT_PENDING', 'PAYMENT_PROCESSING', 'PAID', 'PAYMENT_FAILED', 'PAYMENT_CANCELLED', 'REFUND_PENDING', 'REFUNDED']).describe('Payment lifecycle of an order. UNPAID means no online payment was involved.'),
+  "paymentDueAt": zod.coerce.date().nullish().describe('End of the stock hold while payment is pending'),
+  "payment": zod.union([zod.object({
+  "status": zod.enum(['CREATED', 'PROCESSING', 'PAID', 'FAILED', 'CANCELLED', 'REFUND_PENDING', 'REFUNDED']),
+  "method": zod.string().nullish(),
+  "mode": zod.string(),
+  "amountPaise": zod.number(),
+  "currency": zod.string(),
+  "paidAt": zod.coerce.date().nullish(),
+  "failureReason": zod.string().nullish(),
+  "razorpayPaymentId": zod.string().nullish().describe('Visible to the payer and admins only'),
+  "razorpayOrderId": zod.string().nullish(),
+  "signatureVerified": zod.boolean().nullish().describe('Admin only'),
+  "webhookVerified": zod.boolean().nullish().describe('Admin only')
+}),zod.null()]).optional(),
   "fulfillmentMethod": zod.enum(['CUSTOMER_PICKUP', 'FARMER_DELIVERY', 'THIRD_PARTY_DELIVERY']),
   "totalAmount": zod.number(),
   "deliveryAddress": zod.string().nullish(),
@@ -1753,6 +2127,21 @@ export const GetOrderResponse = zod.object({
   "id": zod.string().uuid(),
   "orderCode": zod.string(),
   "status": zod.enum(['PENDING', 'ACCEPTED', 'REJECTED', 'PREPARING', 'READY', 'DISPATCHED', 'DELIVERED', 'CUSTOMER_CONFIRMED', 'CANCELLED']),
+  "paymentStatus": zod.enum(['UNPAID', 'PAYMENT_PENDING', 'PAYMENT_PROCESSING', 'PAID', 'PAYMENT_FAILED', 'PAYMENT_CANCELLED', 'REFUND_PENDING', 'REFUNDED']).describe('Payment lifecycle of an order. UNPAID means no online payment was involved.'),
+  "paymentDueAt": zod.coerce.date().nullish().describe('End of the stock hold while payment is pending'),
+  "payment": zod.union([zod.object({
+  "status": zod.enum(['CREATED', 'PROCESSING', 'PAID', 'FAILED', 'CANCELLED', 'REFUND_PENDING', 'REFUNDED']),
+  "method": zod.string().nullish(),
+  "mode": zod.string(),
+  "amountPaise": zod.number(),
+  "currency": zod.string(),
+  "paidAt": zod.coerce.date().nullish(),
+  "failureReason": zod.string().nullish(),
+  "razorpayPaymentId": zod.string().nullish().describe('Visible to the payer and admins only'),
+  "razorpayOrderId": zod.string().nullish(),
+  "signatureVerified": zod.boolean().nullish().describe('Admin only'),
+  "webhookVerified": zod.boolean().nullish().describe('Admin only')
+}),zod.null()]).optional(),
   "fulfillmentMethod": zod.enum(['CUSTOMER_PICKUP', 'FARMER_DELIVERY', 'THIRD_PARTY_DELIVERY']),
   "totalAmount": zod.number(),
   "deliveryAddress": zod.string().nullish(),
@@ -1883,6 +2272,21 @@ export const TransitionOrderResponse = zod.object({
   "id": zod.string().uuid(),
   "orderCode": zod.string(),
   "status": zod.enum(['PENDING', 'ACCEPTED', 'REJECTED', 'PREPARING', 'READY', 'DISPATCHED', 'DELIVERED', 'CUSTOMER_CONFIRMED', 'CANCELLED']),
+  "paymentStatus": zod.enum(['UNPAID', 'PAYMENT_PENDING', 'PAYMENT_PROCESSING', 'PAID', 'PAYMENT_FAILED', 'PAYMENT_CANCELLED', 'REFUND_PENDING', 'REFUNDED']).describe('Payment lifecycle of an order. UNPAID means no online payment was involved.'),
+  "paymentDueAt": zod.coerce.date().nullish().describe('End of the stock hold while payment is pending'),
+  "payment": zod.union([zod.object({
+  "status": zod.enum(['CREATED', 'PROCESSING', 'PAID', 'FAILED', 'CANCELLED', 'REFUND_PENDING', 'REFUNDED']),
+  "method": zod.string().nullish(),
+  "mode": zod.string(),
+  "amountPaise": zod.number(),
+  "currency": zod.string(),
+  "paidAt": zod.coerce.date().nullish(),
+  "failureReason": zod.string().nullish(),
+  "razorpayPaymentId": zod.string().nullish().describe('Visible to the payer and admins only'),
+  "razorpayOrderId": zod.string().nullish(),
+  "signatureVerified": zod.boolean().nullish().describe('Admin only'),
+  "webhookVerified": zod.boolean().nullish().describe('Admin only')
+}),zod.null()]).optional(),
   "fulfillmentMethod": zod.enum(['CUSTOMER_PICKUP', 'FARMER_DELIVERY', 'THIRD_PARTY_DELIVERY']),
   "totalAmount": zod.number(),
   "deliveryAddress": zod.string().nullish(),
@@ -2142,6 +2546,21 @@ export const GetCustomerOverviewResponse = zod.object({
   "id": zod.string().uuid(),
   "orderCode": zod.string(),
   "status": zod.enum(['PENDING', 'ACCEPTED', 'REJECTED', 'PREPARING', 'READY', 'DISPATCHED', 'DELIVERED', 'CUSTOMER_CONFIRMED', 'CANCELLED']),
+  "paymentStatus": zod.enum(['UNPAID', 'PAYMENT_PENDING', 'PAYMENT_PROCESSING', 'PAID', 'PAYMENT_FAILED', 'PAYMENT_CANCELLED', 'REFUND_PENDING', 'REFUNDED']).describe('Payment lifecycle of an order. UNPAID means no online payment was involved.'),
+  "paymentDueAt": zod.coerce.date().nullish().describe('End of the stock hold while payment is pending'),
+  "payment": zod.union([zod.object({
+  "status": zod.enum(['CREATED', 'PROCESSING', 'PAID', 'FAILED', 'CANCELLED', 'REFUND_PENDING', 'REFUNDED']),
+  "method": zod.string().nullish(),
+  "mode": zod.string(),
+  "amountPaise": zod.number(),
+  "currency": zod.string(),
+  "paidAt": zod.coerce.date().nullish(),
+  "failureReason": zod.string().nullish(),
+  "razorpayPaymentId": zod.string().nullish().describe('Visible to the payer and admins only'),
+  "razorpayOrderId": zod.string().nullish(),
+  "signatureVerified": zod.boolean().nullish().describe('Admin only'),
+  "webhookVerified": zod.boolean().nullish().describe('Admin only')
+}),zod.null()]).optional(),
   "fulfillmentMethod": zod.enum(['CUSTOMER_PICKUP', 'FARMER_DELIVERY', 'THIRD_PARTY_DELIVERY']),
   "totalAmount": zod.number(),
   "deliveryAddress": zod.string().nullish(),

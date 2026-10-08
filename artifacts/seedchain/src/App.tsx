@@ -41,6 +41,8 @@ const AdminUsers = lazy(() => import("@/pages/admin/users"));
 const AdminEvents = lazy(() => import("@/pages/admin/logs").then((m) => ({ default: m.AdminEvents })));
 const AdminAudit = lazy(() => import("@/pages/admin/logs").then((m) => ({ default: m.AdminAudit })));
 const AdminIntegrations = lazy(() => import("@/pages/admin/logs").then((m) => ({ default: m.AdminIntegrations })));
+const CheckoutPage = lazy(() => import("@/pages/customer/checkout"));
+const AdminPayments = lazy(() => import("@/pages/admin/payments"));
 const AdminMap = lazy(() => import("@/pages/admin/map"));
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, refetchOnWindowFocus: true, staleTime: 5_000 } } });
@@ -81,6 +83,7 @@ function Router() {
       <Route path="/scan" component={ScanPage} />
       <Route path="/marketplace" component={MarketplacePage} />
       <Route path="/marketplace/:lotId" component={ListingPage} />
+      <Route path="/checkout" component={CheckoutPage} />
       <Route path="/farmers/:id" component={FarmerPublicPage} />
 
       <Route path="/farmer">{P("farmer", FarmerDashboard)}</Route>
@@ -107,6 +110,7 @@ function Router() {
       <Route path="/admin/inventory">{P("admin", InventoryPage)}</Route>
       <Route path="/admin/events">{P("admin", AdminEvents)}</Route>
       <Route path="/admin/alerts">{P("admin", AlertsPage)}</Route>
+      <Route path="/admin/payments">{P("admin", AdminPayments)}</Route>
       <Route path="/admin/map">{P("admin", AdminMap)}</Route>
       <Route path="/admin/integrations">{P("admin", AdminIntegrations)}</Route>
       <Route path="/admin/audit">{P("admin", AdminAudit)}</Route>

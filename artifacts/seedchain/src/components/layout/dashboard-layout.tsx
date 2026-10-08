@@ -2,7 +2,7 @@ import { useState, useSyncExternalStore, type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import {
   AlertTriangle, BarChart3, ClipboardList, CloudOff, History, LayoutDashboard, Leaf, LogOut, Menu, Package, QrCode, RefreshCw,
-  ScanLine, ShoppingBag, Sprout, Users, X, Plug, Wifi, WifiOff, Landmark, Boxes, UserCog, Plus, MapPinned,
+  ScanLine, ShoppingBag, Sprout, Users, X, Plug, Wifi, WifiOff, Landmark, Boxes, UserCog, Plus, MapPinned, CreditCard,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/use-auth";
@@ -39,6 +39,7 @@ const NAV = {
     { name: "orders", href: "/admin/orders", icon: ClipboardList },
     { name: "events", href: "/admin/events", icon: History },
     { name: "alerts", href: "/admin/alerts", icon: AlertTriangle },
+    { name: "payments", href: "/admin/payments", icon: CreditCard },
     { name: "map", href: "/admin/map", icon: MapPinned },
     { name: "sources", href: "/admin/integrations", icon: Plug },
     { name: "inventory", href: "/admin/inventory", icon: Boxes },

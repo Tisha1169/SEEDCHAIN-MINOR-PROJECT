@@ -8,11 +8,14 @@
  * that is acceptable. The JSON result file feeds docs/SeedChain_Data_and_Test_Results.xlsx (scripts/build-workbook.py).
  */
 import fs from "node:fs";
+import { createHmac } from "node:crypto";
 
 const BASE = (process.env.BASE || "http://localhost:8080").replace(/\/+$/, "");
 const { ADMIN_EMAIL, ADMIN_PASSWORD } = process.env;
 if (!ADMIN_EMAIL || !ADMIN_PASSWORD) throw new Error("Set ADMIN_EMAIL and ADMIN_PASSWORD");
 const out = process.argv[2] || "e2e-results.json";
+// Optional, local mock only: lets the script "pay" with signatures it can compute. Never set these against production.
+const { SIM_KEY_SECRET, SIM_WEBHOOK_SECRET } = process.env;
 
 const results = [];
 const started = Date.now();
@@ -76,14 +79,72 @@ r = await anon("POST", "/api/scans", { publicToken: token, scanSource: "camera_l
 r = await anon("GET", `/trace/${token}`); check("QR", "Trace page route serves the app", r.s === 200, `HTTP ${r.s}`);
 
 r = await cust("POST", "/api/auth/register", { name: "[E2E TEST] Customer", email: ce, password: pw, role: "customer", phone: "+91 90000 00002" }); check("Customer", "Customer registration", r.s === 201, `HTTP ${r.s}`);
-const key = crypto.randomUUID();
-r = await cust("POST", "/api/orders", { items: [{ lotId: lot?.id, quantity: 20 }], fulfillmentMethod: "CUSTOMER_PICKUP" }, { "idempotency-key": key }); check("Orders", "Customer places order", r.s === 201, `HTTP ${r.s}`); const oid = r.j?.id;
-const r2 = await cust("POST", "/api/orders", { items: [{ lotId: lot?.id, quantity: 20 }], fulfillmentMethod: "CUSTOMER_PICKUP" }, { "idempotency-key": key }); check("Orders", "Same idempotency key does not double-order", r2.j?.id === oid, `same id: ${r2.j?.id === oid}`);
+const cfg = (await anon("GET", "/api/payments/config")).j ?? {};
+check("Payments", "Public payment config exposes no secret", !JSON.stringify(cfg).match(/secret/i), `enabled=${cfg.enabled} mode=${cfg.mode ?? "n/a"}`);
+let oid;
+if (cfg.enabled) {
+  r = await cust("POST", "/api/orders", { items: [{ lotId: lot?.id, quantity: 5 }], fulfillmentMethod: "CUSTOMER_PICKUP" }, { "idempotency-key": crypto.randomUUID() });
+  check("Payments", "Plain orders refused while online payment is on", r.s === 409 && r.j?.code === "PAYMENT_REQUIRED", `HTTP ${r.s}`);
+  const key = crypto.randomUUID();
+  r = await cust("POST", "/api/checkout", { items: [{ lotId: lot?.id, quantity: 20 }], fulfillmentMethod: "CUSTOMER_PICKUP", totalAmount: 1 }, { "idempotency-key": key });
+  check("Payments", "Checkout creates a Razorpay order; total computed on the server (client total ignored)", r.s === 201 && r.j?.session?.amountPaise === 44000, `amountPaise=${r.j?.session?.amountPaise}`);
+  const s = r.j?.session; oid = s?.orderId;
+  const r2 = await cust("POST", "/api/checkout", { items: [{ lotId: lot?.id, quantity: 20 }], fulfillmentMethod: "CUSTOMER_PICKUP" }, { "idempotency-key": key });
+  check("Payments", "Same Idempotency-Key returns the same Razorpay order (no double charge setup)", r2.j?.session?.razorpayOrderId === s?.razorpayOrderId);
+  r = await farmer("GET", `/api/orders/${oid}`); check("Payments", "Unpaid order is invisible to the farmer", r.s === 404, `HTTP ${r.s}`);
+  r = await cust("POST", "/api/checkout/verify", { orderId: oid, razorpay_order_id: s?.razorpayOrderId, razorpay_payment_id: "pay_FORGED000001", razorpay_signature: "0".repeat(64) });
+  check("Payments", "Forged payment signature rejected", r.s === 400 && r.j?.code === "INVALID_SIGNATURE", `HTTP ${r.s}`);
+  r = await anon("POST", "/api/webhooks/razorpay", {}, { "x-razorpay-signature": "bad", "x-razorpay-event-id": "evt_bad" });
+  check("Payments", "Webhook with a bad signature rejected", r.s === 400, `HTTP ${r.s}`);
+  if (SIM_KEY_SECRET && s) {
+    const pid = `pay_SIM_${s.razorpayOrderId.replace("order_", "")}`;
+    const sig = createHmac("sha256", SIM_KEY_SECRET).update(`${s.razorpayOrderId}|${pid}`).digest("hex");
+    r = await cust("POST", "/api/checkout/verify", { orderId: oid, razorpay_order_id: s.razorpayOrderId, razorpay_payment_id: pid, razorpay_signature: sig });
+    check("Payments", "Valid signature marks the order PAID", r.s === 200 && r.j?.order?.paymentStatus === "PAID", `${r.j?.outcome}`);
+    r = await cust("POST", "/api/checkout/verify", { orderId: oid, razorpay_order_id: s.razorpayOrderId, razorpay_payment_id: pid, razorpay_signature: sig });
+    check("Payments", "Repeating the callback is harmless (idempotent)", r.s === 200 && r.j?.outcome === "DUPLICATE_STATE");
+    if (SIM_WEBHOOK_SECRET) {
+      const body = JSON.stringify({ event: "payment.captured", payload: { payment: { entity: { id: pid, order_id: s.razorpayOrderId, amount: s.amountPaise, currency: "INR", status: "captured", method: "upi" } } } });
+      const wsig = createHmac("sha256", SIM_WEBHOOK_SECRET).update(body).digest("hex");
+      const eid = `evt_${Date.now()}`;
+      const send = () => fetch(BASE + "/api/webhooks/razorpay", { method: "POST", headers: { "content-type": "application/json", "x-razorpay-signature": wsig, "x-razorpay-event-id": eid }, body }).then(async (x) => ({ s: x.status, j: await x.json() }));
+      const w1 = await send(), w2 = await send();
+      check("Payments", "Signed webhook accepted; redelivery of the same event is a no-op", w1.s === 200 && w2.s === 200 && w2.j.outcome === "DUPLICATE_EVENT", `${w1.j.outcome} then ${w2.j.outcome}`);
+    }
+  } else {
+    r = await cust("POST", `/api/orders/${oid}/cancel`, { reason: "smoke test" });
+    check("Payments", "Cancelling an unpaid checkout releases the stock hold", r.s === 200 && r.j?.paymentStatus === "PAYMENT_CANCELLED", r.j?.paymentStatus);
+    console.log("note: full paid flow skipped (needs real Razorpay test payment, or SIM_KEY_SECRET against the local mock)");
+    oid = undefined;
+  }
+} else {
+  const key = crypto.randomUUID();
+  r = await cust("POST", "/api/orders", { items: [{ lotId: lot?.id, quantity: 20 }], fulfillmentMethod: "CUSTOMER_PICKUP" }, { "idempotency-key": key }); check("Orders", "Customer places order (pay the farmer directly)", r.s === 201, `HTTP ${r.s}`); oid = r.j?.id;
+  const r2 = await cust("POST", "/api/orders", { items: [{ lotId: lot?.id, quantity: 20 }], fulfillmentMethod: "CUSTOMER_PICKUP" }, { "idempotency-key": key }); check("Orders", "Same idempotency key does not double-order", r2.j?.id === oid, `same id: ${r2.j?.id === oid}`);
+}
 r = await cust("POST", "/api/orders", { items: [{ lotId: lot?.id, quantity: 100000 }], fulfillmentMethod: "CUSTOMER_PICKUP" }, { "idempotency-key": crypto.randomUUID() }); check("Orders", "Over-ordering rejected (no negative stock)", r.s >= 400 && r.s < 500, `HTTP ${r.s}`);
-for (const a of ["accept", "prepare", "ready", "complete"]) { r = await farmer("POST", `/api/orders/${oid}/${a}`, {}); check("Orders", `Order action: ${a}`, r.s === 200, r.j?.status ?? `HTTP ${r.s}`); }
-r = await cust("GET", `/api/orders/${oid}`); check("Orders", "Customer sees order status", r.s === 200, r.j?.status);
+if (oid) {
+  for (const a of ["accept", "prepare", "ready", "complete"]) { r = await farmer("POST", `/api/orders/${oid}/${a}`, {}); check("Orders", `Order action: ${a}`, r.s === 200, r.j?.status ?? `HTTP ${r.s}`); }
+  r = await cust("GET", `/api/orders/${oid}`); check("Orders", "Customer sees order status", r.s === 200, r.j?.status);
+}
 r = await cust("GET", "/api/admin/users"); check("Security", "Customer blocked from admin API", r.s === 403, `HTTP ${r.s}`);
 r = await cust("GET", "/api/lots"); check("Security", "Customer blocked from farmer lots API", r.s === 403, `HTTP ${r.s}`);
+
+// ---- packages and seals
+r = await farmer("POST", `/api/lots/${lot?.id}/packages`, { count: 3, quantityEach: 100 });
+check("Seals", "Farmer creates 3 sealed packages, each with its own QR token", r.s === 201 && r.j?.length === 3 && new Set(r.j.map((p) => p.publicToken)).size === 3, `HTTP ${r.s}`);
+const pk = r.j ?? [];
+for (const p of pk) await farmer("POST", `/api/packages/${p.id}/seal`, { status: "DISPATCH_VERIFIED" });
+r = await anon("GET", `/api/trace/${pk[0]?.publicToken}`);
+check("Seals", "Package QR opens the public trace with its own seal id", r.s === 200 && r.j?.scope === "PACKAGE" && r.j?.physicalIntegrity?.package?.sealId === pk[0]?.sealId, r.j?.physicalIntegrity?.state);
+r = await anon("GET", `/api/trace/${token}`);
+check("Seals", "Lot QR summarises seals as intact when all are verified", r.j?.physicalIntegrity?.state === "INTACT", r.j?.physicalIntegrity?.state);
+r = await anon("POST", `/api/trace/${pk[1]?.publicToken}/report-seal`, { kind: "SEAL_BROKEN", note: "smoke test report" });
+check("Seals", "Public seal report records an exception for that package only", r.s === 201 && r.j?.scope === "PACKAGE", `HTTP ${r.s}`);
+r = await anon("GET", `/api/trace/${pk[1]?.publicToken}`); const bad = r.j?.physicalIntegrity?.state;
+r = await anon("GET", `/api/trace/${pk[0]?.publicToken}`);
+check("Seals", "Exception is isolated: the other package stays intact", bad === "EXCEPTION" && r.j?.physicalIntegrity?.state === "INTACT", `${bad} / ${r.j?.physicalIntegrity?.state}`);
+r = await cust("POST", `/api/packages/${pk[0]?.id}/seal`, { status: "INTACT" }); check("Seals", "Customer cannot change a seal", r.s === 403, `HTTP ${r.s}`);
 
 const passed = results.filter((x) => x.status === "PASS").length;
 fs.writeFileSync(out, JSON.stringify({ base: BASE, at: new Date().toISOString(), seconds: Math.round((Date.now() - started) / 1000), passed, total: results.length, results }, null, 2));

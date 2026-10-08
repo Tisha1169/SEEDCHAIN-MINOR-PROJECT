@@ -29,9 +29,14 @@ import type {
   AnomalyNoteBody,
   AuditLog,
   AuthResponse,
+  CheckoutSession,
+  CheckoutStarted,
+  CheckoutVerified,
+  CheckoutVerifyBody,
   ClearRecallBody,
   CreateLotBody,
   CreateOrderBody,
+  CreatePackagesBody,
   CurrentUser,
   CustomerOverview,
   ErrorResponse,
@@ -75,6 +80,9 @@ import type {
   Order,
   OrderAction,
   OrderTransitionBody,
+  PackageItem,
+  PaymentConfig,
+  PaymentRecord,
   Product,
   ProductBody,
   PublicFarmer,
@@ -91,11 +99,16 @@ import type {
   RecallImpact,
   RecordLotEventBody,
   RecordScanBody,
+  RefundPayment200,
+  RefundPaymentBody,
   RegisterUserBody,
+  ReportSealBody,
   ReviewUserBody,
   RevokeQrBody,
   ScanAreas,
   ScanResult,
+  SealReportResult,
+  SetSealBody,
   StorageRecord,
   TraceEvent,
   TraceUnavailable,
@@ -908,6 +921,693 @@ export function useListQrScans<TData = Awaited<ReturnType<typeof listQrScans>>, 
 
 
 
+
+export const getGetPaymentConfigUrl = () => {
+
+
+
+
+  return `/api/payments/config`
+}
+
+export const getPaymentConfig = async ( options?: RequestInit): Promise<PaymentConfig> => {
+
+  return customFetch<PaymentConfig>(getGetPaymentConfigUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPaymentConfigQueryKey = () => {
+    return [
+    `/api/payments/config`
+    ] as const;
+    }
+
+
+export const getGetPaymentConfigQueryOptions = <TData = Awaited<ReturnType<typeof getPaymentConfig>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPaymentConfig>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPaymentConfigQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPaymentConfig>>> = ({ signal }) => getPaymentConfig({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPaymentConfig>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPaymentConfigQueryResult = NonNullable<Awaited<ReturnType<typeof getPaymentConfig>>>
+export type GetPaymentConfigQueryError = ErrorType<unknown>
+
+
+
+export function useGetPaymentConfig<TData = Awaited<ReturnType<typeof getPaymentConfig>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPaymentConfig>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPaymentConfigQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+/**
+ * Customer only. Validates the cart, holds stock, computes the total on the server and creates the Razorpay order.
+ */
+export const getStartCheckoutUrl = () => {
+
+
+
+
+  return `/api/checkout`
+}
+
+export const startCheckout = async (createOrderBody: CreateOrderBody, options?: RequestInit): Promise<CheckoutStarted> => {
+
+  return customFetch<CheckoutStarted>(getStartCheckoutUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createOrderBody,)
+  }
+);}
+
+
+
+
+export const getStartCheckoutMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startCheckout>>, TError,{data: BodyType<CreateOrderBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startCheckout>>, TError,{data: BodyType<CreateOrderBody>}, TContext> => {
+
+const mutationKey = ['startCheckout'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startCheckout>>, {data: BodyType<CreateOrderBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  startCheckout(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StartCheckoutMutationResult = NonNullable<Awaited<ReturnType<typeof startCheckout>>>
+    export type StartCheckoutMutationBody = BodyType<CreateOrderBody>
+    export type StartCheckoutMutationError = ErrorType<unknown>
+
+    export const useStartCheckout = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startCheckout>>, TError,{data: BodyType<CreateOrderBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof startCheckout>>,
+        TError,
+        {data: BodyType<CreateOrderBody>},
+        TContext
+      > => {
+      return useMutation(getStartCheckoutMutationOptions(options));
+    }
+
+export const getGetCheckoutSessionUrl = (orderId: string,) => {
+
+
+
+
+  return `/api/checkout/${orderId}/session`
+}
+
+export const getCheckoutSession = async (orderId: string, options?: RequestInit): Promise<CheckoutSession> => {
+
+  return customFetch<CheckoutSession>(getGetCheckoutSessionUrl(orderId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCheckoutSessionQueryKey = (orderId: string,) => {
+    return [
+    `/api/checkout/${orderId}/session`
+    ] as const;
+    }
+
+
+export const getGetCheckoutSessionQueryOptions = <TData = Awaited<ReturnType<typeof getCheckoutSession>>, TError = ErrorType<unknown>>(orderId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCheckoutSession>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCheckoutSessionQueryKey(orderId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCheckoutSession>>> = ({ signal }) => getCheckoutSession(orderId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(orderId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCheckoutSession>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCheckoutSessionQueryResult = NonNullable<Awaited<ReturnType<typeof getCheckoutSession>>>
+export type GetCheckoutSessionQueryError = ErrorType<unknown>
+
+
+
+export function useGetCheckoutSession<TData = Awaited<ReturnType<typeof getCheckoutSession>>, TError = ErrorType<unknown>>(
+ orderId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCheckoutSession>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCheckoutSessionQueryOptions(orderId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+/**
+ * The server checks the Razorpay signature against the Razorpay order id it stored. The browser's claim of success is never trusted.
+ */
+export const getVerifyCheckoutUrl = () => {
+
+
+
+
+  return `/api/checkout/verify`
+}
+
+export const verifyCheckout = async (checkoutVerifyBody: CheckoutVerifyBody, options?: RequestInit): Promise<CheckoutVerified> => {
+
+  return customFetch<CheckoutVerified>(getVerifyCheckoutUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      checkoutVerifyBody,)
+  }
+);}
+
+
+
+
+export const getVerifyCheckoutMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyCheckout>>, TError,{data: BodyType<CheckoutVerifyBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof verifyCheckout>>, TError,{data: BodyType<CheckoutVerifyBody>}, TContext> => {
+
+const mutationKey = ['verifyCheckout'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof verifyCheckout>>, {data: BodyType<CheckoutVerifyBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  verifyCheckout(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type VerifyCheckoutMutationResult = NonNullable<Awaited<ReturnType<typeof verifyCheckout>>>
+    export type VerifyCheckoutMutationBody = BodyType<CheckoutVerifyBody>
+    export type VerifyCheckoutMutationError = ErrorType<unknown>
+
+    export const useVerifyCheckout = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyCheckout>>, TError,{data: BodyType<CheckoutVerifyBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof verifyCheckout>>,
+        TError,
+        {data: BodyType<CheckoutVerifyBody>},
+        TContext
+      > => {
+      return useMutation(getVerifyCheckoutMutationOptions(options));
+    }
+
+export const getListPaymentsUrl = () => {
+
+
+
+
+  return `/api/admin/payments`
+}
+
+export const listPayments = async ( options?: RequestInit): Promise<PaymentRecord[]> => {
+
+  return customFetch<PaymentRecord[]>(getListPaymentsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPaymentsQueryKey = () => {
+    return [
+    `/api/admin/payments`
+    ] as const;
+    }
+
+
+export const getListPaymentsQueryOptions = <TData = Awaited<ReturnType<typeof listPayments>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPayments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPaymentsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPayments>>> = ({ signal }) => listPayments({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPayments>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListPaymentsQueryResult = NonNullable<Awaited<ReturnType<typeof listPayments>>>
+export type ListPaymentsQueryError = ErrorType<unknown>
+
+
+
+export function useListPayments<TData = Awaited<ReturnType<typeof listPayments>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPayments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListPaymentsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getRefundPaymentUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/payments/${id}/refund`
+}
+
+export const refundPayment = async (id: string,
+    refundPaymentBody: RefundPaymentBody, options?: RequestInit): Promise<RefundPayment200> => {
+
+  return customFetch<RefundPayment200>(getRefundPaymentUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      refundPaymentBody,)
+  }
+);}
+
+
+
+
+export const getRefundPaymentMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refundPayment>>, TError,{id: string;data: BodyType<RefundPaymentBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof refundPayment>>, TError,{id: string;data: BodyType<RefundPaymentBody>}, TContext> => {
+
+const mutationKey = ['refundPayment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof refundPayment>>, {id: string;data: BodyType<RefundPaymentBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  refundPayment(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RefundPaymentMutationResult = NonNullable<Awaited<ReturnType<typeof refundPayment>>>
+    export type RefundPaymentMutationBody = BodyType<RefundPaymentBody>
+    export type RefundPaymentMutationError = ErrorType<unknown>
+
+    export const useRefundPayment = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refundPayment>>, TError,{id: string;data: BodyType<RefundPaymentBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof refundPayment>>,
+        TError,
+        {id: string;data: BodyType<RefundPaymentBody>},
+        TContext
+      > => {
+      return useMutation(getRefundPaymentMutationOptions(options));
+    }
+
+export const getListLotPackagesUrl = (id: string,) => {
+
+
+
+
+  return `/api/lots/${id}/packages`
+}
+
+export const listLotPackages = async (id: string, options?: RequestInit): Promise<PackageItem[]> => {
+
+  return customFetch<PackageItem[]>(getListLotPackagesUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListLotPackagesQueryKey = (id: string,) => {
+    return [
+    `/api/lots/${id}/packages`
+    ] as const;
+    }
+
+
+export const getListLotPackagesQueryOptions = <TData = Awaited<ReturnType<typeof listLotPackages>>, TError = ErrorType<unknown>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listLotPackages>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListLotPackagesQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listLotPackages>>> = ({ signal }) => listLotPackages(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listLotPackages>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListLotPackagesQueryResult = NonNullable<Awaited<ReturnType<typeof listLotPackages>>>
+export type ListLotPackagesQueryError = ErrorType<unknown>
+
+
+
+export function useListLotPackages<TData = Awaited<ReturnType<typeof listLotPackages>>, TError = ErrorType<unknown>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listLotPackages>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListLotPackagesQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateLotPackagesUrl = (id: string,) => {
+
+
+
+
+  return `/api/lots/${id}/packages`
+}
+
+export const createLotPackages = async (id: string,
+    createPackagesBody: CreatePackagesBody, options?: RequestInit): Promise<PackageItem[]> => {
+
+  return customFetch<PackageItem[]>(getCreateLotPackagesUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createPackagesBody,)
+  }
+);}
+
+
+
+
+export const getCreateLotPackagesMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createLotPackages>>, TError,{id: string;data: BodyType<CreatePackagesBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createLotPackages>>, TError,{id: string;data: BodyType<CreatePackagesBody>}, TContext> => {
+
+const mutationKey = ['createLotPackages'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createLotPackages>>, {id: string;data: BodyType<CreatePackagesBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  createLotPackages(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateLotPackagesMutationResult = NonNullable<Awaited<ReturnType<typeof createLotPackages>>>
+    export type CreateLotPackagesMutationBody = BodyType<CreatePackagesBody>
+    export type CreateLotPackagesMutationError = ErrorType<unknown>
+
+    export const useCreateLotPackages = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createLotPackages>>, TError,{id: string;data: BodyType<CreatePackagesBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createLotPackages>>,
+        TError,
+        {id: string;data: BodyType<CreatePackagesBody>},
+        TContext
+      > => {
+      return useMutation(getCreateLotPackagesMutationOptions(options));
+    }
+
+export const getSetPackageSealUrl = (id: string,) => {
+
+
+
+
+  return `/api/packages/${id}/seal`
+}
+
+export const setPackageSeal = async (id: string,
+    setSealBody: SetSealBody, options?: RequestInit): Promise<PackageItem> => {
+
+  return customFetch<PackageItem>(getSetPackageSealUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      setSealBody,)
+  }
+);}
+
+
+
+
+export const getSetPackageSealMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setPackageSeal>>, TError,{id: string;data: BodyType<SetSealBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setPackageSeal>>, TError,{id: string;data: BodyType<SetSealBody>}, TContext> => {
+
+const mutationKey = ['setPackageSeal'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setPackageSeal>>, {id: string;data: BodyType<SetSealBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  setPackageSeal(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetPackageSealMutationResult = NonNullable<Awaited<ReturnType<typeof setPackageSeal>>>
+    export type SetPackageSealMutationBody = BodyType<SetSealBody>
+    export type SetPackageSealMutationError = ErrorType<unknown>
+
+    export const useSetPackageSeal = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setPackageSeal>>, TError,{id: string;data: BodyType<SetSealBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setPackageSeal>>,
+        TError,
+        {id: string;data: BodyType<SetSealBody>},
+        TContext
+      > => {
+      return useMutation(getSetPackageSealMutationOptions(options));
+    }
+
+/**
+ * Public. Report a seal or packaging problem; records an exception for review, never concludes tampering.
+ */
+export const getReportSealIssueUrl = (publicToken: string,) => {
+
+
+
+
+  return `/api/trace/${publicToken}/report-seal`
+}
+
+export const reportSealIssue = async (publicToken: string,
+    reportSealBody: ReportSealBody, options?: RequestInit): Promise<SealReportResult> => {
+
+  return customFetch<SealReportResult>(getReportSealIssueUrl(publicToken),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      reportSealBody,)
+  }
+);}
+
+
+
+
+export const getReportSealIssueMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reportSealIssue>>, TError,{publicToken: string;data: BodyType<ReportSealBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reportSealIssue>>, TError,{publicToken: string;data: BodyType<ReportSealBody>}, TContext> => {
+
+const mutationKey = ['reportSealIssue'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reportSealIssue>>, {publicToken: string;data: BodyType<ReportSealBody>}> = (props) => {
+          const {publicToken,data} = props ?? {};
+
+          return  reportSealIssue(publicToken,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReportSealIssueMutationResult = NonNullable<Awaited<ReturnType<typeof reportSealIssue>>>
+    export type ReportSealIssueMutationBody = BodyType<ReportSealBody>
+    export type ReportSealIssueMutationError = ErrorType<unknown>
+
+    export const useReportSealIssue = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reportSealIssue>>, TError,{publicToken: string;data: BodyType<ReportSealBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reportSealIssue>>,
+        TError,
+        {publicToken: string;data: BodyType<ReportSealBody>},
+        TContext
+      > => {
+      return useMutation(getReportSealIssueMutationOptions(options));
+    }
 
 /**
  * Admin only. OK scans that shared a coarse location, grouped into 0.5-degree cells (about 55 km). Never exact points.

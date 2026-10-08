@@ -1,3 +1,5 @@
+import { PaymentPanel, PaymentPill } from "@/components/app/payment-panel";
+import { IntegrityChip } from "@/components/app/integrity";
 import { useTranslation } from "react-i18next";
 import { useState } from "react";
 import { Link, useRoute } from "wouter";
@@ -78,7 +80,7 @@ export function OrderDetail({ base }: { base: "farmer" | "customer" | "admin" })
   const o = q.data;
   return (
     <>
-      <PageHeader title={t("orders.detail.title", { code: o.orderCode })} subtitle={<span className="inline-flex items-center gap-2"><OrderStatusPill status={o.status} />{t("orders.detail.placed", { time: dateTime(o.createdAt) })}</span>} actions={<Link href={`/${base}/orders`}><Button variant="outline" className="rounded-full">{t("orders.detail.allOrders")}</Button></Link>} />
+      <PageHeader title={t("orders.detail.title", { code: o.orderCode })} subtitle={<span className="inline-flex items-center gap-2"><OrderStatusPill status={o.status} />{o.paymentStatus !== "UNPAID" && <PaymentPill status={o.paymentStatus} />}{t("orders.detail.placed", { time: dateTime(o.createdAt) })}</span>} actions={<Link href={`/${base}/orders`}><Button variant="outline" className="rounded-full">{t("orders.detail.allOrders")}</Button></Link>} />
       <div className="grid gap-5 lg:grid-cols-3">
         <div className="space-y-5 lg:col-span-2">
           <Card className="p-5">
@@ -101,6 +103,15 @@ export function OrderDetail({ base }: { base: "farmer" | "customer" | "admin" })
           {o.feedback && <Card className="p-5"><h3 className="eyebrow !text-ink/75">{t("orders.feedback.customerFeedback")}</h3><div className="text-amber-400">{"★".repeat(o.feedback.rating)}</div>{o.feedback.comment && <p className="text-sm">{o.feedback.comment}</p>}</Card>}
         </div>
         <div className="space-y-5">
+          {o.paymentStatus !== "UNPAID" && <PaymentPanel order={o} />}
+          {o.items[0]?.publicToken && (
+            <Card className="p-5">
+              <h3 className="mb-2 eyebrow !text-ink/75">{t("pay.order.identity")}</h3>
+              <div className="font-mono text-sm">{o.items[0].lotCode}</div>
+              <p className="mt-1 text-[11px] text-ink/45">{t("pay.order.identityHint")}</p>
+              <div className="mt-2 flex flex-wrap items-center gap-2"><IntegrityChip token={o.items[0].publicToken} /><Link href={`/trace/${o.items[0].publicToken}`} className="text-xs font-medium text-accent">{t("orders.detail.viewTrace")}</Link></div>
+            </Card>
+          )}
           <Card className="p-5">
             <h3 className="mb-2 eyebrow !text-ink/75">{t("orders.detail.fulfilment")}</h3>
             <Kv k={t("orders.detail.method")} v={enumLabel("fulfillment", o.fulfillmentMethod)} />

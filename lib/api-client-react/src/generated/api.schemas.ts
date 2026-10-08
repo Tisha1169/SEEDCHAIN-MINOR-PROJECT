@@ -781,6 +781,496 @@ export interface PublicStorage {
   storageCondition?: string | null;
 }
 
+/**
+ * Payment lifecycle of an order. UNPAID means no online payment was involved.
+ */
+export type OrderPaymentState = typeof OrderPaymentState[keyof typeof OrderPaymentState];
+
+
+export const OrderPaymentState = {
+  UNPAID: 'UNPAID',
+  PAYMENT_PENDING: 'PAYMENT_PENDING',
+  PAYMENT_PROCESSING: 'PAYMENT_PROCESSING',
+  PAID: 'PAID',
+  PAYMENT_FAILED: 'PAYMENT_FAILED',
+  PAYMENT_CANCELLED: 'PAYMENT_CANCELLED',
+  REFUND_PENDING: 'REFUND_PENDING',
+  REFUNDED: 'REFUNDED',
+} as const;
+
+export type PaymentLifecycle = typeof PaymentLifecycle[keyof typeof PaymentLifecycle];
+
+
+export const PaymentLifecycle = {
+  CREATED: 'CREATED',
+  PROCESSING: 'PROCESSING',
+  PAID: 'PAID',
+  FAILED: 'FAILED',
+  CANCELLED: 'CANCELLED',
+  REFUND_PENDING: 'REFUND_PENDING',
+  REFUNDED: 'REFUNDED',
+} as const;
+
+/**
+ * @nullable
+ */
+export type PaymentConfigMode = typeof PaymentConfigMode[keyof typeof PaymentConfigMode] | null;
+
+
+export const PaymentConfigMode = {
+  test: 'test',
+  live: 'live',
+} as const;
+
+export interface PaymentConfig {
+  enabled: boolean;
+  /**
+     * Razorpay public key id only. The key secret never leaves the server.
+     * @nullable
+     */
+  keyId?: string | null;
+  /** @nullable */
+  mode?: PaymentConfigMode;
+  currency: string;
+  holdMinutes: number;
+  merchantName: string;
+}
+
+export type CheckoutSessionCurrency = typeof CheckoutSessionCurrency[keyof typeof CheckoutSessionCurrency];
+
+
+export const CheckoutSessionCurrency = {
+  INR: 'INR',
+} as const;
+
+export type CheckoutSessionMode = typeof CheckoutSessionMode[keyof typeof CheckoutSessionMode];
+
+
+export const CheckoutSessionMode = {
+  test: 'test',
+  live: 'live',
+} as const;
+
+export type CheckoutSessionPrefill = {
+  name: string;
+  email: string;
+  contact?: string;
+};
+
+export interface CheckoutSession {
+  orderId: string;
+  orderCode: string;
+  razorpayOrderId: string;
+  /** Computed on the server from lot prices */
+  amountPaise: number;
+  currency: CheckoutSessionCurrency;
+  keyId: string;
+  mode: CheckoutSessionMode;
+  /** When the stock hold ends */
+  expiresAt: string;
+  merchantName: string;
+  description: string;
+  prefill: CheckoutSessionPrefill;
+}
+
+export type OrderStatus = typeof OrderStatus[keyof typeof OrderStatus];
+
+
+export const OrderStatus = {
+  PENDING: 'PENDING',
+  ACCEPTED: 'ACCEPTED',
+  REJECTED: 'REJECTED',
+  PREPARING: 'PREPARING',
+  READY: 'READY',
+  DISPATCHED: 'DISPATCHED',
+  DELIVERED: 'DELIVERED',
+  CUSTOMER_CONFIRMED: 'CUSTOMER_CONFIRMED',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+export interface OrderPayment {
+  status: PaymentLifecycle;
+  /** @nullable */
+  method?: string | null;
+  mode: string;
+  amountPaise: number;
+  currency: string;
+  /** @nullable */
+  paidAt?: string | null;
+  /** @nullable */
+  failureReason?: string | null;
+  /**
+     * Visible to the payer and admins only
+     * @nullable
+     */
+  razorpayPaymentId?: string | null;
+  /** @nullable */
+  razorpayOrderId?: string | null;
+  /**
+     * Admin only
+     * @nullable
+     */
+  signatureVerified?: boolean | null;
+  /**
+     * Admin only
+     * @nullable
+     */
+  webhookVerified?: boolean | null;
+}
+
+export type FulfillmentMethod = typeof FulfillmentMethod[keyof typeof FulfillmentMethod];
+
+
+export const FulfillmentMethod = {
+  CUSTOMER_PICKUP: 'CUSTOMER_PICKUP',
+  FARMER_DELIVERY: 'FARMER_DELIVERY',
+  THIRD_PARTY_DELIVERY: 'THIRD_PARTY_DELIVERY',
+} as const;
+
+export interface OrderParty {
+  id: string;
+  name: string;
+  /**
+     * Visible to the order's farmer and admin only
+     * @nullable
+     */
+  phone?: string | null;
+}
+
+export interface OrderFarmer {
+  id: string;
+  publicName: string;
+}
+
+export interface OrderItem {
+  id: string;
+  lotId: string;
+  lotCode: string;
+  productName: string;
+  variety: string;
+  unit: string;
+  quantity: number;
+  unitPrice: number;
+  lineTotal: number;
+  /** @nullable */
+  publicToken?: string | null;
+}
+
+export type OrderAction = typeof OrderAction[keyof typeof OrderAction];
+
+
+export const OrderAction = {
+  accept: 'accept',
+  reject: 'reject',
+  prepare: 'prepare',
+  ready: 'ready',
+  dispatch: 'dispatch',
+  complete: 'complete',
+  cancel: 'cancel',
+  'confirm-receipt': 'confirm-receipt',
+} as const;
+
+export interface OrderFeedback {
+  rating: number;
+  /** @nullable */
+  freshnessRating?: number | null;
+  /** @nullable */
+  qualityRating?: number | null;
+  /** @nullable */
+  comment?: string | null;
+  createdAt: string;
+}
+
+export interface Order {
+  id: string;
+  orderCode: string;
+  status: OrderStatus;
+  paymentStatus: OrderPaymentState;
+  /**
+     * End of the stock hold while payment is pending
+     * @nullable
+     */
+  paymentDueAt?: string | null;
+  payment?: OrderPayment | null;
+  fulfillmentMethod: FulfillmentMethod;
+  totalAmount: number;
+  /** @nullable */
+  deliveryAddress?: string | null;
+  /** @nullable */
+  customerNotes?: string | null;
+  /** @nullable */
+  rejectionReason?: string | null;
+  /** @nullable */
+  cancelReason?: string | null;
+  /** @nullable */
+  deliveryLocation?: string | null;
+  /** @nullable */
+  deliveryNotes?: string | null;
+  /** @nullable */
+  thirdPartyName?: string | null;
+  /** @nullable */
+  thirdPartyReference?: string | null;
+  /** @nullable */
+  acceptedAt?: string | null;
+  /** @nullable */
+  preparedAt?: string | null;
+  /** @nullable */
+  readyAt?: string | null;
+  /** @nullable */
+  dispatchedAt?: string | null;
+  /** @nullable */
+  deliveredAt?: string | null;
+  /** @nullable */
+  confirmedAt?: string | null;
+  /** @nullable */
+  cancelledAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  customer: OrderParty;
+  farmer: OrderFarmer;
+  items: OrderItem[];
+  /** Actions the current caller may perform now (computed by the backend state machine) */
+  allowedActions: OrderAction[];
+  events?: TraceEvent[];
+  feedback?: OrderFeedback | null;
+}
+
+export interface CheckoutStarted {
+  alreadyPaid: boolean;
+  session?: CheckoutSession;
+  order: Order;
+}
+
+export interface CheckoutVerifyBody {
+  orderId: string;
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+}
+
+export type CheckoutVerifiedOutcome = typeof CheckoutVerifiedOutcome[keyof typeof CheckoutVerifiedOutcome];
+
+
+export const CheckoutVerifiedOutcome = {
+  APPLIED: 'APPLIED',
+  DUPLICATE_STATE: 'DUPLICATE_STATE',
+  LATE_PAYMENT: 'LATE_PAYMENT',
+} as const;
+
+export interface CheckoutVerified {
+  outcome: CheckoutVerifiedOutcome;
+  order: Order;
+}
+
+export interface PaymentRecord {
+  id: string;
+  orderId: string;
+  orderCode: string;
+  orderStatus?: string;
+  customerName?: string;
+  razorpayOrderId: string;
+  /** @nullable */
+  razorpayPaymentId?: string | null;
+  amountPaise: number;
+  currency: string;
+  status: string;
+  /** @nullable */
+  method?: string | null;
+  mode: string;
+  signatureVerified: boolean;
+  webhookVerified: boolean;
+  /** @nullable */
+  failureReason?: string | null;
+  /** @nullable */
+  refundId?: string | null;
+  /** @nullable */
+  paidAt?: string | null;
+  createdAt: string;
+}
+
+export type SealStatus = typeof SealStatus[keyof typeof SealStatus];
+
+
+export const SealStatus = {
+  ASSIGNED: 'ASSIGNED',
+  DISPATCH_VERIFIED: 'DISPATCH_VERIFIED',
+  INTACT: 'INTACT',
+  BROKEN: 'BROKEN',
+  REPORTED: 'REPORTED',
+  REPLACED: 'REPLACED',
+} as const;
+
+export type IntegrityStatus = typeof IntegrityStatus[keyof typeof IntegrityStatus];
+
+
+export const IntegrityStatus = {
+  NOT_CHECKED: 'NOT_CHECKED',
+  OK: 'OK',
+  EXCEPTION: 'EXCEPTION',
+} as const;
+
+export type PackageItemHistoryItem = {
+  eventType: string;
+  /** @nullable */
+  from?: string | null;
+  /** @nullable */
+  to?: string | null;
+  /** @nullable */
+  actorRole?: string | null;
+  /** @nullable */
+  note?: string | null;
+  at: string;
+};
+
+export interface PackageItem {
+  id: string;
+  lotId: string;
+  packageNumber: number;
+  /** e.g. PKG-001 */
+  label: string;
+  quantity: number;
+  sealId: string;
+  sealStatus: SealStatus;
+  integrityStatus: IntegrityStatus;
+  /** This package's own QR token. Owner and admin only. */
+  publicToken: string;
+  createdAt: string;
+  updatedAt: string;
+  history?: PackageItemHistoryItem[];
+}
+
+export interface CreatePackagesBody {
+  /**
+     * @minItems 1
+     * @maxItems 200
+     */
+  quantities?: number[];
+  /**
+     * @minimum 1
+     * @maximum 200
+     */
+  count?: number;
+  /** @exclusiveMinimum 0 */
+  quantityEach?: number;
+}
+
+export type SetSealBodyStatus = typeof SetSealBodyStatus[keyof typeof SetSealBodyStatus];
+
+
+export const SetSealBodyStatus = {
+  DISPATCH_VERIFIED: 'DISPATCH_VERIFIED',
+  INTACT: 'INTACT',
+  BROKEN: 'BROKEN',
+  REPORTED: 'REPORTED',
+  REPLACED: 'REPLACED',
+} as const;
+
+export interface SetSealBody {
+  status: SetSealBodyStatus;
+  /** @maxLength 300 */
+  note?: string;
+}
+
+export type ReportSealBodyKind = typeof ReportSealBodyKind[keyof typeof ReportSealBodyKind];
+
+
+export const ReportSealBodyKind = {
+  SEAL_BROKEN: 'SEAL_BROKEN',
+  SEAL_MISSING: 'SEAL_MISSING',
+  SEAL_MISMATCH: 'SEAL_MISMATCH',
+  OTHER: 'OTHER',
+} as const;
+
+export interface ReportSealBody {
+  kind: ReportSealBodyKind;
+  /** @maxLength 300 */
+  note?: string;
+}
+
+export type SealReportResultScope = typeof SealReportResultScope[keyof typeof SealReportResultScope];
+
+
+export const SealReportResultScope = {
+  PACKAGE: 'PACKAGE',
+  LOT: 'LOT',
+} as const;
+
+export interface SealReportResult {
+  recorded: boolean;
+  scope: SealReportResultScope;
+  alreadyUnderReview: boolean;
+}
+
+export type DigitalIdentityQuality = typeof DigitalIdentityQuality[keyof typeof DigitalIdentityQuality];
+
+
+export const DigitalIdentityQuality = {
+  NONE: 'NONE',
+  RECORDED_BY_FARMER: 'RECORDED_BY_FARMER',
+  INSPECTED: 'INSPECTED',
+} as const;
+
+export interface DigitalIdentity {
+  qrValid: boolean;
+  lotRegistered: boolean;
+  farmerVerified: boolean;
+  quality: DigitalIdentityQuality;
+}
+
+export type PhysicalIntegrityScope = typeof PhysicalIntegrityScope[keyof typeof PhysicalIntegrityScope];
+
+
+export const PhysicalIntegrityScope = {
+  LOT: 'LOT',
+  PACKAGE: 'PACKAGE',
+} as const;
+
+export type PhysicalIntegrityState = typeof PhysicalIntegrityState[keyof typeof PhysicalIntegrityState];
+
+
+export const PhysicalIntegrityState = {
+  NO_SEALS: 'NO_SEALS',
+  NOT_VERIFIED: 'NOT_VERIFIED',
+  INTACT: 'INTACT',
+  EXCEPTION: 'EXCEPTION',
+} as const;
+
+export type PhysicalIntegrityCounts = {
+  NOT_CHECKED: number;
+  OK: number;
+  EXCEPTION: number;
+};
+
+/**
+ * @nullable
+ */
+export type PhysicalIntegrityPackage = {
+  label?: string;
+  sealId?: string;
+  sealStatus?: SealStatus;
+  quantity?: number;
+} | null;
+
+export interface PhysicalIntegrity {
+  scope: PhysicalIntegrityScope;
+  state: PhysicalIntegrityState;
+  packagesTotal: number;
+  counts: PhysicalIntegrityCounts;
+  /** @nullable */
+  package?: PhysicalIntegrityPackage;
+}
+
+/**
+ * Whether the scanned QR was the lot's or one package's
+ */
+export type PublicTraceScope = typeof PublicTraceScope[keyof typeof PublicTraceScope];
+
+
+export const PublicTraceScope = {
+  LOT: 'LOT',
+  PACKAGE: 'PACKAGE',
+} as const;
+
 export type PublicTraceVerification = typeof PublicTraceVerification[keyof typeof PublicTraceVerification];
 
 
@@ -833,6 +1323,10 @@ export interface JourneyStep {
 }
 
 export interface PublicTrace {
+  /** Whether the scanned QR was the lot's or one package's */
+  scope: PublicTraceScope;
+  digitalIdentity: DigitalIdentity;
+  physicalIntegrity: PhysicalIntegrity;
   verification: PublicTraceVerification;
   lotCode: string;
   lotId?: string;
@@ -1583,131 +2077,6 @@ export interface PublicFarmer {
   listings: Listing[];
 }
 
-export type OrderStatus = typeof OrderStatus[keyof typeof OrderStatus];
-
-
-export const OrderStatus = {
-  PENDING: 'PENDING',
-  ACCEPTED: 'ACCEPTED',
-  REJECTED: 'REJECTED',
-  PREPARING: 'PREPARING',
-  READY: 'READY',
-  DISPATCHED: 'DISPATCHED',
-  DELIVERED: 'DELIVERED',
-  CUSTOMER_CONFIRMED: 'CUSTOMER_CONFIRMED',
-  CANCELLED: 'CANCELLED',
-} as const;
-
-export type OrderAction = typeof OrderAction[keyof typeof OrderAction];
-
-
-export const OrderAction = {
-  accept: 'accept',
-  reject: 'reject',
-  prepare: 'prepare',
-  ready: 'ready',
-  dispatch: 'dispatch',
-  complete: 'complete',
-  cancel: 'cancel',
-  'confirm-receipt': 'confirm-receipt',
-} as const;
-
-export type FulfillmentMethod = typeof FulfillmentMethod[keyof typeof FulfillmentMethod];
-
-
-export const FulfillmentMethod = {
-  CUSTOMER_PICKUP: 'CUSTOMER_PICKUP',
-  FARMER_DELIVERY: 'FARMER_DELIVERY',
-  THIRD_PARTY_DELIVERY: 'THIRD_PARTY_DELIVERY',
-} as const;
-
-export interface OrderItem {
-  id: string;
-  lotId: string;
-  lotCode: string;
-  productName: string;
-  variety: string;
-  unit: string;
-  quantity: number;
-  unitPrice: number;
-  lineTotal: number;
-  /** @nullable */
-  publicToken?: string | null;
-}
-
-export interface OrderParty {
-  id: string;
-  name: string;
-  /**
-     * Visible to the order's farmer and admin only
-     * @nullable
-     */
-  phone?: string | null;
-}
-
-export interface OrderFarmer {
-  id: string;
-  publicName: string;
-}
-
-export interface OrderFeedback {
-  rating: number;
-  /** @nullable */
-  freshnessRating?: number | null;
-  /** @nullable */
-  qualityRating?: number | null;
-  /** @nullable */
-  comment?: string | null;
-  createdAt: string;
-}
-
-export interface Order {
-  id: string;
-  orderCode: string;
-  status: OrderStatus;
-  fulfillmentMethod: FulfillmentMethod;
-  totalAmount: number;
-  /** @nullable */
-  deliveryAddress?: string | null;
-  /** @nullable */
-  customerNotes?: string | null;
-  /** @nullable */
-  rejectionReason?: string | null;
-  /** @nullable */
-  cancelReason?: string | null;
-  /** @nullable */
-  deliveryLocation?: string | null;
-  /** @nullable */
-  deliveryNotes?: string | null;
-  /** @nullable */
-  thirdPartyName?: string | null;
-  /** @nullable */
-  thirdPartyReference?: string | null;
-  /** @nullable */
-  acceptedAt?: string | null;
-  /** @nullable */
-  preparedAt?: string | null;
-  /** @nullable */
-  readyAt?: string | null;
-  /** @nullable */
-  dispatchedAt?: string | null;
-  /** @nullable */
-  deliveredAt?: string | null;
-  /** @nullable */
-  confirmedAt?: string | null;
-  /** @nullable */
-  cancelledAt?: string | null;
-  createdAt: string;
-  updatedAt: string;
-  customer: OrderParty;
-  farmer: OrderFarmer;
-  items: OrderItem[];
-  /** Actions the current caller may perform now (computed by the backend state machine) */
-  allowedActions: OrderAction[];
-  events?: TraceEvent[];
-  feedback?: OrderFeedback | null;
-}
-
 export interface CreateOrderItem {
   lotId: string;
   /**
@@ -2049,6 +2418,21 @@ export type ListQrScansParams = {
  * @maximum 500
  */
 limit?: number;
+};
+
+export type RefundPaymentBody = {
+  /**
+     * @minLength 5
+     * @maxLength 300
+     */
+  reason: string;
+};
+
+export type RefundPayment200 = {
+  alreadyRefunded?: boolean;
+  /** @nullable */
+  refundId?: string | null;
+  pending?: boolean;
 };
 
 export type GetScanAreasParams = {

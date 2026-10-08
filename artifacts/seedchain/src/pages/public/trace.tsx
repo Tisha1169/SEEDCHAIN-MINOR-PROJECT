@@ -13,6 +13,7 @@ import { useTranslation } from "react-i18next";
 import { cropName, dateOnly, dateTime, enumLabel, qty, timeAgo, unitLabel } from "@/lib/format";
 import { errMsg, uuid } from "@/lib/api";
 import { LotStatusPill } from "@/components/app/common";
+import { IdentityPanel } from "@/components/app/integrity";
 
 const apiBase = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/+$/, "") ?? "";
 
@@ -137,6 +138,8 @@ export default function TracePage() {
             <p className="relative mt-3 text-xs leading-relaxed text-ink/55">{verified ? tr("trace.verifiedBody") : tr("trace.unverifiedBody")}</p>
           </div>
         </Reveal>
+
+        <Reveal blur={false} delay={0.03}><IdentityPanel trace={t} token={token} /></Reveal>
 
         {/* product */}
         <Reveal blur={false} delay={0.05}>

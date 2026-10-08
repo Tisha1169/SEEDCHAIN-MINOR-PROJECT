@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { useState } from "react";
 import { Link, useRoute, useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
-import { useGetListing, useGetPublicFarmer, useListMarketplace, type FulfillmentMethod, type Listing, type Order } from "@workspace/api-client-react";
+import { useGetListing, useGetPaymentConfig, useGetPublicFarmer, useListMarketplace, type FulfillmentMethod, type Listing, type Order } from "@workspace/api-client-react";
 import { BadgeCheck, MapPin, QrCode, Search, Sprout } from "lucide-react";
 import { Navbar } from "@/components/layout/navbar";
 import { Button } from "@/components/ui/button";
@@ -75,6 +75,7 @@ export function ListingPage() {
   const qc = useQueryClient();
   const { toast } = useToast();
   const q = useGetListing(lotId, { query: { queryKey: [`/api/marketplace/listings/${lotId}`], retry: false } });
+  const cfg = useGetPaymentConfig({ query: { queryKey: ["/api/payments/config"], staleTime: 60_000 } });
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState<FulfillmentMethod>("CUSTOMER_PICKUP");
   const [address, setAddress] = useState("");
@@ -90,6 +91,11 @@ export function ListingPage() {
 
   async function order(e: React.FormEvent) {
     e.preventDefault();
+    // With online payment on, "Buy now" goes to the checkout page; the order is created there, after review, with the total computed on the server.
+    if (cfg.data?.enabled) {
+      navigate(`/checkout?lot=${encodeURIComponent(lotId)}&qty=${encodeURIComponent(amount)}&m=${method}`);
+      return;
+    }
     setBusy(true);
     try {
       const o = await apiRequest<Order>({
@@ -149,7 +155,7 @@ export function ListingPage() {
               {method !== "CUSTOMER_PICKUP" && <Field label={t("market.deliveryAddress")}><textarea className={textareaCls} rows={2} required value={address} onChange={(e) => setAddress(e.target.value)} /></Field>}
               <Field label={t("market.noteFarmer")}><input className={inputCls} value={notes} onChange={(e) => setNotes(e.target.value)} /></Field>
               <div className="flex justify-between border-t pt-3 text-sm"><span>{t("market.total")}</span><b>{inr(total)}</b></div>
-              <Button disabled={busy || !(n > 0)} className="h-11 w-full rounded-2xl">{busy ? t("market.placing") : t("market.placeOrder")}</Button>
+              <Button disabled={busy || !(n > 0)} className="h-11 w-full rounded-2xl">{busy ? t("market.placing") : cfg.data?.enabled ? t("pay.buyNow") : t("market.placeOrder")}</Button>
               <p className="text-[11px] text-ink/45">{t("market.reservedNote")}</p>
             </form>
           )}

@@ -188,6 +188,120 @@ paths:
                 type: array
                 items: { $ref: "#/components/schemas/QrScan" }
 
+  /payments/config:
+    get:
+      operationId: getPaymentConfig
+      tags: [payments]
+      responses:
+        "200":
+          description: Whether online payment is enabled (public key id only)
+          content: { application/json: { schema: { $ref: "#/components/schemas/PaymentConfig" } } }
+  /checkout:
+    post:
+      operationId: startCheckout
+      tags: [payments]
+      description: Customer only. Validates the cart, holds stock, computes the total on the server and creates the Razorpay order.
+      parameters:
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string, minLength: 8, maxLength: 100 } }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/CreateOrderBody" } } }
+      responses:
+        "201":
+          description: Checkout session
+          content: { application/json: { schema: { $ref: "#/components/schemas/CheckoutStarted" } } }
+  /checkout/{orderId}/session:
+    get:
+      operationId: getCheckoutSession
+      tags: [payments]
+      parameters:
+        - { name: orderId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Resume or retry payment while the stock hold is valid
+          content: { application/json: { schema: { $ref: "#/components/schemas/CheckoutSession" } } }
+  /checkout/verify:
+    post:
+      operationId: verifyCheckout
+      tags: [payments]
+      description: The server checks the Razorpay signature against the Razorpay order id it stored. The browser's claim of success is never trusted.
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/CheckoutVerifyBody" } } }
+      responses:
+        "200":
+          description: Verification result
+          content: { application/json: { schema: { $ref: "#/components/schemas/CheckoutVerified" } } }
+  /admin/payments:
+    get:
+      operationId: listPayments
+      tags: [admin]
+      responses:
+        "200":
+          description: Payments (admin)
+          content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/PaymentRecord" } } } }
+  /admin/payments/{id}/refund:
+    post:
+      operationId: refundPayment
+      tags: [admin]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [reason], properties: { reason: { type: string, minLength: 5, maxLength: 300 } } } } }
+      responses:
+        "200":
+          description: Refund requested through Razorpay
+          content: { application/json: { schema: { type: object, properties: { alreadyRefunded: { type: boolean }, refundId: { type: [string, "null"] }, pending: { type: boolean } } } } }
+  /lots/{id}/packages:
+    get:
+      operationId: listLotPackages
+      tags: [lots]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Packages of a lot with seal history (owner or admin)
+          content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/PackageItem" } } } }
+    post:
+      operationId: createLotPackages
+      tags: [lots]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/CreatePackagesBody" } } }
+      responses:
+        "201":
+          description: Packages created, each with its own QR token and seal id
+          content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/PackageItem" } } } }
+  /packages/{id}/seal:
+    post:
+      operationId: setPackageSeal
+      tags: [lots]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/SetSealBody" } } }
+      responses:
+        "200":
+          description: Updated package
+          content: { application/json: { schema: { $ref: "#/components/schemas/PackageItem" } } }
+  /trace/{publicToken}/report-seal:
+    post:
+      operationId: reportSealIssue
+      tags: [public]
+      description: Public. Report a seal or packaging problem; records an exception for review, never concludes tampering.
+      parameters:
+        - { name: publicToken, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/ReportSealBody" } } }
+      responses:
+        "201":
+          description: Recorded
+          content: { application/json: { schema: { $ref: "#/components/schemas/SealReportResult" } } }
   /admin/scans/areas:
     get:
       operationId: getScanAreas
@@ -1559,10 +1673,196 @@ components:
         storageEnd: { type: [string, "null"], format: date-time }
         temperatureC: { type: [number, "null"] }
         storageCondition: { type: [string, "null"] }
+    OrderPaymentState:
+      type: string
+      enum: [UNPAID, PAYMENT_PENDING, PAYMENT_PROCESSING, PAID, PAYMENT_FAILED, PAYMENT_CANCELLED, REFUND_PENDING, REFUNDED]
+      description: Payment lifecycle of an order. UNPAID means no online payment was involved.
+    PaymentLifecycle:
+      type: string
+      enum: [CREATED, PROCESSING, PAID, FAILED, CANCELLED, REFUND_PENDING, REFUNDED]
+    PaymentConfig:
+      type: object
+      required: [enabled, currency, holdMinutes, merchantName]
+      properties:
+        enabled: { type: boolean }
+        keyId: { type: [string, "null"], description: "Razorpay public key id only. The key secret never leaves the server." }
+        mode: { type: [string, "null"], enum: [test, live, null] }
+        currency: { type: string }
+        holdMinutes: { type: integer }
+        merchantName: { type: string }
+    CheckoutSession:
+      type: object
+      required: [orderId, orderCode, razorpayOrderId, amountPaise, currency, keyId, mode, expiresAt, merchantName, description, prefill]
+      properties:
+        orderId: { type: string, format: uuid }
+        orderCode: { type: string }
+        razorpayOrderId: { type: string }
+        amountPaise: { type: integer, description: Computed on the server from lot prices }
+        currency: { type: string, enum: [INR] }
+        keyId: { type: string }
+        mode: { type: string, enum: [test, live] }
+        expiresAt: { type: string, format: date-time, description: When the stock hold ends }
+        merchantName: { type: string }
+        description: { type: string }
+        prefill:
+          type: object
+          required: [name, email]
+          properties:
+            name: { type: string }
+            email: { type: string }
+            contact: { type: string }
+    CheckoutStarted:
+      type: object
+      required: [alreadyPaid, order]
+      properties:
+        alreadyPaid: { type: boolean }
+        session: { $ref: "#/components/schemas/CheckoutSession" }
+        order: { $ref: "#/components/schemas/Order" }
+    CheckoutVerifyBody:
+      type: object
+      required: [orderId, razorpay_order_id, razorpay_payment_id, razorpay_signature]
+      properties:
+        orderId: { type: string, format: uuid }
+        razorpay_order_id: { type: string }
+        razorpay_payment_id: { type: string }
+        razorpay_signature: { type: string }
+    CheckoutVerified:
+      type: object
+      required: [outcome, order]
+      properties:
+        outcome: { type: string, enum: [APPLIED, DUPLICATE_STATE, LATE_PAYMENT] }
+        order: { $ref: "#/components/schemas/Order" }
+    OrderPayment:
+      type: object
+      required: [status, mode, amountPaise, currency]
+      properties:
+        status: { $ref: "#/components/schemas/PaymentLifecycle" }
+        method: { type: [string, "null"] }
+        mode: { type: string }
+        amountPaise: { type: integer }
+        currency: { type: string }
+        paidAt: { type: [string, "null"], format: date-time }
+        failureReason: { type: [string, "null"] }
+        razorpayPaymentId: { type: [string, "null"], description: Visible to the payer and admins only }
+        razorpayOrderId: { type: [string, "null"] }
+        signatureVerified: { type: [boolean, "null"], description: Admin only }
+        webhookVerified: { type: [boolean, "null"], description: Admin only }
+    PaymentRecord:
+      type: object
+      required: [id, orderId, orderCode, razorpayOrderId, amountPaise, currency, status, mode, signatureVerified, webhookVerified, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        orderId: { type: string, format: uuid }
+        orderCode: { type: string }
+        orderStatus: { type: string }
+        customerName: { type: string }
+        razorpayOrderId: { type: string }
+        razorpayPaymentId: { type: [string, "null"] }
+        amountPaise: { type: integer }
+        currency: { type: string }
+        status: { type: string }
+        method: { type: [string, "null"] }
+        mode: { type: string }
+        signatureVerified: { type: boolean }
+        webhookVerified: { type: boolean }
+        failureReason: { type: [string, "null"] }
+        refundId: { type: [string, "null"] }
+        paidAt: { type: [string, "null"], format: date-time }
+        createdAt: { type: string, format: date-time }
+    SealStatus:
+      type: string
+      enum: [ASSIGNED, DISPATCH_VERIFIED, INTACT, BROKEN, REPORTED, REPLACED]
+    IntegrityStatus:
+      type: string
+      enum: [NOT_CHECKED, OK, EXCEPTION]
+    PackageItem:
+      type: object
+      required: [id, lotId, packageNumber, label, quantity, sealId, sealStatus, integrityStatus, publicToken, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        lotId: { type: string, format: uuid }
+        packageNumber: { type: integer }
+        label: { type: string, description: "e.g. PKG-001" }
+        quantity: { type: number }
+        sealId: { type: string }
+        sealStatus: { $ref: "#/components/schemas/SealStatus" }
+        integrityStatus: { $ref: "#/components/schemas/IntegrityStatus" }
+        publicToken: { type: string, description: This package's own QR token. Owner and admin only. }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        history:
+          type: array
+          items:
+            type: object
+            required: [eventType, at]
+            properties:
+              eventType: { type: string }
+              from: { type: [string, "null"] }
+              to: { type: [string, "null"] }
+              actorRole: { type: [string, "null"] }
+              note: { type: [string, "null"] }
+              at: { type: string, format: date-time }
+    CreatePackagesBody:
+      type: object
+      properties:
+        quantities: { type: array, minItems: 1, maxItems: 200, items: { type: number, exclusiveMinimum: 0 } }
+        count: { type: integer, minimum: 1, maximum: 200 }
+        quantityEach: { type: number, exclusiveMinimum: 0 }
+    SetSealBody:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [DISPATCH_VERIFIED, INTACT, BROKEN, REPORTED, REPLACED] }
+        note: { type: string, maxLength: 300 }
+    ReportSealBody:
+      type: object
+      required: [kind]
+      properties:
+        kind: { type: string, enum: [SEAL_BROKEN, SEAL_MISSING, SEAL_MISMATCH, OTHER] }
+        note: { type: string, maxLength: 300 }
+    SealReportResult:
+      type: object
+      required: [recorded, scope, alreadyUnderReview]
+      properties:
+        recorded: { type: boolean }
+        scope: { type: string, enum: [PACKAGE, LOT] }
+        alreadyUnderReview: { type: boolean }
+    DigitalIdentity:
+      type: object
+      required: [qrValid, lotRegistered, farmerVerified, quality]
+      properties:
+        qrValid: { type: boolean }
+        lotRegistered: { type: boolean }
+        farmerVerified: { type: boolean }
+        quality: { type: string, enum: [NONE, RECORDED_BY_FARMER, INSPECTED] }
+    PhysicalIntegrity:
+      type: object
+      required: [scope, state, packagesTotal, counts]
+      properties:
+        scope: { type: string, enum: [LOT, PACKAGE] }
+        state: { type: string, enum: [NO_SEALS, NOT_VERIFIED, INTACT, EXCEPTION] }
+        packagesTotal: { type: integer }
+        counts:
+          type: object
+          required: [NOT_CHECKED, OK, EXCEPTION]
+          properties:
+            NOT_CHECKED: { type: integer }
+            OK: { type: integer }
+            EXCEPTION: { type: integer }
+        package:
+          type: [object, "null"]
+          properties:
+            label: { type: string }
+            sealId: { type: string }
+            sealStatus: { $ref: "#/components/schemas/SealStatus" }
+            quantity: { type: number }
     PublicTrace:
       type: object
-      required: [verification, lotCode, productName, variety, farmer, farmName, origin, status, listed, recalled, journey, completeness, farmerRating, timeline, lastUpdatedAt, qrVersion, unit, retrievedAt]
+      required: [verification, lotCode, productName, variety, farmer, farmName, origin, status, listed, recalled, journey, completeness, farmerRating, timeline, lastUpdatedAt, qrVersion, unit, retrievedAt, scope, digitalIdentity, physicalIntegrity]
       properties:
+        scope: { type: string, enum: [LOT, PACKAGE], description: Whether the scanned QR was the lot's or one package's }
+        digitalIdentity: { $ref: "#/components/schemas/DigitalIdentity" }
+        physicalIntegrity: { $ref: "#/components/schemas/PhysicalIntegrity" }
         verification: { type: string, enum: [VERIFIED, UNVERIFIED_FARMER] }
         lotCode: { type: string }
         lotId: { type: string, format: uuid }
@@ -2224,11 +2524,14 @@ components:
         createdAt: { type: string, format: date-time }
     Order:
       type: object
-      required: [id, orderCode, status, fulfillmentMethod, totalAmount, items, customer, farmer, createdAt, updatedAt, allowedActions]
+      required: [id, orderCode, status, fulfillmentMethod, totalAmount, items, customer, farmer, createdAt, updatedAt, allowedActions, paymentStatus]
       properties:
         id: { type: string, format: uuid }
         orderCode: { type: string }
         status: { $ref: "#/components/schemas/OrderStatus" }
+        paymentStatus: { $ref: "#/components/schemas/OrderPaymentState" }
+        paymentDueAt: { type: [string, "null"], format: date-time, description: End of the stock hold while payment is pending }
+        payment: { oneOf: [{ $ref: "#/components/schemas/OrderPayment" }, { type: "null" }] }
         fulfillmentMethod: { $ref: "#/components/schemas/FulfillmentMethod" }
         totalAmount: { type: number }
         deliveryAddress: { type: [string, "null"] }

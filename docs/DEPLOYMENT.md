@@ -23,6 +23,8 @@
 | `FRONTEND_DIST_DIR` | | set in the image (`/app/public`) |
 | `COOKIE_SECURE`, `TRUST_PROXY` | | defaults `true` / `1` in production (one reverse proxy); adjust to your proxy depth |
 | `CORS_ORIGINS` | | only if a different origin calls the API (not recommended) |
+| `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET` | for online payment | See `PAYMENTS.md`. Payments stay off until key id and secret are set; webhook secret is required in production when on |
+| `PAYMENT_HOLD_MINUTES` | | stock hold while paying, default 20 |
 | `DATA_GOV_IN_API_KEY` | for prices | free key from data.gov.in |
 | `DATA_GOV_IN_RESOURCE_ID`, `MARKET_COMMODITY`, `MARKET_INGEST_INTERVAL_MINUTES`, `WEATHER_INGEST_INTERVAL_MINUTES`, `INGESTION_ENABLED` | | tuning |
 | `RATE_LIMIT_API_PER_MINUTE`, `RATE_LIMIT_TRACE_PER_MINUTE`, `RATE_LIMIT_AUTH_PER_15_MINUTES` | | defaults 300 / 60 / 20 |
