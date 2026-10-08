@@ -39,14 +39,18 @@ function popup(title: string, lines?: string[]): HTMLElement {
   return root;
 }
 
-/** Thin Leaflet wrapper. OpenStreetMap tiles need no key; attribution is mandatory and shown. */
+/**
+ * Thin Leaflet wrapper. OpenStreetMap tiles need no key; attribution is mandatory and shown.
+ * The site sends Referrer-Policy: no-referrer, but OSM blocks tile requests that carry no Referer (HTTP 403),
+ * so tile images alone send the bare origin (no path or query).
+ */
 export default function MapView({ pins = [], areas = [], path, height = 360, attribution }: { pins?: MapPin[]; areas?: MapArea[]; path?: [number, number][]; height?: number; attribution: string }) {
   const el = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!el.current) return;
     const map = L.map(el.current, { zoomControl: true, scrollWheelZoom: false, attributionControl: true });
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 18, attribution }).addTo(map);
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 18, attribution, referrerPolicy: "origin" }).addTo(map);
     const bounds: L.LatLngTuple[] = [];
 
     for (const a of areas) {

@@ -12,6 +12,7 @@ Built with Leaflet and OpenStreetMap tiles: free, no API key. Attribution ("Map 
 - The public QR page never shows coordinates, only place names.
 - No IP address or precise scan location is stored.
 - Scan-area responses contain cell centres on a fixed grid, so they cannot equal an exact submitted point (covered by `test/map.test.ts`).
+- Tile images send only the site origin as Referer (`referrerPolicy: "origin"`) because OpenStreetMap blocks requests without one (HTTP 403 "Access blocked"); every other request keeps `Referrer-Policy: no-referrer`.
 - Farmer and admin map views refresh every 30 seconds; this is polling, not a live GPS feed.
 
 ## Not built
