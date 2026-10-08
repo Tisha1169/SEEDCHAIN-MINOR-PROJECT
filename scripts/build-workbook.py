@@ -106,11 +106,12 @@ def cmd_build(a):
         ["Units_Resources", "Unit definitions and the official links to every resource used."],
         ["Ingestion_Runs", "Every fetch the pipeline made: status, counts, endpoint, timings. Failures are shown, not hidden."],
         ["Raw_Payloads", "Fingerprint (SHA-256) and size of each untouched raw download kept for audit."],
+        ["Mandi_Prices", "Daily potato mandi prices (INR per quintal): min, max, modal, arrivals. Shows NO DATA YET until the data.gov.in sync or a CSV import succeeds."],
         ["Weather_Observations", "Real Open-Meteo readings stored for farms that have coordinates (positions rounded to 0.01 degrees)."],
         ["Test_Runs", "One row per test run (this log only grows)."],
         ["Test_Results", f"One row per individual check or test across all runs ({total_tests:,} so far)."],
         ["", ""],
-        ["Not in this workbook", "Mandi prices (needs a data.gov.in API key), AGMARKNET, DES, NHB, ICAR-CPRI, IMD: not integrated, so no rows exist."],
+        ["Not in this workbook", "Mandi prices (see the Mandi_Prices sheet; empty until a key or CSV import), AGMARKNET, DES, NHB, ICAR-CPRI, IMD: not integrated, so no rows exist."],
         ["Note on FAOSTAT scope", "FAOSTAT is national/regional only. It has no state or district data; Punjab district figures come only from the PAU sheet."],
         ["Test data", "Accounts and lots named [E2E TEST] / [PILOT TEST] are test records created by the test scripts, not real farmers."],
     ]
@@ -142,6 +143,12 @@ def cmd_build(a):
     wx = rd(os.path.join(a.export_dir, "weather.csv"))
     sheet("Weather_Observations", ["Source", "Observed (UTC)", "Retrieved (UTC)", "Lat (0.01)", "Lon (0.01)", "Temp C", "Rain mm", "Humidity %", "WMO code", "Condition"], [[w["source"], w["observation_time"][:19], w["retrieved_at"][:19], float(w["latitude"]), float(w["longitude"]), *(float(w[k]) if w[k] else None for k in ("temperature_c", "precipitation_mm", "humidity_pct")), w["weather_code"], w["condition"]] for w in wx], {1: 20, 2: 20})
 
+    mp = os.path.join(a.export_dir, "mandi.csv")
+    mandi = rd(mp) if os.path.exists(mp) else []
+    mrows = [[m["observation_date"], m["state"], m["district"], m["market"], m["commodity"], m["variety"], m["grade"], float(m["arrival_quantity_tonnes"]) if m["arrival_quantity_tonnes"] else None, float(m["min_price"]) if m["min_price"] else None, float(m["max_price"]) if m["max_price"] else None, float(m["modal_price"]) if m["modal_price"] else None, m["price_unit"], m["source"], m["retrieved_at"][:19]] for m in mandi]
+    if not mrows:
+        mrows = [["NO DATA YET", "", "", "", "", "", "", None, None, None, None, "", "No successful mandi sync. Needs DATA_GOV_IN_API_KEY or a CSV import (see docs/DATA_SOURCES.md). Nothing is estimated.", ""]]
+    sheet("Mandi_Prices", ["Observation date", "State", "District", "Market", "Commodity", "Variety", "Grade", "Arrivals (t)", "Min price", "Max price", "Modal price", "Unit", "Source / status", "Retrieved (UTC)"], mrows, {0: 16, 3: 28, 12: 60, 13: 20})
     tr, td = [], []
     for r in runs:
         p = sum(1 for i in r["items"] if i["status"] == "PASS"); f = len(r["items"]) - p
