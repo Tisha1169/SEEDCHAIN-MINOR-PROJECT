@@ -69,6 +69,11 @@ const PROJECTORS: Record<string, Projector> = {
   LOSS_RECORDED: (e, u) => ({ label: "Loss recorded", quantityChange: e.quantityChange, location: null, detail: qty(e.quantityChange, u) }),
   SPOILAGE_RECORDED: (e, u) => ({ label: "Spoilage recorded", quantityChange: e.quantityChange, location: null, detail: qty(e.quantityChange, u) }),
   CORRECTION_RECORDED: (e) => ({ label: "Correction recorded", quantityChange: e.quantityChange, location: null, detail: null }),
+  ORDER_PAID: (e, u) => ({ label: "Customer order placed (payment confirmed)", quantityChange: e.quantityChange, location: null, detail: qty(e.quantityChange, u) }),
+  PACKAGES_CREATED: (e) => ({ label: "Packed in sealed packages", quantityChange: null, location: null, detail: typeof e.metadata.count === "number" ? `${e.metadata.count} package(s) with serialised tamper-evident seals` : null }),
+  SEAL_VERIFIED_AT_DISPATCH: () => ({ label: "Package seals verified at dispatch", quantityChange: null, location: null, detail: null }),
+  SEAL_INTEGRITY_EXCEPTION: (e) => ({ label: "Seal integrity exception recorded", quantityChange: null, location: null, detail: typeof e.reason === "string" ? e.reason : null }),
+  SEAL_REPLACED: (e) => ({ label: "A package seal was replaced and recorded", quantityChange: null, location: null, detail: typeof e.reason === "string" ? e.reason : null }),
   LOT_SOLD_OUT: () => ({ label: "Lot sold out", quantityChange: null, location: null, detail: null }),
 };
 

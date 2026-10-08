@@ -8,6 +8,7 @@ import ordersRouter from "./orders";
 import miscRouter from "./misc";
 import opsRouter from "./ops";
 import paymentsRouter from "./payments";
+import packagesRouter from "./packages";
 
 const router: IRouter = Router();
 
@@ -21,6 +22,7 @@ router.use(adminRouter);
 router.use(farmsRouter);
 router.use(lotsRouter);
 router.use(paymentsRouter);
+router.use(packagesRouter);
 router.use(ordersRouter);
 router.use(miscRouter);
 router.use(opsRouter);

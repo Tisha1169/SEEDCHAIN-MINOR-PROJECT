@@ -169,6 +169,13 @@ async function markPaid(tx: DbOrTx, payment: Payment, order: Order, input: PaidI
 
   await tx.update(paymentsTable).set({ ...flags, status: "PAID", razorpayPaymentId: input.razorpayPaymentId, method: input.method ?? payment.method, paidAt: now, failureCode: null, failureReason: null, updatedAt: now }).where(eq(paymentsTable.id, payment.id));
   await tx.update(ordersTable).set({ paymentStatus: "PAID", paymentDueAt: null, updatedAt: now, version: sql`${ordersTable.version} + 1` }).where(eq(ordersTable.id, order.id));
+  // Now (and only now) the order becomes a public fact on each lot's journey.
+  const lines = await tx.select().from(orderItemsTable).where(eq(orderItemsTable.orderId, order.id));
+  for (const line of [...lines].sort((a, b) => a.lotId.localeCompare(b.lotId))) {
+    const [lot] = await tx.select().from(lotsTable).where(eq(lotsTable.id, line.lotId));
+    const avail = availableOf(counters(lot));
+    await appendEvent(tx, SYSTEM, { lotId: lot.id, orderId: order.id, eventType: "ORDER_PAID", quantityBefore: avail, quantityChange: Number(line.quantity), quantityAfter: avail, status: "PAID", reason: "Payment confirmed", metadata: { orderCode: order.orderCode, via: input.via } });
+  }
   await notify(tx, [order.farmerId], { type: "ORDER_NEW", params: { orderCode: order.orderCode, customerName: "" }, entityType: "order", entityId: order.id });
   await notify(tx, [order.customerId], { type: "PAYMENT_RECEIVED", params: { orderCode: order.orderCode }, entityType: "order", entityId: order.id });
   await audit(tx, SYSTEM, "PAYMENT_CONFIRMED", "order", order.id, { paymentStatus: order.paymentStatus }, { paymentStatus: "PAID", via: input.via, amountPaise: payment.amountPaise, mode: payment.mode });

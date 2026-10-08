@@ -26,6 +26,7 @@ import { availableOf } from "../domain/state-machine";
 import { counters } from "./lots";
 import { appendEvent, raiseAlert } from "./records";
 import { notifyChange } from "./realtime";
+import { findPackageByToken, governingQr, physicalIntegrityFor } from "./packages";
 
 /**
  * Public, unauthenticated read model behind every printed QR.
@@ -33,7 +34,10 @@ import { notifyChange } from "./realtime";
  */
 export async function getPublicTrace(token: string) {
   if (!isWellFormedToken(token)) throw notFound("Unknown QR code");
-  const [qr] = await db.select().from(qrCodesTable).where(eq(qrCodesTable.publicToken, token));
+  let [qr] = await db.select().from(qrCodesTable).where(eq(qrCodesTable.publicToken, token));
+  // A package has its own QR token; it inherits the state (active, revoked, disabled) of its lot's QR.
+  const pkg = qr ? null : await findPackageByToken(token);
+  if (!qr && pkg) qr = (await governingQr(pkg.lotId)) ?? qr;
   if (!qr) throw notFound("Unknown QR code");
   if (qr.status !== "ACTIVE") {
     throw new HttpError(
@@ -83,7 +87,17 @@ export async function getPublicTrace(token: string) {
   const rating = (await loadFarmerRatings([row.lot.farmerId])).get(row.lot.farmerId) ?? noRating;
   const [quality] = await db.select().from(lotQualityRecordsTable).where(eq(lotQualityRecordsTable.lotId, row.lot.id)).orderBy(desc(lotQualityRecordsTable.inspectionDate), desc(lotQualityRecordsTable.createdAt)).limit(1);
   const [recall] = row.lot.recalled ? await db.select().from(lotRecallsTable).where(and(eq(lotRecallsTable.lotId, row.lot.id), eq(lotRecallsTable.status, "ACTIVE"))) : [];
+  const physical = await physicalIntegrityFor(row.lot.id, pkg);
   return {
+    scope: pkg ? ("PACKAGE" as const) : ("LOT" as const),
+    // Digital identity: what the registered record proves. Physical integrity: what the seal indicates. Neither is a food-safety guarantee.
+    digitalIdentity: {
+      qrValid: true,
+      lotRegistered: true,
+      farmerVerified: verified,
+      quality: quality ? (quality.recordedBy === "FARMER" ? ("RECORDED_BY_FARMER" as const) : ("INSPECTED" as const)) : ("NONE" as const),
+    },
+    physicalIntegrity: physical,
     recalled: row.lot.recalled,
     recall: recall ? { message: recall.publicMessage, since: recall.initiatedAt.toISOString() } : null,
     journey: buildJourney(events.filter((e) => e.isPublic).map((e) => ({ eventType: e.eventType, eventTime: e.eventTime }))),
@@ -176,7 +190,11 @@ export async function recordScan(input: ScanInput, user: User | undefined) {
     return { result: "INVALID" as const, duplicate: false };
   }
 
-  const [qr] = await db.select().from(qrCodesTable).where(eq(qrCodesTable.publicToken, input.publicToken));
+  let [qr] = await db.select().from(qrCodesTable).where(eq(qrCodesTable.publicToken, input.publicToken));
+  if (!qr) {
+    const pkg = await findPackageByToken(input.publicToken);
+    if (pkg) qr = (await governingQr(pkg.lotId)) ?? qr; // package scans count towards the lot's QR analytics
+  }
   if (!qr) {
     await db.insert(qrScanEventsTable).values({
       scanSource: input.scanSource,

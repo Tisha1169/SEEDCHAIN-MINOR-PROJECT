@@ -22,3 +22,6 @@ export const authLimiter = rateLimit({
 
 /** Razorpay webhook deliveries (signature-checked in the handler; this only caps abuse of the public URL). */
 export const webhookLimiter = rateLimit({ ...common, windowMs: 60_000, limit: 600 });
+
+/** Public seal reports create alerts for admins, so cap them tightly per client. */
+export const sealReportLimiter = rateLimit({ ...common, windowMs: 60 * 60_000, limit: 10 });

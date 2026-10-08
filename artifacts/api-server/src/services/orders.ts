@@ -290,6 +290,7 @@ export async function createOrder(actor: Actor & { user: User }, idempotencyKey:
           quantityChange: qty,
           quantityAfter: availableOf(counters(after)),
           status: "PENDING",
+          isPublic: !opts.awaitPayment, // a held-but-unpaid order is not a public fact; ORDER_PAID is written when payment is confirmed
           reason: opts.awaitPayment ? "Stock held while the customer completes payment" : "Customer order placed; stock reserved",
           metadata: { orderCode: order.orderCode, fulfillmentMethod: input.fulfillmentMethod, unitPrice: price },
         });
