@@ -41,6 +41,21 @@ export const config = {
   frontendDir: env.FRONTEND_DIST_DIR ? path.resolve(env.FRONTEND_DIST_DIR) : "",
   runMigrationsOnStart: env.RUN_MIGRATIONS_ON_START === "true",
   legacySessionSecret: env.LEGACY_SESSION_SECRET ?? env.SESSION_SECRET ?? "",
+  /** Razorpay. Online payments are enabled only when both the key id and the key secret are set. The secret never leaves the server. */
+  payments: {
+    keyId: env.RAZORPAY_KEY_ID ?? "",
+    keySecret: env.RAZORPAY_KEY_SECRET ?? "",
+    webhookSecret: env.RAZORPAY_WEBHOOK_SECRET ?? "",
+    apiBase: (env.RAZORPAY_API_BASE ?? "https://api.razorpay.com").replace(/\/+$/, ""),
+    /** How long stock stays reserved while the customer pays. */
+    holdMinutes: num(env.PAYMENT_HOLD_MINUTES, 20),
+    get enabled() {
+      return !!(this.keyId && this.keySecret);
+    },
+    get mode(): "live" | "test" {
+      return this.keyId.startsWith("rzp_live_") ? "live" : "test";
+    },
+  },
   ingestion: {
     enabled: env.INGESTION_ENABLED ? env.INGESTION_ENABLED === "true" : !isTest,
     marketIntervalMinutes: num(env.MARKET_INGEST_INTERVAL_MINUTES, 360),
@@ -67,5 +82,7 @@ export function assertProductionConfig(): void {
   const localHttp = process.env.ALLOW_INSECURE_LOCAL === "true";
   if (!/^https:\/\//.test(config.publicTraceBaseUrl) && !localHttp) problems.push("PUBLIC_TRACE_BASE_URL must be an https:// URL");
   if (!config.cookieSecure && !localHttp) problems.push("COOKIE_SECURE must not be false in production");
+  if (config.payments.keyId && !config.payments.keySecret) problems.push("RAZORPAY_KEY_SECRET is required when RAZORPAY_KEY_ID is set");
+  if (config.payments.enabled && !config.payments.webhookSecret) problems.push("RAZORPAY_WEBHOOK_SECRET is required when online payments are enabled (webhooks reconcile payments)");
   if (problems.length) throw new Error(`Invalid production configuration:\n- ${problems.join("\n- ")}`);
 }

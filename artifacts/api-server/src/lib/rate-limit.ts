@@ -19,3 +19,6 @@ export const authLimiter = rateLimit({
   // Successful logins do not count against the limit.
   skipSuccessfulRequests: true,
 });
+
+/** Razorpay webhook deliveries (signature-checked in the handler; this only caps abuse of the public URL). */
+export const webhookLimiter = rateLimit({ ...common, windowMs: 60_000, limit: 600 });

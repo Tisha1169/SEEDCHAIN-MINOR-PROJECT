@@ -5,6 +5,7 @@ import { logger } from "../lib/logger";
 import { runSource, type SourceKey } from "./external/ingestion";
 import { computeRisk, syncRiskAlert } from "./lots";
 import { raiseAlert, resolveAlertsByKey } from "./records";
+import { expireUnpaidOrders } from "./payments";
 
 /**
  * In-process periodic jobs. A Postgres advisory lock per job makes sure only
@@ -130,6 +131,8 @@ export async function runDueSources(now = Date.now()): Promise<SourceKey[]> {
 }
 
 export function startScheduler(): void {
+  // Abandoned checkouts must release their stock even when external-data ingestion is switched off.
+  if (config.payments.enabled) every(1, 91005, "payment-expiry", async () => void (await expireUnpaidOrders()), 20_000);
   if (!config.ingestion.enabled) {
     logger.info("Scheduler disabled (INGESTION_ENABLED=false)");
     return;

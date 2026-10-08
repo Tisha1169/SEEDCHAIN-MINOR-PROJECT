@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import {
   alertsTable,
   db,
@@ -138,7 +138,7 @@ export async function farmerOverview(user: User) {
       completed: sql<number>`count(*) FILTER (WHERE ${ordersTable.status} = 'CUSTOMER_CONFIRMED')::int`,
     })
     .from(ordersTable)
-    .where(eq(ordersTable.farmerId, fid));
+    .where(and(eq(ordersTable.farmerId, fid), inArray(ordersTable.paymentStatus, ["UNPAID", "PAID", "REFUND_PENDING", "REFUNDED"])));
   const recent = await db
     .select({ e: traceabilityEventsTable, lotCode: lotsTable.lotCode, actorName: usersTable.name })
     .from(traceabilityEventsTable)

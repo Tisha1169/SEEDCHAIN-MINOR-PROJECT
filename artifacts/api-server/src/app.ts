@@ -13,7 +13,8 @@ import { config } from "./config";
 import { logger } from "./lib/logger";
 import { loadUser } from "./lib/auth";
 import { errorHandler, HttpError } from "./lib/errors";
-import { apiLimiter } from "./lib/rate-limit";
+import { apiLimiter, webhookLimiter } from "./lib/rate-limit";
+import { handleWebhook } from "./services/payments";
 import { isRealtimeHealthy } from "./services/realtime";
 import { raiseAlert } from "./services/records";
 
@@ -45,12 +46,14 @@ app.use(
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'"],
+        // Razorpay Standard Checkout (checkout.js and its payment iframe) is the only third-party script and frame we allow.
+        scriptSrc: ["'self'", "https://checkout.razorpay.com"],
+        frameSrc: ["https://api.razorpay.com", "https://checkout.razorpay.com"],
         styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
         fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
-        imgSrc: ["'self'", "data:", "blob:", "https://tile.openstreetmap.org"],
+        imgSrc: ["'self'", "data:", "blob:", "https://tile.openstreetmap.org", "https://*.razorpay.com"],
         mediaSrc: ["'self'", "blob:"],
-        connectSrc: ["'self'"],
+        connectSrc: ["'self'", "https://api.razorpay.com", "https://lumberjack.razorpay.com", "https://checkout.razorpay.com"],
         workerSrc: ["'self'", "blob:"],
         frameAncestors: ["'none'"],
         objectSrc: ["'none'"],
@@ -75,6 +78,19 @@ if (config.corsOrigins.length) {
 }
 
 app.use(cookieParser());
+
+// Razorpay webhooks: signed with the webhook secret over the EXACT raw bytes, so this route must see the body before
+// express.json and sits outside the cookie-session CSRF check (authenticity comes from the signature instead).
+app.post("/api/webhooks/razorpay", webhookLimiter, express.raw({ type: "*/*", limit: "256kb" }), async (req, res, next) => {
+  try {
+    const raw = Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0);
+    const r = await handleWebhook(raw, req.get("x-razorpay-signature"), req.get("x-razorpay-event-id"));
+    res.status(r.status).json(r.body);
+  } catch (err) {
+    next(err);
+  }
+});
+
 app.use(express.json({ limit: "100kb" }));
 
 // CSRF defence for cookie sessions: state-changing API calls must carry a

@@ -29,6 +29,13 @@
       "when": 1791386067044,
       "tag": "0003_pilot_upgrade",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791486056951,
+      "tag": "0004_payments_packages_seals",
+      "breakpoints": true
     }
   ]
 }

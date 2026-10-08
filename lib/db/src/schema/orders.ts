@@ -14,6 +14,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { usersTable } from "./users";
 import { lotsTable } from "./lots";
+import { orderPaymentStatusEnum } from "./payments-enums";
 
 export const orderStatusEnum = pgEnum("order_status", [
   "PENDING",
@@ -46,6 +47,10 @@ export const ordersTable = pgTable(
       .notNull()
       .references(() => usersTable.id),
     status: orderStatusEnum("status").notNull().default("PENDING"),
+    /** Online payment lifecycle, separate from fulfilment status. UNPAID = no online payment involved. */
+    paymentStatus: orderPaymentStatusEnum("payment_status").notNull().default("UNPAID"),
+    /** While awaiting payment, stock is held until this time; after that the order is cancelled and stock released. */
+    paymentDueAt: timestamp("payment_due_at", { withTimezone: true }),
     fulfillmentMethod: fulfillmentMethodEnum("fulfillment_method").notNull(),
     deliveryAddress: text("delivery_address"),
     customerNotes: text("customer_notes"),

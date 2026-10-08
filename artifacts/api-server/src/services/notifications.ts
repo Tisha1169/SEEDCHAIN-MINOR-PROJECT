@@ -26,7 +26,10 @@ export type NotificationType =
   | "LOT_RECALLED"
   | "LOT_RECALL_CLEARED"
   | "REVIEW_RECEIVED"
-  | "REVIEW_HIDDEN";
+  | "REVIEW_HIDDEN"
+  | "PAYMENT_RECEIVED"
+  | "REFUND_DUE"
+  | "SEAL_EXCEPTION";
 
 export interface NotifyInput {
   type: NotificationType;

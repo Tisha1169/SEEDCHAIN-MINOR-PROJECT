@@ -8,9 +8,10 @@ import {
   TransitionOrderParams,
 } from "@workspace/api-zod";
 import { requireAuth, requireRole } from "../lib/auth";
-import { badRequest } from "../lib/errors";
+import { badRequest, conflict } from "../lib/errors";
 import { actorOf, parse, withIdempotency } from "../lib/http";
 import { createOrder, getOrder, listOrders, transitionOrder } from "../services/orders";
+import { paymentConfig } from "../services/payments";
 import { submitReview } from "../services/reviews";
 import { reportOfflineConflict } from "./lots";
 
@@ -24,6 +25,8 @@ router.get("/orders", requireAuth, async (req, res) => {
 router.post("/orders", requireRole(["customer"]), async (req, res) => {
   const key = req.get("idempotency-key");
   if (!key || key.length < 8 || key.length > 100) throw badRequest("Idempotency-Key header (8-100 chars) is required");
+  // With online payments on, orders must go through /checkout; otherwise this route would be a way around paying.
+  if (paymentConfig().enabled) throw conflict("Online payment is required for orders. Please use checkout.", "PAYMENT_REQUIRED");
   const body = parse(CreateOrderBody, req.body);
   const r = await createOrder(actorOf(req), key, body);
   res.status(r.duplicate ? 200 : 201).json(r.order);

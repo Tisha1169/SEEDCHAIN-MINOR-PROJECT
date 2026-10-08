@@ -7,6 +7,7 @@ import {
   orderFeedbackTable,
   orderItemsTable,
   ordersTable,
+  paymentsTable,
   productsTable,
   qrCodesTable,
   traceabilityEventsTable,
@@ -29,7 +30,7 @@ import {
 import { appendEvent, audit, raiseAlert, type Actor } from "./records";
 import { applyLotState, counters, maybeSoldOut, serializeEvent } from "./lots";
 import { notifyChange } from "./realtime";
-import { notify, type NotificationType } from "./notifications";
+import { notify, notifyAdmins, type NotificationType } from "./notifications";
 
 function orderCode(): string {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -39,13 +40,17 @@ function orderCode(): string {
   return `ORD-${s}`;
 }
 
+/** Orders in these payment states are the customer's (and admin's) business only; the farmer sees an order once it is paid. */
+export const FARMER_VISIBLE_PAYMENT = ["UNPAID", "PAID", "REFUND_PENDING", "REFUNDED"] as const;
+const farmerCanSeePayment = (ps: string) => (FARMER_VISIBLE_PAYMENT as readonly string[]).includes(ps);
+
 function canSee(user: User, o: Order): boolean {
-  return user.role === "admin" || o.customerId === user.id || o.farmerId === user.id;
+  return user.role === "admin" || o.customerId === user.id || (o.farmerId === user.id && farmerCanSeePayment(o.paymentStatus));
 }
 
 function viewerRole(user: User, o: Order): Role | null {
   if (user.role === "admin") return "admin";
-  if (user.role === "farmer" && o.farmerId === user.id) return "farmer";
+  if (user.role === "farmer" && o.farmerId === user.id && farmerCanSeePayment(o.paymentStatus)) return "farmer";
   if (user.role === "customer" && o.customerId === user.id) return "customer";
   return null;
 }
@@ -75,6 +80,9 @@ async function serializeOrders(user: User, orders: Order[], withEvents: boolean)
     .leftJoin(farmerProfilesTable, eq(farmerProfilesTable.userId, usersTable.id))
     .where(inArray(usersTable.id, [...new Set(orders.flatMap((o) => [o.customerId, o.farmerId]))]));
   const person = new Map(people.map((p) => [p.id, p]));
+  const pays = await db.select().from(paymentsTable).where(inArray(paymentsTable.orderId, ids)).orderBy(desc(paymentsTable.createdAt));
+  const payOf = new Map<string, (typeof pays)[number]>();
+  for (const p of pays) if (!payOf.has(p.orderId)) payOf.set(p.orderId, p);
   const feedback = await db.select().from(orderFeedbackTable).where(inArray(orderFeedbackTable.orderId, ids));
   const fb = new Map(feedback.map((f) => [f.orderId, f]));
   const events = withEvents
@@ -98,6 +106,27 @@ async function serializeOrders(user: User, orders: Order[], withEvents: boolean)
       status: o.status,
       fulfillmentMethod: o.fulfillmentMethod,
       totalAmount: Number(o.totalAmount),
+      paymentStatus: o.paymentStatus,
+      paymentDueAt: iso(o.paymentDueAt),
+      payment: (() => {
+        const p = payOf.get(o.id);
+        if (!p) return null;
+        const priv = role === "customer" || role === "admin";
+        return {
+          status: p.status,
+          method: p.method,
+          mode: p.mode,
+          amountPaise: p.amountPaise,
+          currency: p.currency,
+          paidAt: iso(p.paidAt),
+          failureReason: priv ? p.failureReason : null,
+          // The gateway's payment id is shown to the payer and to admins; the farmer only needs to know it is paid.
+          razorpayPaymentId: priv ? p.razorpayPaymentId : null,
+          razorpayOrderId: priv ? p.razorpayOrderId : null,
+          signatureVerified: role === "admin" ? p.signatureVerified : null,
+          webhookVerified: role === "admin" ? p.webhookVerified : null,
+        };
+      })(),
       deliveryAddress: o.deliveryAddress,
       customerNotes: o.customerNotes,
       rejectionReason: o.rejectionReason,
@@ -143,7 +172,7 @@ async function serializeOrders(user: User, orders: Order[], withEvents: boolean)
 
 export async function listOrders(user: User, status?: OrderStatus) {
   const conds = [];
-  if (user.role === "farmer") conds.push(eq(ordersTable.farmerId, user.id));
+  if (user.role === "farmer") conds.push(eq(ordersTable.farmerId, user.id), inArray(ordersTable.paymentStatus, [...FARMER_VISIBLE_PAYMENT]));
   if (user.role === "customer") conds.push(eq(ordersTable.customerId, user.id));
   if (status) conds.push(eq(ordersTable.status, status));
   const rows = await db
@@ -173,7 +202,12 @@ export interface CreateOrderInput {
  * - Lots are locked FOR UPDATE in a deterministic order (no deadlocks).
  * - The (customer, Idempotency-Key) unique index makes retries safe.
  */
-export async function createOrder(actor: Actor & { user: User }, idempotencyKey: string, input: CreateOrderInput) {
+export interface CreateOrderOptions {
+  /** Online-payment checkout: hold stock until paid; the farmer is told only once payment is confirmed. */
+  awaitPayment?: { holdMinutes: number };
+}
+
+export async function createOrder(actor: Actor & { user: User }, idempotencyKey: string, input: CreateOrderInput, opts: CreateOrderOptions = {}) {
   const customer = actor.user;
   const [dup] = await db
     .select()
@@ -233,6 +267,8 @@ export async function createOrder(actor: Actor & { user: User }, idempotencyKey:
           customerNotes: input.customerNotes ?? null,
           totalAmount: Math.round(total * 100) / 100,
           idempotencyKey,
+          paymentStatus: opts.awaitPayment ? "PAYMENT_PENDING" : "UNPAID",
+          paymentDueAt: opts.awaitPayment ? new Date(Date.now() + opts.awaitPayment.holdMinutes * 60_000) : null,
         })
         .returning();
 
@@ -254,14 +290,14 @@ export async function createOrder(actor: Actor & { user: User }, idempotencyKey:
           quantityChange: qty,
           quantityAfter: availableOf(counters(after)),
           status: "PENDING",
-          reason: "Customer order placed; stock reserved",
+          reason: opts.awaitPayment ? "Stock held while the customer completes payment" : "Customer order placed; stock reserved",
           metadata: { orderCode: order.orderCode, fulfillmentMethod: input.fulfillmentMethod, unitPrice: price },
         });
         await notifyChange(tx, { topic: "lots", entityId: lot.id, lotId: lot.id, farmerId });
       }
-      await notify(tx, [farmerId], { type: "ORDER_NEW", params: { orderCode: order.orderCode, customerName: customer.name }, entityType: "order", entityId: order.id });
+      if (!opts.awaitPayment) await notify(tx, [farmerId], { type: "ORDER_NEW", params: { orderCode: order.orderCode, customerName: customer.name }, entityType: "order", entityId: order.id });
       await audit(tx, actor, "ORDER_CREATED", "order", order.id, null, { orderCode: order.orderCode, total: order.totalAmount, items: lines.map((l) => ({ lot: l.lot.lotCode, qty: l.qty })) });
-      await notifyChange(tx, { topic: "orders", entityId: order.id, farmerId, customerId: customer.id });
+      await notifyChange(tx, { topic: "orders", entityId: order.id, farmerId: opts.awaitPayment ? undefined : farmerId, customerId: customer.id });
       await notifyChange(tx, { topic: "listings" });
       return order.id;
     });
@@ -325,6 +361,9 @@ export async function transitionOrder(actor: Actor & { user: User }, orderId: st
     if (!order || !canSee(user, order)) throw notFound("Order not found");
     const role = viewerRole(user, order)!;
     const method = order.fulfillmentMethod as FulfillmentMethod;
+    if (action !== "cancel" && !["UNPAID", "PAID"].includes(order.paymentStatus)) {
+      throw conflict(order.paymentStatus === "REFUND_PENDING" || order.paymentStatus === "REFUNDED" ? "This order is being refunded" : "This order is still waiting for payment", "AWAITING_PAYMENT");
+    }
     const rule = checkOrderTransition(action, role, order.status as OrderStatus, method, input.reason);
     const forward = ["accept", "prepare", "ready", "dispatch", "complete"].includes(action);
     if (forward) {
@@ -339,6 +378,12 @@ export async function transitionOrder(actor: Actor & { user: User }, orderId: st
 
     const now = new Date();
     const patch: Partial<typeof ordersTable.$inferInsert> = { status: rule.to, updatedAt: now };
+    // Cancelling or rejecting a paid order means money must go back; an unpaid hold just ends.
+    if ((action === "cancel" || action === "reject") && order.paymentStatus === "PAID") patch.paymentStatus = "REFUND_PENDING";
+    if ((action === "cancel" || action === "reject") && ["PAYMENT_PENDING", "PAYMENT_PROCESSING", "PAYMENT_FAILED"].includes(order.paymentStatus)) {
+      patch.paymentStatus = "PAYMENT_CANCELLED";
+      patch.paymentDueAt = null;
+    }
     switch (action) {
       case "accept":
         patch.acceptedAt = eventTime;
@@ -434,6 +479,14 @@ export async function transitionOrder(actor: Actor & { user: User }, orderId: st
       .update(ordersTable)
       .set({ ...patch, version: sql`${ordersTable.version} + 1` })
       .where(eq(ordersTable.id, order.id));
+    if (patch.paymentStatus === "REFUND_PENDING") {
+      await tx.update(paymentsTable).set({ status: "REFUND_PENDING", updatedAt: now }).where(and(eq(paymentsTable.orderId, order.id), eq(paymentsTable.status, "PAID")));
+      await raiseAlert(tx, { type: "REFUND_DUE", severity: "HIGH", message: `Order ${order.orderCode} was ${action === "reject" ? "rejected" : "cancelled"} after payment; a refund is due`, entityType: "order", entityId: order.id, dedupeKey: `REFUND_DUE:${order.id}` });
+      await notifyAdmins(tx, { type: "REFUND_DUE", params: { orderCode: order.orderCode }, entityType: "order", entityId: order.id });
+    }
+    if (patch.paymentStatus === "PAYMENT_CANCELLED") {
+      await tx.update(paymentsTable).set({ status: "CANCELLED", updatedAt: now }).where(and(eq(paymentsTable.orderId, order.id), inArray(paymentsTable.status, ["CREATED", "PROCESSING", "FAILED"])));
+    }
     const NOTIFY: Partial<Record<OrderAction, { type: NotificationType; to: "customer" | "farmer" | "other" }>> = {
       accept: { type: "ORDER_ACCEPTED", to: "customer" },
       reject: { type: "ORDER_REJECTED", to: "customer" },
