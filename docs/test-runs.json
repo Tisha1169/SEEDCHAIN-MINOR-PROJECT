@@ -2158,5 +2158,75 @@
     "detail": "'Qr Anomaly Flagged' appeared in the lot history"
    }
   ]
+ },
+ {
+  "id": "R010",
+  "at": "2026-10-08T03:59:59+00:00",
+  "name": "Map features on production (Render)",
+  "environment": "production",
+  "kind": "manual",
+  "notes": "Done through Chrome plus API checks, 2026-10-08. One real production-only bug found and fixed (OSM referrer).",
+  "items": [
+   {
+    "group": "Deployment",
+    "name": "Render deploy of map features (commit 087a476 containing ce03b4f)",
+    "status": "PASS",
+    "detail": "GET /api/admin/scans/areas returns 200 for admin after deploy"
+   },
+   {
+    "group": "Production map",
+    "name": "OpenStreetMap tiles load on production",
+    "status": "FAIL",
+    "detail": "First deploy: tiles returned HTTP 403 'Access blocked' because Referrer-Policy: no-referrer sends no Referer (passed locally)"
+   },
+   {
+    "group": "Production map",
+    "name": "Tiles load after referrerPolicy:'origin' fix (commit 4e0a420)",
+    "status": "PASS",
+    "detail": "Farm map shows Nakodar with roads and the farm pin; 8 tiles loaded"
+   },
+   {
+    "group": "Production map",
+    "name": "Farmer farm map shows only own farm",
+    "status": "PASS",
+    "detail": "1 farm, all own; GPS 31.1256, 75.4747"
+   },
+   {
+    "group": "Production map",
+    "name": "Journey map on a new lot shows located steps with numbered pin and ordered list",
+    "status": "PASS",
+    "detail": "SC-PB-JAL-2026-000004: 2 located steps at Nakodar, '2 step(s) have no coordinates' stated"
+   },
+   {
+    "group": "Production map",
+    "name": "Older lot created before farm had GPS shows honest 'No recorded step has coordinates yet'",
+    "status": "PASS",
+    "detail": "History is append-only so it is not back-filled or guessed"
+   },
+   {
+    "group": "Production access",
+    "name": "Admin scan areas: 13 OK scans, 7 shared a location, 3 coarse cells",
+    "status": "PASS",
+    "detail": "Cell centres 31.25,75.75 / 30.75,75.75 / 31.75,74.75"
+   },
+   {
+    "group": "Production access",
+    "name": "Farmer gets 403 and anonymous gets 401 on /api/admin/scans/areas",
+    "status": "PASS",
+    "detail": ""
+   },
+   {
+    "group": "Production access",
+    "name": "Admin sees all farms (4, 1 with GPS); CSP allows tile.openstreetmap.org",
+    "status": "PASS",
+    "detail": ""
+   },
+   {
+    "group": "Production map",
+    "name": "Admin map page visual check in Chrome",
+    "status": "FAIL",
+    "detail": "Not done: Chrome session was signed in as a farmer and the admin password may not be typed by the assistant; admin data verified through the API instead"
+   }
+  ]
  }
 ]
