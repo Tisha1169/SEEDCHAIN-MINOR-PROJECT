@@ -6310,5 +6310,367 @@
     "detail": "Not done: the assistant cannot create or sign in to the owner's Razorpay account or enter API keys; payments stay off until the owner sets RAZORPAY_* in Render"
    }
   ]
+ },
+ {
+  "id": "R025",
+  "at": "2026-10-08T19:57:01.215Z",
+  "name": "E2E smoke script on production, Razorpay TEST mode on",
+  "environment": "production",
+  "kind": "e2e",
+  "notes": "Only failure: PAU 403 from Render network (known). Full paid flow needs a manual test payment.",
+  "items": [
+   {
+    "group": "Platform",
+    "name": "Readiness probe /ready",
+    "status": "PASS",
+    "detail": "HTTP 200"
+   },
+   {
+    "group": "Platform",
+    "name": "Frontend (SPA) served",
+    "status": "PASS",
+    "detail": "HTTP 200"
+   },
+   {
+    "group": "Security",
+    "name": "HSTS / CSP / nosniff headers present",
+    "status": "PASS",
+    "detail": "CSP + nosniff"
+   },
+   {
+    "group": "Auth",
+    "name": "Admin login",
+    "status": "PASS",
+    "detail": "HTTP 200"
+   },
+   {
+    "group": "Admin",
+    "name": "Admin overview loads",
+    "status": "PASS",
+    "detail": "HTTP 200"
+   },
+   {
+    "group": "Auth",
+    "name": "Wrong password rejected",
+    "status": "PASS",
+    "detail": "HTTP 401"
+   },
+   {
+    "group": "Security",
+    "name": "Anonymous blocked from admin API",
+    "status": "PASS",
+    "detail": "HTTP 401"
+   },
+   {
+    "group": "Security",
+    "name": "Request without CSRF header rejected",
+    "status": "PASS",
+    "detail": "HTTP 403"
+   },
+   {
+    "group": "Data",
+    "name": "Ingest pau_potato_punjab",
+    "status": "FAIL",
+    "detail": "FAILED: 0 records, 0 rejected HTTP 403 Forbidden"
+   },
+   {
+    "group": "Data",
+    "name": "Ingest faostat_potato_india",
+    "status": "PASS",
+    "detail": "SUCCESS: 192 records, 0 rejected "
+   },
+   {
+    "group": "Data",
+    "name": "Punjab district data public, Jalandhar ranked first",
+    "status": "PASS",
+    "detail": "Jalandhar"
+   },
+   {
+    "group": "Data",
+    "name": "FAOSTAT India series public",
+    "status": "PASS",
+    "detail": "64 years"
+   },
+   {
+    "group": "Data",
+    "name": "Data health lists all sources",
+    "status": "PASS",
+    "detail": "9 sources"
+   },
+   {
+    "group": "Farmer",
+    "name": "Farmer registration",
+    "status": "PASS",
+    "detail": "HTTP 201"
+   },
+   {
+    "group": "Farmer",
+    "name": "Pending farmer may create farm profile",
+    "status": "PASS",
+    "detail": "HTTP 201"
+   },
+   {
+    "group": "Farmer",
+    "name": "Pending farmer cannot create lots",
+    "status": "PASS",
+    "detail": "HTTP 403"
+   },
+   {
+    "group": "Admin",
+    "name": "Admin approves farmer",
+    "status": "PASS",
+    "detail": "HTTP 200"
+   },
+   {
+    "group": "Lots",
+    "name": "Approved farmer creates lot",
+    "status": "PASS",
+    "detail": "SC-PB-JAL-2026-000010"
+   },
+   {
+    "group": "Lots",
+    "name": "Lot listed for sale",
+    "status": "PASS",
+    "detail": "HTTP 200"
+   },
+   {
+    "group": "QR",
+    "name": "QR content is only the trace URL on this host",
+    "status": "PASS",
+    "detail": "https://seedchain-tisha.onrender.com/trace/UeCr9co0BUartHhdfowL9blkc6GPSECk25fMrhwqor8"
+   },
+   {
+    "group": "QR",
+    "name": "Token is high-entropy (>= 40 chars)",
+    "status": "PASS",
+    "detail": "43 chars"
+   },
+   {
+    "group": "QR",
+    "name": "Public trace works without login",
+    "status": "PASS",
+    "detail": "SC-PB-JAL-2026-000010"
+   },
+   {
+    "group": "Privacy",
+    "name": "No private notes, email or phone on public trace",
+    "status": "PASS",
+    "detail": ""
+   },
+   {
+    "group": "QR",
+    "name": "Unknown token returns 404",
+    "status": "PASS",
+    "detail": "HTTP 404"
+   },
+   {
+    "group": "QR",
+    "name": "Scan recorded",
+    "status": "PASS",
+    "detail": "HTTP 200"
+   },
+   {
+    "group": "QR",
+    "name": "Trace page route serves the app",
+    "status": "PASS",
+    "detail": "HTTP 200"
+   },
+   {
+    "group": "Customer",
+    "name": "Customer registration",
+    "status": "PASS",
+    "detail": "HTTP 201"
+   },
+   {
+    "group": "Payments",
+    "name": "Public payment config exposes no secret",
+    "status": "PASS",
+    "detail": "enabled=true mode=test"
+   },
+   {
+    "group": "Payments",
+    "name": "Plain orders refused while online payment is on",
+    "status": "PASS",
+    "detail": "HTTP 409"
+   },
+   {
+    "group": "Payments",
+    "name": "Checkout creates a Razorpay order; total computed on the server (client total ignored)",
+    "status": "PASS",
+    "detail": "amountPaise=44000"
+   },
+   {
+    "group": "Payments",
+    "name": "Same Idempotency-Key returns the same Razorpay order (no double charge setup)",
+    "status": "PASS",
+    "detail": ""
+   },
+   {
+    "group": "Payments",
+    "name": "Unpaid order is invisible to the farmer",
+    "status": "PASS",
+    "detail": "HTTP 404"
+   },
+   {
+    "group": "Payments",
+    "name": "Forged payment signature rejected",
+    "status": "PASS",
+    "detail": "HTTP 400"
+   },
+   {
+    "group": "Payments",
+    "name": "Webhook with a bad signature rejected",
+    "status": "PASS",
+    "detail": "HTTP 400"
+   },
+   {
+    "group": "Payments",
+    "name": "Cancelling an unpaid checkout releases the stock hold",
+    "status": "PASS",
+    "detail": "PAYMENT_CANCELLED"
+   },
+   {
+    "group": "Orders",
+    "name": "Over-ordering rejected (no negative stock)",
+    "status": "PASS",
+    "detail": "HTTP 409"
+   },
+   {
+    "group": "Security",
+    "name": "Customer blocked from admin API",
+    "status": "PASS",
+    "detail": "HTTP 403"
+   },
+   {
+    "group": "Security",
+    "name": "Customer blocked from farmer lots API",
+    "status": "PASS",
+    "detail": "HTTP 403"
+   },
+   {
+    "group": "Seals",
+    "name": "Farmer creates 3 sealed packages, each with its own QR token",
+    "status": "PASS",
+    "detail": "HTTP 201"
+   },
+   {
+    "group": "Seals",
+    "name": "Package QR opens the public trace with its own seal id",
+    "status": "PASS",
+    "detail": "INTACT"
+   },
+   {
+    "group": "Seals",
+    "name": "Lot QR summarises seals as intact when all are verified",
+    "status": "PASS",
+    "detail": "INTACT"
+   },
+   {
+    "group": "Seals",
+    "name": "Public seal report records an exception for that package only",
+    "status": "PASS",
+    "detail": "HTTP 201"
+   },
+   {
+    "group": "Seals",
+    "name": "Exception is isolated: the other package stays intact",
+    "status": "PASS",
+    "detail": "EXCEPTION / INTACT"
+   },
+   {
+    "group": "Seals",
+    "name": "Customer cannot change a seal",
+    "status": "PASS",
+    "detail": "HTTP 403"
+   },
+   {
+    "group": "Cart",
+    "name": "New customer's cart is empty",
+    "status": "PASS",
+    "detail": ""
+   },
+   {
+    "group": "Cart",
+    "name": "Add a lot to the cart",
+    "status": "PASS",
+    "detail": "HTTP 201"
+   },
+   {
+    "group": "Cart",
+    "name": "Add a second lot (same farmer): one group, subtotal from live prices",
+    "status": "PASS",
+    "detail": "subtotal=170"
+   },
+   {
+    "group": "Cart",
+    "name": "Cannot add more than the stock",
+    "status": "PASS",
+    "detail": "HTTP 409"
+   },
+   {
+    "group": "Cart",
+    "name": "Change a quantity",
+    "status": "PASS",
+    "detail": "subtotal=230"
+   },
+   {
+    "group": "Cart",
+    "name": "Server preview prices both lines",
+    "status": "PASS",
+    "detail": "subtotal=230"
+   },
+   {
+    "group": "Cart",
+    "name": "Multi-item checkout: one Razorpay order for the whole farmer group, total from the server",
+    "status": "PASS",
+    "detail": "amountPaise=23000"
+   },
+   {
+    "group": "Cart",
+    "name": "Starting checkout does not empty the cart",
+    "status": "PASS",
+    "detail": "items=2"
+   },
+   {
+    "group": "Cart",
+    "name": "Abandoning the checkout leaves the cart intact",
+    "status": "PASS",
+    "detail": ""
+   }
+  ]
+ },
+ {
+  "id": "R026",
+  "at": "2026-10-08T19:57:14+00:00",
+  "name": "Razorpay test mode live on production",
+  "environment": "production",
+  "kind": "manual",
+  "notes": "",
+  "items": [
+   {
+    "group": "Razorpay",
+    "name": "Production reports payments enabled in TEST mode with the owner's key id; secret not exposed",
+    "status": "PASS",
+    "detail": "/api/payments/config: enabled=true mode=test"
+   },
+   {
+    "group": "Razorpay",
+    "name": "Real Razorpay test API accepts our key pair: single-lot and two-lot checkouts create gateway orders with server-computed amounts (44000 and 23000 paise)",
+    "status": "PASS",
+    "detail": "Created through https://api.razorpay.com using the owner's test keys"
+   },
+   {
+    "group": "Razorpay",
+    "name": "Plain orders refused while payments on; forged signature and unsigned webhook rejected; abandoned checkout releases stock and keeps the cart",
+    "status": "PASS",
+    "detail": ""
+   },
+   {
+    "group": "Gap",
+    "name": "A real test payment through Razorpay's hosted window (UPI/card) and a real signed webhook delivery",
+    "status": "FAIL",
+    "detail": "Not yet done: needs the owner to click a Razorpay test payment; webhook endpoint registration in the Razorpay dashboard not verifiable by the assistant"
+   }
+  ]
  }
 ]
