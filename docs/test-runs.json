@@ -3850,5 +3850,319 @@
     "detail": "Not tested: needs your Razorpay test keys. Everything around it is tested; see docs/PAYMENTS.md"
    }
   ]
+ },
+ {
+  "id": "R016",
+  "at": "2026-10-08T19:29:18.475Z",
+  "name": "E2E smoke script on production after payments/seals deploy",
+  "environment": "production",
+  "kind": "e2e",
+  "notes": "Only failure: PAU 403 from Render network (known)",
+  "items": [
+   {
+    "group": "Platform",
+    "name": "Readiness probe /ready",
+    "status": "PASS",
+    "detail": "HTTP 200"
+   },
+   {
+    "group": "Platform",
+    "name": "Frontend (SPA) served",
+    "status": "PASS",
+    "detail": "HTTP 200"
+   },
+   {
+    "group": "Security",
+    "name": "HSTS / CSP / nosniff headers present",
+    "status": "PASS",
+    "detail": "CSP + nosniff"
+   },
+   {
+    "group": "Auth",
+    "name": "Admin login",
+    "status": "PASS",
+    "detail": "HTTP 200"
+   },
+   {
+    "group": "Admin",
+    "name": "Admin overview loads",
+    "status": "PASS",
+    "detail": "HTTP 200"
+   },
+   {
+    "group": "Auth",
+    "name": "Wrong password rejected",
+    "status": "PASS",
+    "detail": "HTTP 401"
+   },
+   {
+    "group": "Security",
+    "name": "Anonymous blocked from admin API",
+    "status": "PASS",
+    "detail": "HTTP 401"
+   },
+   {
+    "group": "Security",
+    "name": "Request without CSRF header rejected",
+    "status": "PASS",
+    "detail": "HTTP 403"
+   },
+   {
+    "group": "Data",
+    "name": "Ingest pau_potato_punjab",
+    "status": "FAIL",
+    "detail": "FAILED: 0 records, 0 rejected HTTP 403 Forbidden"
+   },
+   {
+    "group": "Data",
+    "name": "Ingest faostat_potato_india",
+    "status": "PASS",
+    "detail": "SUCCESS: 192 records, 0 rejected "
+   },
+   {
+    "group": "Data",
+    "name": "Punjab district data public, Jalandhar ranked first",
+    "status": "PASS",
+    "detail": "Jalandhar"
+   },
+   {
+    "group": "Data",
+    "name": "FAOSTAT India series public",
+    "status": "PASS",
+    "detail": "64 years"
+   },
+   {
+    "group": "Data",
+    "name": "Data health lists all sources",
+    "status": "PASS",
+    "detail": "9 sources"
+   },
+   {
+    "group": "Farmer",
+    "name": "Farmer registration",
+    "status": "PASS",
+    "detail": "HTTP 201"
+   },
+   {
+    "group": "Farmer",
+    "name": "Pending farmer may create farm profile",
+    "status": "PASS",
+    "detail": "HTTP 201"
+   },
+   {
+    "group": "Farmer",
+    "name": "Pending farmer cannot create lots",
+    "status": "PASS",
+    "detail": "HTTP 403"
+   },
+   {
+    "group": "Admin",
+    "name": "Admin approves farmer",
+    "status": "PASS",
+    "detail": "HTTP 200"
+   },
+   {
+    "group": "Lots",
+    "name": "Approved farmer creates lot",
+    "status": "PASS",
+    "detail": "SC-PB-JAL-2026-000007"
+   },
+   {
+    "group": "Lots",
+    "name": "Lot listed for sale",
+    "status": "PASS",
+    "detail": "HTTP 200"
+   },
+   {
+    "group": "QR",
+    "name": "QR content is only the trace URL on this host",
+    "status": "PASS",
+    "detail": "https://seedchain-tisha.onrender.com/trace/tdN7mDcU4aH8if-wNhwH_sz5mY-kGqfz4ALwTSy6Vhk"
+   },
+   {
+    "group": "QR",
+    "name": "Token is high-entropy (>= 40 chars)",
+    "status": "PASS",
+    "detail": "43 chars"
+   },
+   {
+    "group": "QR",
+    "name": "Public trace works without login",
+    "status": "PASS",
+    "detail": "SC-PB-JAL-2026-000007"
+   },
+   {
+    "group": "Privacy",
+    "name": "No private notes, email or phone on public trace",
+    "status": "PASS",
+    "detail": ""
+   },
+   {
+    "group": "QR",
+    "name": "Unknown token returns 404",
+    "status": "PASS",
+    "detail": "HTTP 404"
+   },
+   {
+    "group": "QR",
+    "name": "Scan recorded",
+    "status": "PASS",
+    "detail": "HTTP 200"
+   },
+   {
+    "group": "QR",
+    "name": "Trace page route serves the app",
+    "status": "PASS",
+    "detail": "HTTP 200"
+   },
+   {
+    "group": "Customer",
+    "name": "Customer registration",
+    "status": "PASS",
+    "detail": "HTTP 201"
+   },
+   {
+    "group": "Payments",
+    "name": "Public payment config exposes no secret",
+    "status": "PASS",
+    "detail": "enabled=false mode=n/a"
+   },
+   {
+    "group": "Orders",
+    "name": "Customer places order (pay the farmer directly)",
+    "status": "PASS",
+    "detail": "HTTP 201"
+   },
+   {
+    "group": "Orders",
+    "name": "Same idempotency key does not double-order",
+    "status": "PASS",
+    "detail": "same id: true"
+   },
+   {
+    "group": "Orders",
+    "name": "Over-ordering rejected (no negative stock)",
+    "status": "PASS",
+    "detail": "HTTP 409"
+   },
+   {
+    "group": "Orders",
+    "name": "Order action: accept",
+    "status": "PASS",
+    "detail": "ACCEPTED"
+   },
+   {
+    "group": "Orders",
+    "name": "Order action: prepare",
+    "status": "PASS",
+    "detail": "PREPARING"
+   },
+   {
+    "group": "Orders",
+    "name": "Order action: ready",
+    "status": "PASS",
+    "detail": "READY"
+   },
+   {
+    "group": "Orders",
+    "name": "Order action: complete",
+    "status": "PASS",
+    "detail": "DELIVERED"
+   },
+   {
+    "group": "Orders",
+    "name": "Customer sees order status",
+    "status": "PASS",
+    "detail": "DELIVERED"
+   },
+   {
+    "group": "Security",
+    "name": "Customer blocked from admin API",
+    "status": "PASS",
+    "detail": "HTTP 403"
+   },
+   {
+    "group": "Security",
+    "name": "Customer blocked from farmer lots API",
+    "status": "PASS",
+    "detail": "HTTP 403"
+   },
+   {
+    "group": "Seals",
+    "name": "Farmer creates 3 sealed packages, each with its own QR token",
+    "status": "PASS",
+    "detail": "HTTP 201"
+   },
+   {
+    "group": "Seals",
+    "name": "Package QR opens the public trace with its own seal id",
+    "status": "PASS",
+    "detail": "INTACT"
+   },
+   {
+    "group": "Seals",
+    "name": "Lot QR summarises seals as intact when all are verified",
+    "status": "PASS",
+    "detail": "INTACT"
+   },
+   {
+    "group": "Seals",
+    "name": "Public seal report records an exception for that package only",
+    "status": "PASS",
+    "detail": "HTTP 201"
+   },
+   {
+    "group": "Seals",
+    "name": "Exception is isolated: the other package stays intact",
+    "status": "PASS",
+    "detail": "EXCEPTION / INTACT"
+   },
+   {
+    "group": "Seals",
+    "name": "Customer cannot change a seal",
+    "status": "PASS",
+    "detail": "HTTP 403"
+   }
+  ]
+ },
+ {
+  "id": "R017",
+  "at": "2026-10-08T19:29:56+00:00",
+  "name": "Production checks after deploy 27734fe",
+  "environment": "production",
+  "kind": "manual",
+  "notes": "",
+  "items": [
+   {
+    "group": "Deployment",
+    "name": "Render deploy of 27734fe (payments, label, packages/seals); migration 0004 applied",
+    "status": "PASS",
+    "detail": "/ready reports 5 migrations; /api/payments/config responds enabled=false"
+   },
+   {
+    "group": "Production",
+    "name": "Payments are off without keys: public config exposes no key or secret",
+    "status": "PASS",
+    "detail": "enabled=false, keyId=null"
+   },
+   {
+    "group": "Production",
+    "name": "Package QR page on production: digital identity, Seal intact, package label, seal serial, journey events",
+    "status": "PASS",
+    "detail": "SC-PB-JAL-2026-000004 PKG-001"
+   },
+   {
+    "group": "Production",
+    "name": "Cosmetic: new public journey events show title-cased codes ('Packages Created', 'Seal Verified At Dispatch') instead of the friendlier labels",
+    "status": "FAIL",
+    "detail": "Frontend event-label map lacks the new event types; text is correct, only styling"
+   },
+   {
+    "group": "Gap",
+    "name": "Live payment with real Razorpay keys",
+    "status": "FAIL",
+    "detail": "Not possible until the owner adds RAZORPAY_KEY_ID/SECRET/WEBHOOK_SECRET on Render"
+   }
+  ]
  }
 ]
