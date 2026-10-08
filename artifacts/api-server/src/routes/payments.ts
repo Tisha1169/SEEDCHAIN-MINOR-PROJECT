@@ -4,6 +4,7 @@ import { CreateOrderBody } from "@workspace/api-zod";
 import { requireRole } from "../lib/auth";
 import { badRequest } from "../lib/errors";
 import { actorOf, parse } from "../lib/http";
+import { previewCheckout } from "../services/cart";
 import { getCheckoutSession, listPayments, paymentConfig, refundPayment, startCheckout, verifyCheckout } from "../services/payments";
 
 const router = Router();
@@ -21,6 +22,13 @@ router.post("/checkout", requireRole(["customer"]), async (req, res) => {
   const body = parse(CreateOrderBody, req.body);
   res.setHeader("Cache-Control", "no-store");
   res.status(201).json(await startCheckout(actorOf(req), key, body));
+});
+
+/** What the server would charge for these items right now (prices, stock, one-farmer rule). Nothing is reserved. */
+router.post("/checkout/preview", requireRole(["customer"]), async (req, res) => {
+  const body = parse(CreateOrderBody.pick({ items: true }), req.body);
+  res.setHeader("Cache-Control", "no-store");
+  res.json(await previewCheckout(body.items));
 });
 
 /** Resume or retry payment while the stock hold is still valid. */

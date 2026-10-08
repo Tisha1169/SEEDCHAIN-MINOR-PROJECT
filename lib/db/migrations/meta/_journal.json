@@ -36,6 +36,13 @@
       "when": 1791486056951,
       "tag": "0004_payments_packages_seals",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791487889211,
+      "tag": "0005_cart_items",
+      "breakpoints": true
     }
   ]
 }

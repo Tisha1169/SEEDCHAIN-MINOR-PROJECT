@@ -196,6 +196,62 @@ paths:
         "200":
           description: Whether online payment is enabled (public key id only)
           content: { application/json: { schema: { $ref: "#/components/schemas/PaymentConfig" } } }
+  /cart:
+    get:
+      operationId: getCart
+      tags: [cart]
+      description: Customer only. Lines are re-priced from live lots and grouped by farmer.
+      responses:
+        "200": { description: The cart, content: { application/json: { schema: { $ref: "#/components/schemas/Cart" } } } }
+    delete:
+      operationId: clearCart
+      tags: [cart]
+      responses:
+        "200": { description: Empty cart, content: { application/json: { schema: { $ref: "#/components/schemas/Cart" } } } }
+  /cart/count:
+    get:
+      operationId: getCartCount
+      tags: [cart]
+      responses:
+        "200": { description: Number of lines, content: { application/json: { schema: { type: object, required: [count], properties: { count: { type: integer } } } } } }
+  /cart/items:
+    post:
+      operationId: addToCart
+      tags: [cart]
+      description: Adds to the quantity already in the cart. Refuses unlisted, recalled or over-stock quantities.
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/CartAddBody" } } }
+      responses:
+        "201": { description: Updated cart, content: { application/json: { schema: { $ref: "#/components/schemas/Cart" } } } }
+  /cart/items/{lotId}:
+    patch:
+      operationId: setCartQuantity
+      tags: [cart]
+      parameters:
+        - { name: lotId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/CartSetBody" } } }
+      responses:
+        "200": { description: Updated cart, content: { application/json: { schema: { $ref: "#/components/schemas/Cart" } } } }
+    delete:
+      operationId: removeFromCart
+      tags: [cart]
+      parameters:
+        - { name: lotId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: Updated cart, content: { application/json: { schema: { $ref: "#/components/schemas/Cart" } } } }
+  /checkout/preview:
+    post:
+      operationId: previewCheckout
+      tags: [payments]
+      description: What the server would charge for these items right now. Reserves nothing.
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/CreateOrderBody" } } }
+      responses:
+        "200": { description: Server-priced preview, content: { application/json: { schema: { $ref: "#/components/schemas/CheckoutPreview" } } } }
   /checkout:
     post:
       operationId: startCheckout
@@ -1680,6 +1736,66 @@ components:
     PaymentLifecycle:
       type: string
       enum: [CREATED, PROCESSING, PAID, FAILED, CANCELLED, REFUND_PENDING, REFUNDED]
+    CartIssue:
+      type: string
+      enum: [NOT_LISTED, RECALLED, SOLD_OUT, EXCEEDS_STOCK, FARMER_UNAVAILABLE]
+    PricedLine:
+      type: object
+      required: [lotId, lotCode, productName, variety, unit, quantity, available, farmer, priceChanged, issues]
+      properties:
+        lotId: { type: string, format: uuid }
+        lotCode: { type: string }
+        productName: { type: string }
+        variety: { type: string }
+        unit: { type: string }
+        quantity: { type: number }
+        unitPrice: { type: [number, "null"], description: Current live price }
+        lineTotal: { type: [number, "null"] }
+        available: { type: number, description: Live stock a customer could buy right now }
+        qualityGrade: { type: [string, "null"] }
+        farmName: { type: [string, "null"] }
+        publicToken: { type: [string, "null"] }
+        farmer: { $ref: "#/components/schemas/ListingFarmer" }
+        priceAtAdd: { type: [number, "null"], description: Price the customer last saw }
+        priceChanged: { type: boolean }
+        issues: { type: array, items: { $ref: "#/components/schemas/CartIssue" } }
+    CartGroup:
+      type: object
+      required: [farmer, lines, subtotal, canCheckout]
+      properties:
+        farmer: { $ref: "#/components/schemas/ListingFarmer" }
+        lines: { type: array, items: { $ref: "#/components/schemas/PricedLine" } }
+        subtotal: { type: number }
+        canCheckout: { type: boolean, description: False while any line has an issue }
+    Cart:
+      type: object
+      required: [itemCount, groups, total, hasIssues]
+      properties:
+        itemCount: { type: integer }
+        groups: { type: array, items: { $ref: "#/components/schemas/CartGroup" } }
+        total: { type: number }
+        hasIssues: { type: boolean }
+    CartAddBody:
+      type: object
+      required: [lotId, quantity]
+      properties:
+        lotId: { type: string, format: uuid }
+        quantity: { type: number, exclusiveMinimum: 0 }
+    CartSetBody:
+      type: object
+      required: [quantity]
+      properties:
+        quantity: { type: number, exclusiveMinimum: 0 }
+    CheckoutPreview:
+      type: object
+      required: [lines, farmer, subtotal, singleFarmer, canCheckout, farmerCount]
+      properties:
+        lines: { type: array, items: { $ref: "#/components/schemas/PricedLine" } }
+        farmer: { $ref: "#/components/schemas/ListingFarmer" }
+        subtotal: { type: number, description: First farmer group only; check singleFarmer }
+        singleFarmer: { type: boolean }
+        farmerCount: { type: integer }
+        canCheckout: { type: boolean }
     PaymentConfig:
       type: object
       required: [enabled, currency, holdMinutes, merchantName]

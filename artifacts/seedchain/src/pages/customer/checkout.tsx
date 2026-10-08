@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
-import { getCheckoutSession, useGetListing, useGetPaymentConfig, type CheckoutSession, type CheckoutStarted, type CheckoutVerified, type FulfillmentMethod, type Order } from "@workspace/api-client-react";
+import { getCheckoutSession, previewCheckout, useGetPaymentConfig, type CheckoutSession, type CheckoutStarted, type CheckoutVerified, type FulfillmentMethod, type Order } from "@workspace/api-client-react";
 import { AlertTriangle, BadgeCheck, Check, Clock, Lock, QrCode, RefreshCw, ShieldCheck, Sprout } from "lucide-react";
 import { Navbar } from "@/components/layout/navbar";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ApiError } from "@workspace/api-client-react";
 import { apiRequest, errMsg, uuid } from "@/lib/api";
 import { cropName, dateTime, enumLabel, inr, qty, unitLabel } from "@/lib/format";
+import { refreshCart } from "@/hooks/use-cart";
 import { openRazorpayCheckout, type RazorpayFailure, type RazorpaySuccess } from "@/lib/razorpay";
 
 type Phase = "form" | "creating" | "paying" | "verifying" | "success" | "failed" | "dismissed" | "expired" | "unverified";
@@ -50,14 +52,27 @@ export default function CheckoutPage() {
   const qc = useQueryClient();
   const { toast } = useToast();
   const params = useMemo(() => new URLSearchParams(window.location.search), []);
-  const lotId = params.get("lot") ?? "";
-  const initialQty = params.get("qty") ?? "";
+  // ?lots=<lotId>:<qty>,<lotId>:<qty>  (from the cart)   or   ?lot=<id>&qty=<n>  (from "Buy now")
+  const initialItems = useMemo(() => {
+    const multi = params.get("lots");
+    if (multi) return multi.split(",").map((p) => ({ lotId: p.split(":")[0], quantity: Number(p.split(":")[1]) })).filter((i) => i.lotId && i.quantity > 0);
+    const lot = params.get("lot");
+    return lot ? [{ lotId: lot, quantity: Number(params.get("qty")) || 0 }] : [];
+  }, [params]);
   const initialMethod = (params.get("m") as FulfillmentMethod | null) ?? "CUSTOMER_PICKUP";
 
-  const listing = useGetListing(lotId, { query: { queryKey: [`/api/marketplace/listings/${lotId}`], retry: false, enabled: !!lotId } });
+  const [items, setItems] = useState(initialItems);
+  const single = items.length === 1;
   const cfg = useGetPaymentConfig({ query: { queryKey: ["/api/payments/config"], staleTime: 60_000 } });
+  // The server prices the order: current prices, live stock, and the one-farmer rule. Nothing below trusts the browser.
+  const preview = useQuery({
+    queryKey: ["checkout-preview", items],
+    queryFn: () => previewCheckout({ items: items.filter((i) => i.quantity > 0), fulfillmentMethod: "CUSTOMER_PICKUP" }),
+    enabled: items.some((i) => i.quantity > 0),
+    retry: false,
+    placeholderData: (prev) => prev,
+  });
 
-  const [amount, setAmount] = useState(initialQty);
   const [method, setMethod] = useState<FulfillmentMethod>(["CUSTOMER_PICKUP", "FARMER_DELIVERY", "THIRD_PARTY_DELIVERY"].includes(initialMethod) ? initialMethod : "CUSTOMER_PICKUP");
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
@@ -69,10 +84,11 @@ export default function CheckoutPage() {
   const [error, setError] = useState<string | null>(null);
   const busy = useRef(false);
 
-  const l = listing.data;
-  const n = Number(amount);
-  const subtotal = l && n > 0 && l.pricePerUnit != null ? Math.round(n * l.pricePerUnit * 100) / 100 : null; // display only; the server recomputes it
-  const tooMuch = !!l && n > l.available;
+  const pv = preview.data;
+  const first = pv?.lines[0];
+  const subtotal = pv && pv.singleFarmer ? pv.subtotal : null;
+  const hasIssues = !!pv?.lines.some((x) => x.issues.length > 0);
+  const ready = !!pv && pv.canCheckout && !hasIssues && items.every((i) => i.quantity > 0);
   const enabled = cfg.data?.enabled === true;
 
   useEffect(() => {
@@ -83,9 +99,9 @@ export default function CheckoutPage() {
     return () => window.removeEventListener("beforeunload", h);
   }, [phase]);
 
-  if (!lotId) return <Shell><ErrorState error={new Error(t("pay.checkout.unavailable"))} /></Shell>;
-  if (listing.isLoading || cfg.isLoading) return <Shell><Loading /></Shell>;
-  if (listing.error || !l) return <Shell><ErrorState error={listing.error ?? new Error(t("pay.checkout.unavailable"))} onRetry={() => void listing.refetch()} /></Shell>;
+  if (!items.length) return <Shell><ErrorState error={new Error(t("pay.checkout.unavailable"))} /></Shell>;
+  if (cfg.isLoading || (preview.isLoading && !pv)) return <Shell><Loading /></Shell>;
+  if (preview.error && !pv) return <Shell><ErrorState error={preview.error} onRetry={() => void preview.refetch()} /></Shell>;
   if (!user) return <Shell><Card className="p-8 text-center"><p className="mb-4">{t("pay.checkout.signIn")}</p><Link href="/login"><Button className="rounded-full">{t("market.signIn")}</Button></Link></Card></Shell>;
   if (user.role !== "customer") return <Shell><Card className="p-8 text-center text-sm text-ink/60">{t("pay.checkout.onlyCustomers")}</Card></Shell>;
 
@@ -98,6 +114,7 @@ export default function CheckoutPage() {
       setPaid(res.order);
       setPhase(res.outcome === "LATE_PAYMENT" ? "expired" : "success");
       void qc.invalidateQueries();
+      void refreshCart(qc);
     } catch (err) {
       setError(errMsg(err));
       setPhase("unverified");
@@ -138,7 +155,7 @@ export default function CheckoutPage() {
     try {
       const res = await apiRequest<CheckoutStarted>({
         url: "/api/checkout", method: "POST", headers: { "Idempotency-Key": key },
-        body: { items: [{ lotId, quantity: n }], fulfillmentMethod: method, ...(method !== "CUSTOMER_PICKUP" && { deliveryAddress: address }), ...(notes && { customerNotes: notes }) },
+        body: { items: items.map((i) => ({ lotId: i.lotId, quantity: i.quantity })), fulfillmentMethod: method, ...(method !== "CUSTOMER_PICKUP" && { deliveryAddress: address }), ...(notes && { customerNotes: notes }) },
       });
       if (res.alreadyPaid || !res.session) {
         setPaid(res.order);
@@ -149,7 +166,7 @@ export default function CheckoutPage() {
     } catch (err) {
       setPhase("form");
       setError(errMsg(err));
-      void listing.refetch();
+      void preview.refetch();
     } finally {
       busy.current = false;
     }
@@ -175,7 +192,7 @@ export default function CheckoutPage() {
       await apiRequest({ url: `/api/orders/${session.orderId}/cancel`, method: "POST", body: { reason: "Cancelled during checkout" } });
       toast({ title: t("pay.state.cancelled") });
       void qc.invalidateQueries();
-      navigate(`/marketplace/${lotId}`);
+      navigate("/cart");
     } catch (err) {
       toast({ title: errMsg(err), variant: "destructive" });
     }
@@ -187,7 +204,7 @@ export default function CheckoutPage() {
     try {
       const o = await apiRequest<Order>({
         url: "/api/orders", method: "POST", headers: { "Idempotency-Key": key },
-        body: { items: [{ lotId, quantity: n }], fulfillmentMethod: method, ...(method !== "CUSTOMER_PICKUP" && { deliveryAddress: address }), ...(notes && { customerNotes: notes }) },
+        body: { items: items.map((i) => ({ lotId: i.lotId, quantity: i.quantity })), fulfillmentMethod: method, ...(method !== "CUSTOMER_PICKUP" && { deliveryAddress: address }), ...(notes && { customerNotes: notes }) },
       });
       void qc.invalidateQueries();
       navigate(`/customer/orders/${o.id}`);
@@ -251,19 +268,41 @@ export default function CheckoutPage() {
 
   // ------------------------------------------------------------------ the checkout itself
   const working = phase === "creating" || phase === "paying";
+  const mixed = !!pv && !pv.singleFarmer;
+  const canPay = ready && !working && (method === "CUSTOMER_PICKUP" || address.trim().length > 0);
+  const setQty = (lotId: string, v: string) => setItems((cur) => cur.map((i) => (i.lotId === lotId ? { ...i, quantity: Number(v) || 0 } : i)));
   return (
     <Shell>
       <div className="mb-2 eyebrow">{t("pay.checkout.title").toUpperCase()}</div>
       <h1 className="mb-1 text-4xl font-extralight tracking-tight">{t("pay.checkout.title")}</h1>
       <p className="mb-6 max-w-xl text-sm text-ink/55">{t("pay.checkout.subtitle")}</p>
-      <Steps active={working ? 2 : n > 0 ? 1 : 0} />
+      <Steps active={working ? 2 : ready ? 1 : 0} />
       <div className="grid gap-5 lg:grid-cols-5">
         <form onSubmit={enabled ? proceed : placeDirect} className="space-y-5 lg:col-span-3">
           <Card className="space-y-4 p-6">
-            <h2 className="eyebrow">{t("pay.checkout.quantity").toUpperCase()}</h2>
-            <Field label={t("market.quantityUnit", { unit: unitLabel(l.unit) })} hint={tooMuch ? t("pay.checkout.tooMuch", { n: l.available, unit: unitLabel(l.unit) }) : undefined}>
-              <input className={inputCls} type="number" required min="0.001" max={l.available} step="any" value={amount} onChange={(e) => setAmount(e.target.value)} disabled={working} />
-            </Field>
+            <h2 className="eyebrow">{t("checkout.itemsTitle").toUpperCase()}</h2>
+            <ul className="divide-y divide-white/10">
+              {(pv?.lines ?? []).map((l) => (
+                <li key={l.lotId} className="py-3 first:pt-0 last:pb-0">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <div className="font-light">{cropName(l.productName)} <span className="text-ink/50">· {l.variety}</span></div>
+                      <div className="font-mono text-[11px] text-ink/45">{l.lotCode}</div>
+                    </div>
+                    <div className="text-right text-sm"><div>{qty(l.quantity, l.unit)} × {inr(l.unitPrice)}</div><div className="font-medium">{inr(l.lineTotal)}</div></div>
+                  </div>
+                  {single && (
+                    <Field label={t("market.quantityUnit", { unit: unitLabel(l.unit) })}>
+                      <input className={inputCls} type="number" required min="0.001" max={l.available} step="any" value={items[0].quantity || ""} onChange={(e) => setQty(l.lotId, e.target.value)} disabled={working} />
+                    </Field>
+                  )}
+                  {l.issues.map((i) => <p key={i} role="alert" className="mt-1.5 text-xs text-rose-300">{t(`cart.issue.${i}`, { n: l.available, unit: unitLabel(l.unit) })}</p>)}
+                </li>
+              ))}
+            </ul>
+            {!single && <Link href="/cart" className="inline-block text-xs text-accent hover:underline">{t("checkout.editInCart")}</Link>}
+            {mixed && <p role="alert" className="text-sm text-rose-300">{t("checkout.mixed")}</p>}
+            {preview.error && <p role="alert" className="text-sm text-rose-300">{t("checkout.previewFailed")}</p>}
           </Card>
           <Card className="space-y-4 p-6">
             <h2 className="eyebrow">{t("pay.checkout.fulfilment").toUpperCase()}</h2>
@@ -279,10 +318,11 @@ export default function CheckoutPage() {
           </Card>
 
           {error && <div role="alert" className="rounded-2xl border border-rose-400/25 bg-rose-400/10 p-4 text-sm text-rose-200">{error}</div>}
+          {hasIssues && <p role="alert" className="text-sm text-rose-300">{t("checkout.issues")}</p>}
 
           {enabled ? (
             <div className="space-y-3">
-              <Button disabled={working || !(n > 0) || tooMuch} className="h-14 w-full rounded-full text-[15px]">
+              <Button disabled={!canPay} className="h-14 w-full rounded-full text-[15px]">
                 <Lock className="mr-2 h-4 w-4" />{phase === "creating" ? t("pay.checkout.preparing") : phase === "paying" ? t("pay.state.waiting") : `${t("pay.checkout.proceed")}${subtotal != null ? ` · ${inr(subtotal)}` : ""}`}
               </Button>
               <p className="flex items-start gap-2 text-[12px] leading-relaxed text-ink/50"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-accent" />{t("pay.checkout.secure")}</p>
@@ -292,26 +332,27 @@ export default function CheckoutPage() {
           ) : (
             <div className="space-y-3">
               <p className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-sm text-ink/70">{t("pay.checkout.notEnabled")}</p>
-              <Button disabled={working || !(n > 0) || tooMuch} className="h-12 w-full rounded-full">{t("pay.checkout.placeDirect")}</Button>
+              <Button disabled={!canPay} className="h-12 w-full rounded-full">{t("pay.checkout.placeDirect")}</Button>
             </div>
           )}
         </form>
 
         <aside className="lg:col-span-2">
           <Card className="sticky top-28 overflow-hidden">
-            <div className="relative aspect-[16/8]">
-              <ProduceTile name={l.productName} seed={l.lotCode} className="absolute inset-0" />
-              <div className="absolute left-4 top-4 flex items-center gap-1.5 rounded-full glass-strong px-3 py-1.5 text-[10px] tracking-[0.18em]">
-                {l.farmer.verified ? <><BadgeCheck className="h-3.5 w-3.5 text-accent" />{t("pay.checkout.verified").toUpperCase()}</> : t("pay.checkout.unverified").toUpperCase()}
+            {first && (
+              <div className="relative aspect-[16/8]">
+                <ProduceTile name={first.productName} seed={first.lotCode} className="absolute inset-0" />
+                <div className="absolute left-4 top-4 flex items-center gap-1.5 rounded-full glass-strong px-3 py-1.5 text-[10px] tracking-[0.18em]">
+                  {pv.farmer.verified ? <><BadgeCheck className="h-3.5 w-3.5 text-accent" />{t("pay.checkout.verified").toUpperCase()}</> : t("pay.checkout.unverified").toUpperCase()}
+                </div>
               </div>
-            </div>
+            )}
             <div className="p-6">
               <h2 className="eyebrow mb-4">{t("pay.checkout.summary").toUpperCase()}</h2>
-              <Kv k={t("pay.checkout.product")} v={<>{cropName(l.productName)} · {l.variety}</>} />
-              <Kv k={t("pay.checkout.lot")} v={<span className="font-mono">{l.lotCode}</span>} />
-              <Kv k={t("pay.checkout.farmer")} v={<span className="inline-flex items-center gap-1"><Sprout className="h-3.5 w-3.5 text-ink/40" />{l.farmer.publicName}{l.farmer.verified && <BadgeCheck className="h-4 w-4 text-accent" />}</span>} />
-              <Kv k={t("pay.checkout.quantity")} v={n > 0 ? qty(n, l.unit) : "—"} />
-              <Kv k={t("pay.checkout.pricePerUnit", { unit: unitLabel(l.unit) })} v={inr(l.pricePerUnit)} />
+              {pv && <Kv k={t("pay.checkout.farmer")} v={<span className="inline-flex items-center gap-1"><Sprout className="h-3.5 w-3.5 text-ink/40" />{pv.farmer.publicName}{pv.farmer.verified && <BadgeCheck className="h-4 w-4 text-accent" />}</span>} />}
+              {(pv?.lines ?? []).map((l) => (
+                <Kv key={l.lotId} k={`${cropName(l.productName)} · ${qty(l.quantity, l.unit)}`} v={inr(l.lineTotal)} />
+              ))}
               <div className="my-3 h-px bg-white/10" />
               <Kv k={t("pay.checkout.subtotal")} v={subtotal != null ? inr(subtotal) : "—"} />
               <Kv k={t("pay.checkout.delivery")} v={<span className="text-ink/60">{t("pay.checkout.deliveryFree")}</span>} />
@@ -319,7 +360,7 @@ export default function CheckoutPage() {
               <div className="mt-2 flex items-baseline justify-between border-t border-white/10 pt-4"><span className="eyebrow">{t("pay.checkout.total").toUpperCase()}</span><span className="text-3xl font-extralight text-accent">{subtotal != null ? inr(subtotal) : "—"}</span></div>
             </div>
           </Card>
-          <Link href={`/marketplace/${lotId}`} className="mt-3 block text-center text-xs text-ink/45 hover:text-ink/70">← {t("pay.checkout.back")}</Link>
+          <Link href={single ? `/marketplace/${items[0].lotId}` : "/cart"} className="mt-3 block text-center text-xs text-ink/45 hover:text-ink/70">← {single ? t("pay.checkout.back") : t("cart.view")}</Link>
         </aside>
       </div>
     </Shell>

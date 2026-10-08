@@ -27,7 +27,7 @@ export const uuid = (): string => crypto.randomUUID();
 
 export interface RequestSpec {
   url: string;
-  method: "POST" | "PATCH";
+  method: "POST" | "PATCH" | "DELETE" | "GET";
   body?: unknown;
   headers?: Record<string, string>;
 }

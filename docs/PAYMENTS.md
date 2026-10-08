@@ -69,4 +69,4 @@ A farmer **cannot see or act on** an order until it is paid. Admins and the payi
 
 ## Not built
 
-A multi-item cart (checkout is "Buy now" for one lot; the server already accepts several lots from one farmer), GST/invoice generation, partial refunds, saved cards, and settlement reconciliation reports. Delivery charges are not collected online (arranged with the farmer; shown as ₹0 online).
+One payment covering several farmers (see `CART.md`: each farmer is checked out and paid separately), GST/invoice generation, partial refunds, saved cards, and settlement reconciliation reports. Delivery charges are not collected online (arranged with the farmer; shown as ₹0 online).

@@ -811,6 +811,95 @@ export const PaymentLifecycle = {
   REFUNDED: 'REFUNDED',
 } as const;
 
+export type CartIssue = typeof CartIssue[keyof typeof CartIssue];
+
+
+export const CartIssue = {
+  NOT_LISTED: 'NOT_LISTED',
+  RECALLED: 'RECALLED',
+  SOLD_OUT: 'SOLD_OUT',
+  EXCEEDS_STOCK: 'EXCEEDS_STOCK',
+  FARMER_UNAVAILABLE: 'FARMER_UNAVAILABLE',
+} as const;
+
+export interface ListingFarmer {
+  id: string;
+  publicName: string;
+  /** @nullable */
+  district?: string | null;
+  /** @nullable */
+  state?: string | null;
+  verified: boolean;
+}
+
+export interface PricedLine {
+  lotId: string;
+  lotCode: string;
+  productName: string;
+  variety: string;
+  unit: string;
+  quantity: number;
+  /**
+     * Current live price
+     * @nullable
+     */
+  unitPrice?: number | null;
+  /** @nullable */
+  lineTotal?: number | null;
+  /** Live stock a customer could buy right now */
+  available: number;
+  /** @nullable */
+  qualityGrade?: string | null;
+  /** @nullable */
+  farmName?: string | null;
+  /** @nullable */
+  publicToken?: string | null;
+  farmer: ListingFarmer;
+  /**
+     * Price the customer last saw
+     * @nullable
+     */
+  priceAtAdd?: number | null;
+  priceChanged: boolean;
+  issues: CartIssue[];
+}
+
+export interface CartGroup {
+  farmer: ListingFarmer;
+  lines: PricedLine[];
+  subtotal: number;
+  /** False while any line has an issue */
+  canCheckout: boolean;
+}
+
+export interface Cart {
+  itemCount: number;
+  groups: CartGroup[];
+  total: number;
+  hasIssues: boolean;
+}
+
+export interface CartAddBody {
+  lotId: string;
+  /** @exclusiveMinimum 0 */
+  quantity: number;
+}
+
+export interface CartSetBody {
+  /** @exclusiveMinimum 0 */
+  quantity: number;
+}
+
+export interface CheckoutPreview {
+  lines: PricedLine[];
+  farmer: ListingFarmer;
+  /** First farmer group only; check singleFarmer */
+  subtotal: number;
+  singleFarmer: boolean;
+  farmerCount: number;
+  canCheckout: boolean;
+}
+
 /**
  * @nullable
  */
@@ -1971,16 +2060,6 @@ export interface MyScan {
   publicToken: string;
 }
 
-export interface ListingFarmer {
-  id: string;
-  publicName: string;
-  /** @nullable */
-  district?: string | null;
-  /** @nullable */
-  state?: string | null;
-  verified: boolean;
-}
-
 /**
  * @nullable
  */
@@ -2418,6 +2497,10 @@ export type ListQrScansParams = {
  * @maximum 500
  */
 limit?: number;
+};
+
+export type GetCartCount200 = {
+  count: number;
 };
 
 export type RefundPaymentBody = {

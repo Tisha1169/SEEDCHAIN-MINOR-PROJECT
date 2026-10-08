@@ -9,6 +9,7 @@ import { applyLotState, counters } from "./lots";
 import { notify, notifyAdmins } from "./notifications";
 import { notifyChange } from "./realtime";
 import { createOrder, getOrder, type CreateOrderInput } from "./orders";
+import { removeBoughtFromCart } from "./cart";
 import { razorpay, verifyPaymentSignature, verifyWebhookSignature } from "./razorpay";
 
 /**
@@ -171,6 +172,7 @@ async function markPaid(tx: DbOrTx, payment: Payment, order: Order, input: PaidI
   await tx.update(ordersTable).set({ paymentStatus: "PAID", paymentDueAt: null, updatedAt: now, version: sql`${ordersTable.version} + 1` }).where(eq(ordersTable.id, order.id));
   // Now (and only now) the order becomes a public fact on each lot's journey.
   const lines = await tx.select().from(orderItemsTable).where(eq(orderItemsTable.orderId, order.id));
+  await removeBoughtFromCart(tx, order.customerId, lines.map((l) => l.lotId));
   for (const line of [...lines].sort((a, b) => a.lotId.localeCompare(b.lotId))) {
     const [lot] = await tx.select().from(lotsTable).where(eq(lotsTable.id, line.lotId));
     const avail = availableOf(counters(lot));

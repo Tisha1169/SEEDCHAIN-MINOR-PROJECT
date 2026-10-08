@@ -2,8 +2,8 @@ import { useTranslation } from "react-i18next";
 import { useState } from "react";
 import { Link, useRoute, useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
-import { useGetListing, useGetPaymentConfig, useGetPublicFarmer, useListMarketplace, type FulfillmentMethod, type Listing, type Order } from "@workspace/api-client-react";
-import { BadgeCheck, MapPin, QrCode, Search, Sprout } from "lucide-react";
+import { getGetCartQueryKey, useGetCart, useGetListing, useGetPaymentConfig, useGetPublicFarmer, useListMarketplace, type FulfillmentMethod, type Listing, type Order } from "@workspace/api-client-react";
+import { BadgeCheck, MapPin, QrCode, Search, ShoppingCart, Sprout } from "lucide-react";
 import { Navbar } from "@/components/layout/navbar";
 import { Button } from "@/components/ui/button";
 import { FieldScene, Frame, ProduceTile } from "@/components/art";
@@ -12,6 +12,7 @@ import { Card, Empty, ErrorState, Field, inputCls, Kv, Loading, textareaCls } fr
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, errMsg, uuid } from "@/lib/api";
+import { refreshCart } from "@/hooks/use-cart";
 import { cropName, dateOnly, enumLabel, inr, qty, unitLabel } from "@/lib/format";
 
 function ListingCard({ l }: { l: Listing }) {
@@ -75,6 +76,8 @@ export function ListingPage() {
   const qc = useQueryClient();
   const { toast } = useToast();
   const q = useGetListing(lotId, { query: { queryKey: [`/api/marketplace/listings/${lotId}`], retry: false } });
+  const cartQ = useGetCart({ query: { queryKey: getGetCartQueryKey(), enabled: user?.role === "customer", retry: false } });
+  const [added, setAdded] = useState(false);
   const cfg = useGetPaymentConfig({ query: { queryKey: ["/api/payments/config"], staleTime: 60_000 } });
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState<FulfillmentMethod>("CUSTOMER_PICKUP");
@@ -88,6 +91,23 @@ export function ListingPage() {
   const l = q.data;
   const n = Number(amount);
   const total = n > 0 && l.pricePerUnit != null ? n * l.pricePerUnit : null;
+  const inCart = cartQ.data?.groups.flatMap((g) => g.lines).find((x) => x.lotId === lotId)?.quantity ?? 0;
+
+  async function addToCart() {
+    if (!(n > 0)) return;
+    setBusy(true);
+    setAdded(false);
+    try {
+      await apiRequest({ url: "/api/cart/items", method: "POST", body: { lotId, quantity: n } });
+      await refreshCart(qc);
+      setAdded(true);
+      toast({ title: t("cart.added"), description: t("cart.addedBody", { qty: qty(n, l.unit), name: `${cropName(l.productName)} · ${l.variety}` }) });
+    } catch (err) {
+      toast({ title: t("cart.updateFailed"), description: errMsg(err), variant: "destructive" });
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function order(e: React.FormEvent) {
     e.preventDefault();
@@ -155,7 +175,12 @@ export function ListingPage() {
               {method !== "CUSTOMER_PICKUP" && <Field label={t("market.deliveryAddress")}><textarea className={textareaCls} rows={2} required value={address} onChange={(e) => setAddress(e.target.value)} /></Field>}
               <Field label={t("market.noteFarmer")}><input className={inputCls} value={notes} onChange={(e) => setNotes(e.target.value)} /></Field>
               <div className="flex justify-between border-t pt-3 text-sm"><span>{t("market.total")}</span><b>{inr(total)}</b></div>
-              <Button disabled={busy || !(n > 0)} className="h-11 w-full rounded-2xl">{busy ? t("market.placing") : cfg.data?.enabled ? t("pay.buyNow") : t("market.placeOrder")}</Button>
+              {inCart > 0 && <p className="text-xs text-ink/55">{t("cart.inCart", { n: inCart, unit: unitLabel(l.unit) })}</p>}
+              <div className="grid grid-cols-2 gap-2">
+                <Button type="button" variant="outline" disabled={busy || !(n > 0)} onClick={() => void addToCart()} className="h-11 rounded-2xl"><ShoppingCart className="mr-2 h-4 w-4" />{busy ? t("cart.adding") : t("cart.addToCart")}</Button>
+                <Button disabled={busy || !(n > 0)} className="h-11 rounded-2xl">{busy ? t("market.placing") : cfg.data?.enabled ? t("pay.buyNow") : t("market.placeOrder")}</Button>
+              </div>
+              {added && <p role="status" className="text-xs text-accent">✓ {t("cart.added")} · <Link href="/cart" className="underline">{t("cart.view")}</Link></p>}
               <p className="text-[11px] text-ink/45">{t("market.reservedNote")}</p>
             </form>
           )}

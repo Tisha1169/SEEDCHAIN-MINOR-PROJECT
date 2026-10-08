@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { AnimatePresence, motion } from "framer-motion";
-import { Menu, ScanLine, X } from "lucide-react";
+import { Menu, ScanLine, ShoppingCart, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/use-auth";
+import { useCartCount } from "@/hooks/use-cart";
 import { LanguageSwitcher } from "@/i18n/language-switcher";
 
 export const HASH_KEY = "sc.pendingHash";
@@ -31,6 +32,7 @@ export function Logo({ className = "" }: { className?: string }) {
 export function Navbar() {
   const { t } = useTranslation();
   const { isAuthenticated, user } = useAuth();
+  const cartCount = useCartCount();
   const [location, navigate] = useLocation();
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -84,6 +86,12 @@ export function Navbar() {
 
         <div className="flex items-center gap-1 sm:gap-2">
           <LanguageSwitcher />
+          {user?.role === "customer" && (
+            <Link href="/cart" aria-label={`${t("layout.nav.cart")}${cartCount ? ` (${cartCount})` : ""}`} className="relative rounded-full p-2 text-ink/70 transition-colors hover:text-ink">
+              <ShoppingCart className="h-[18px] w-[18px]" />
+              {cartCount > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-semibold text-[#07130c]">{cartCount > 99 ? "99+" : cartCount}</span>}
+            </Link>
+          )}
           <Link href="/scan" className="hidden items-center gap-1.5 rounded-full px-3 py-2 text-[13px] text-ink/70 transition-colors hover:text-ink sm:flex"><ScanLine className="h-4 w-4" />{t("nav.scan")}</Link>
           {isAuthenticated ? (
             <Link href={`/${user?.role}`} className="rounded-full bg-white px-4 py-2 text-[13px] font-medium text-neutral-950 transition-shadow hover:shadow-[0_0_30px_-6px_rgba(255,255,255,0.55)]">{t("nav.dashboard")}</Link>

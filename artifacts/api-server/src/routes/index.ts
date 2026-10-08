@@ -9,6 +9,7 @@ import miscRouter from "./misc";
 import opsRouter from "./ops";
 import paymentsRouter from "./payments";
 import packagesRouter from "./packages";
+import cartRouter from "./cart";
 
 const router: IRouter = Router();
 
@@ -23,6 +24,7 @@ router.use(farmsRouter);
 router.use(lotsRouter);
 router.use(paymentsRouter);
 router.use(packagesRouter);
+router.use(cartRouter);
 router.use(ordersRouter);
 router.use(miscRouter);
 router.use(opsRouter);

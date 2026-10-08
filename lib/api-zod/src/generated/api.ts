@@ -332,6 +332,274 @@ export const GetPaymentConfigResponse = zod.object({
 
 
 /**
+ * Customer only. Lines are re-priced from live lots and grouped by farmer.
+ */
+export const GetCartResponse = zod.object({
+  "itemCount": zod.number(),
+  "groups": zod.array(zod.object({
+  "farmer": zod.object({
+  "id": zod.string().uuid(),
+  "publicName": zod.string(),
+  "district": zod.string().nullish(),
+  "state": zod.string().nullish(),
+  "verified": zod.boolean()
+}),
+  "lines": zod.array(zod.object({
+  "lotId": zod.string().uuid(),
+  "lotCode": zod.string(),
+  "productName": zod.string(),
+  "variety": zod.string(),
+  "unit": zod.string(),
+  "quantity": zod.number(),
+  "unitPrice": zod.number().nullish().describe('Current live price'),
+  "lineTotal": zod.number().nullish(),
+  "available": zod.number().describe('Live stock a customer could buy right now'),
+  "qualityGrade": zod.string().nullish(),
+  "farmName": zod.string().nullish(),
+  "publicToken": zod.string().nullish(),
+  "farmer": zod.object({
+  "id": zod.string().uuid(),
+  "publicName": zod.string(),
+  "district": zod.string().nullish(),
+  "state": zod.string().nullish(),
+  "verified": zod.boolean()
+}),
+  "priceAtAdd": zod.number().nullish().describe('Price the customer last saw'),
+  "priceChanged": zod.boolean(),
+  "issues": zod.array(zod.enum(['NOT_LISTED', 'RECALLED', 'SOLD_OUT', 'EXCEEDS_STOCK', 'FARMER_UNAVAILABLE']))
+})),
+  "subtotal": zod.number(),
+  "canCheckout": zod.boolean().describe('False while any line has an issue')
+})),
+  "total": zod.number(),
+  "hasIssues": zod.boolean()
+})
+
+
+export const ClearCartResponse = zod.object({
+  "itemCount": zod.number(),
+  "groups": zod.array(zod.object({
+  "farmer": zod.object({
+  "id": zod.string().uuid(),
+  "publicName": zod.string(),
+  "district": zod.string().nullish(),
+  "state": zod.string().nullish(),
+  "verified": zod.boolean()
+}),
+  "lines": zod.array(zod.object({
+  "lotId": zod.string().uuid(),
+  "lotCode": zod.string(),
+  "productName": zod.string(),
+  "variety": zod.string(),
+  "unit": zod.string(),
+  "quantity": zod.number(),
+  "unitPrice": zod.number().nullish().describe('Current live price'),
+  "lineTotal": zod.number().nullish(),
+  "available": zod.number().describe('Live stock a customer could buy right now'),
+  "qualityGrade": zod.string().nullish(),
+  "farmName": zod.string().nullish(),
+  "publicToken": zod.string().nullish(),
+  "farmer": zod.object({
+  "id": zod.string().uuid(),
+  "publicName": zod.string(),
+  "district": zod.string().nullish(),
+  "state": zod.string().nullish(),
+  "verified": zod.boolean()
+}),
+  "priceAtAdd": zod.number().nullish().describe('Price the customer last saw'),
+  "priceChanged": zod.boolean(),
+  "issues": zod.array(zod.enum(['NOT_LISTED', 'RECALLED', 'SOLD_OUT', 'EXCEEDS_STOCK', 'FARMER_UNAVAILABLE']))
+})),
+  "subtotal": zod.number(),
+  "canCheckout": zod.boolean().describe('False while any line has an issue')
+})),
+  "total": zod.number(),
+  "hasIssues": zod.boolean()
+})
+
+
+export const GetCartCountResponse = zod.object({
+  "count": zod.number()
+})
+
+
+/**
+ * Adds to the quantity already in the cart. Refuses unlisted, recalled or over-stock quantities.
+ */
+export const addToCartBodyQuantityExclusiveMin = 0;
+
+
+
+export const AddToCartBody = zod.object({
+  "lotId": zod.string().uuid(),
+  "quantity": zod.number().gt(addToCartBodyQuantityExclusiveMin)
+})
+
+
+export const SetCartQuantityParams = zod.object({
+  "lotId": zod.coerce.string().uuid()
+})
+
+export const setCartQuantityBodyQuantityExclusiveMin = 0;
+
+
+
+export const SetCartQuantityBody = zod.object({
+  "quantity": zod.number().gt(setCartQuantityBodyQuantityExclusiveMin)
+})
+
+export const SetCartQuantityResponse = zod.object({
+  "itemCount": zod.number(),
+  "groups": zod.array(zod.object({
+  "farmer": zod.object({
+  "id": zod.string().uuid(),
+  "publicName": zod.string(),
+  "district": zod.string().nullish(),
+  "state": zod.string().nullish(),
+  "verified": zod.boolean()
+}),
+  "lines": zod.array(zod.object({
+  "lotId": zod.string().uuid(),
+  "lotCode": zod.string(),
+  "productName": zod.string(),
+  "variety": zod.string(),
+  "unit": zod.string(),
+  "quantity": zod.number(),
+  "unitPrice": zod.number().nullish().describe('Current live price'),
+  "lineTotal": zod.number().nullish(),
+  "available": zod.number().describe('Live stock a customer could buy right now'),
+  "qualityGrade": zod.string().nullish(),
+  "farmName": zod.string().nullish(),
+  "publicToken": zod.string().nullish(),
+  "farmer": zod.object({
+  "id": zod.string().uuid(),
+  "publicName": zod.string(),
+  "district": zod.string().nullish(),
+  "state": zod.string().nullish(),
+  "verified": zod.boolean()
+}),
+  "priceAtAdd": zod.number().nullish().describe('Price the customer last saw'),
+  "priceChanged": zod.boolean(),
+  "issues": zod.array(zod.enum(['NOT_LISTED', 'RECALLED', 'SOLD_OUT', 'EXCEEDS_STOCK', 'FARMER_UNAVAILABLE']))
+})),
+  "subtotal": zod.number(),
+  "canCheckout": zod.boolean().describe('False while any line has an issue')
+})),
+  "total": zod.number(),
+  "hasIssues": zod.boolean()
+})
+
+
+export const RemoveFromCartParams = zod.object({
+  "lotId": zod.coerce.string().uuid()
+})
+
+export const RemoveFromCartResponse = zod.object({
+  "itemCount": zod.number(),
+  "groups": zod.array(zod.object({
+  "farmer": zod.object({
+  "id": zod.string().uuid(),
+  "publicName": zod.string(),
+  "district": zod.string().nullish(),
+  "state": zod.string().nullish(),
+  "verified": zod.boolean()
+}),
+  "lines": zod.array(zod.object({
+  "lotId": zod.string().uuid(),
+  "lotCode": zod.string(),
+  "productName": zod.string(),
+  "variety": zod.string(),
+  "unit": zod.string(),
+  "quantity": zod.number(),
+  "unitPrice": zod.number().nullish().describe('Current live price'),
+  "lineTotal": zod.number().nullish(),
+  "available": zod.number().describe('Live stock a customer could buy right now'),
+  "qualityGrade": zod.string().nullish(),
+  "farmName": zod.string().nullish(),
+  "publicToken": zod.string().nullish(),
+  "farmer": zod.object({
+  "id": zod.string().uuid(),
+  "publicName": zod.string(),
+  "district": zod.string().nullish(),
+  "state": zod.string().nullish(),
+  "verified": zod.boolean()
+}),
+  "priceAtAdd": zod.number().nullish().describe('Price the customer last saw'),
+  "priceChanged": zod.boolean(),
+  "issues": zod.array(zod.enum(['NOT_LISTED', 'RECALLED', 'SOLD_OUT', 'EXCEEDS_STOCK', 'FARMER_UNAVAILABLE']))
+})),
+  "subtotal": zod.number(),
+  "canCheckout": zod.boolean().describe('False while any line has an issue')
+})),
+  "total": zod.number(),
+  "hasIssues": zod.boolean()
+})
+
+
+/**
+ * What the server would charge for these items right now. Reserves nothing.
+ */
+export const previewCheckoutBodyItemsItemQuantityExclusiveMin = 0;
+export const previewCheckoutBodyItemsItemQuantityMax = 100000000;
+
+export const previewCheckoutBodyItemsMax = 20;
+
+export const previewCheckoutBodyDeliveryAddressMax = 500;
+
+export const previewCheckoutBodyCustomerNotesMax = 1000;
+
+
+
+export const PreviewCheckoutBody = zod.object({
+  "items": zod.array(zod.object({
+  "lotId": zod.string().uuid(),
+  "quantity": zod.number().gt(previewCheckoutBodyItemsItemQuantityExclusiveMin).max(previewCheckoutBodyItemsItemQuantityMax)
+})).min(1).max(previewCheckoutBodyItemsMax),
+  "fulfillmentMethod": zod.enum(['CUSTOMER_PICKUP', 'FARMER_DELIVERY', 'THIRD_PARTY_DELIVERY']),
+  "deliveryAddress": zod.string().max(previewCheckoutBodyDeliveryAddressMax).optional(),
+  "customerNotes": zod.string().max(previewCheckoutBodyCustomerNotesMax).optional()
+})
+
+export const PreviewCheckoutResponse = zod.object({
+  "lines": zod.array(zod.object({
+  "lotId": zod.string().uuid(),
+  "lotCode": zod.string(),
+  "productName": zod.string(),
+  "variety": zod.string(),
+  "unit": zod.string(),
+  "quantity": zod.number(),
+  "unitPrice": zod.number().nullish().describe('Current live price'),
+  "lineTotal": zod.number().nullish(),
+  "available": zod.number().describe('Live stock a customer could buy right now'),
+  "qualityGrade": zod.string().nullish(),
+  "farmName": zod.string().nullish(),
+  "publicToken": zod.string().nullish(),
+  "farmer": zod.object({
+  "id": zod.string().uuid(),
+  "publicName": zod.string(),
+  "district": zod.string().nullish(),
+  "state": zod.string().nullish(),
+  "verified": zod.boolean()
+}),
+  "priceAtAdd": zod.number().nullish().describe('Price the customer last saw'),
+  "priceChanged": zod.boolean(),
+  "issues": zod.array(zod.enum(['NOT_LISTED', 'RECALLED', 'SOLD_OUT', 'EXCEEDS_STOCK', 'FARMER_UNAVAILABLE']))
+})),
+  "farmer": zod.object({
+  "id": zod.string().uuid(),
+  "publicName": zod.string(),
+  "district": zod.string().nullish(),
+  "state": zod.string().nullish(),
+  "verified": zod.boolean()
+}),
+  "subtotal": zod.number().describe('First farmer group only; check singleFarmer'),
+  "singleFarmer": zod.boolean(),
+  "farmerCount": zod.number(),
+  "canCheckout": zod.boolean()
+})
+
+
+/**
  * Customer only. Validates the cart, holds stock, computes the total on the server and creates the Razorpay order.
  */
 export const startCheckoutHeaderIdempotencyKeyMin = 8;

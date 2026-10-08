@@ -4164,5 +4164,1795 @@
     "detail": "Not possible until the owner adds RAZORPAY_KEY_ID/SECRET/WEBHOOK_SECRET on Render"
    }
   ]
+ },
+ {
+  "id": "R018",
+  "at": "2026-10-08T19:39:03+00:00",
+  "name": "Backend tests (vitest): cart added",
+  "environment": "local",
+  "kind": "vitest",
+  "notes": "Adds cart.test.ts (12)",
+  "items": [
+   {
+    "group": "acceptance.test.ts",
+    "name": "acceptance: direct farmer \u2192 customer flow with live QR trace runs the full real-world scenario end to end",
+    "status": "PASS",
+    "detail": "575 ms"
+   },
+   {
+    "group": "acceptance.test.ts",
+    "name": "acceptance: direct farmer \u2192 customer flow with live QR trace pickup orders skip dispatch and are confirmed by the customer",
+    "status": "PASS",
+    "detail": "283 ms"
+   },
+   {
+    "group": "cart.test.ts",
+    "name": "cart basics is for customers only",
+    "status": "PASS",
+    "detail": "4 ms"
+   },
+   {
+    "group": "cart.test.ts",
+    "name": "cart basics adds, accumulates, updates and removes lines; totals come from live prices",
+    "status": "PASS",
+    "detail": "97 ms"
+   },
+   {
+    "group": "cart.test.ts",
+    "name": "cart basics keeps carts private per customer",
+    "status": "PASS",
+    "detail": "113 ms"
+   },
+   {
+    "group": "cart.test.ts",
+    "name": "cart basics refuses bad input and more than is available",
+    "status": "PASS",
+    "detail": "75 ms"
+   },
+   {
+    "group": "cart.test.ts",
+    "name": "cart basics will not take unlisted or recalled lots",
+    "status": "PASS",
+    "detail": "88 ms"
+   },
+   {
+    "group": "cart.test.ts",
+    "name": "cart basics limits the number of different lots in one cart",
+    "status": "PASS",
+    "detail": "736 ms"
+   },
+   {
+    "group": "cart.test.ts",
+    "name": "live re-pricing and issues flags a changed price, a sold-out lot and an over-stock line instead of charging blindly",
+    "status": "PASS",
+    "detail": "205 ms"
+   },
+   {
+    "group": "cart.test.ts",
+    "name": "live re-pricing and issues drops lines whose lot disappeared and shows recalled lots as unbuyable",
+    "status": "PASS",
+    "detail": "138 ms"
+   },
+   {
+    "group": "cart.test.ts",
+    "name": "checkout preview and buying from the cart previews a multi-line, single-farmer purchase and refuses a mixed-farmer one",
+    "status": "PASS",
+    "detail": "56 ms"
+   },
+   {
+    "group": "cart.test.ts",
+    "name": "checkout preview and buying from the cart an order placed without online payment removes exactly the bought lots from the cart",
+    "status": "PASS",
+    "detail": "74 ms"
+   },
+   {
+    "group": "cart.test.ts",
+    "name": "multi-item online payment charges one total for several lots from one farmer, and clears only those lines when paid (not when merely started)",
+    "status": "PASS",
+    "detail": "107 ms"
+   },
+   {
+    "group": "cart.test.ts",
+    "name": "multi-item online payment an abandoned checkout leaves the cart intact so the customer can try again",
+    "status": "PASS",
+    "detail": "74 ms"
+   },
+   {
+    "group": "data.test.ts",
+    "name": "PAU parser and validator (real page) extracts the period, attribution, district rows and state total from the real PAU page",
+    "status": "PASS",
+    "detail": "2 ms"
+   },
+   {
+    "group": "data.test.ts",
+    "name": "PAU parser and validator (real page) validates internal consistency and reports (not hides) anything it rejects",
+    "status": "PASS",
+    "detail": "1 ms"
+   },
+   {
+    "group": "data.test.ts",
+    "name": "PAU parser and validator (real page) fails loudly when the page layout changes instead of inventing data",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "data.test.ts",
+    "name": "FAOSTAT parser (real rows) splits quoted CSV with commas inside quotes",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "data.test.ts",
+    "name": "FAOSTAT parser (real rows) keeps only India potato area, yield and production and validates units and consistency",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "data.test.ts",
+    "name": "mandi record validation normalises valid records and never fabricates missing fields",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "data.test.ts",
+    "name": "mandi record validation rejects with a reason: bad date, no price, min>max, modal outside range, future date",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "data.test.ts",
+    "name": "mandi record validation parses CSV exports from the portal",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "data.test.ts",
+    "name": "weather validation accepts plausible values and rejects impossible ones (no clamping)",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "data.test.ts",
+    "name": "freshness vocabulary is CURRENT / CACHED / STALE / NO_DATA / NOT_INTEGRATED",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "data.test.ts",
+    "name": "pipeline end to end the registry covers every named source and is mirrored into the database",
+    "status": "PASS",
+    "detail": "1 ms"
+   },
+   {
+    "group": "data.test.ts",
+    "name": "pipeline end to end PAU: fetch \u2192 raw \u2192 validate \u2192 normalise \u2192 master, idempotent, with lineage and cited API output",
+    "status": "PASS",
+    "detail": "87 ms"
+   },
+   {
+    "group": "data.test.ts",
+    "name": "pipeline end to end when the source later fails: nothing breaks, last validated data stays, an alert is raised, freshness says CACHED",
+    "status": "PASS",
+    "detail": "38 ms"
+   },
+   {
+    "group": "data.test.ts",
+    "name": "pipeline end to end FAOSTAT: streams a zip, keeps only India potatoes, labels the series historical and national",
+    "status": "PASS",
+    "detail": "13 ms"
+   },
+   {
+    "group": "data.test.ts",
+    "name": "pipeline end to end mandi: stores validated daily observations, rejects bad ones with reasons, and never guesses a missing district",
+    "status": "PASS",
+    "detail": "67 ms"
+   },
+   {
+    "group": "data.test.ts",
+    "name": "pipeline end to end an unreachable mandi API leaves previous data intact and reports the real error",
+    "status": "PASS",
+    "detail": "2 ms"
+   },
+   {
+    "group": "data.test.ts",
+    "name": "pipeline end to end source health is visible to admins and farmers, not customers; reference-only sources never claim data",
+    "status": "PASS",
+    "detail": "76 ms"
+   },
+   {
+    "group": "data.test.ts",
+    "name": "pipeline end to end the scheduler only runs sources that are due and configured",
+    "status": "PASS",
+    "detail": "36 ms"
+   },
+   {
+    "group": "map.test.ts",
+    "name": "scan areas (admin only, coarse) groups located scans into ~55 km cells and never returns the submitted point",
+    "status": "PASS",
+    "detail": "27 ms"
+   },
+   {
+    "group": "map.test.ts",
+    "name": "scan areas (admin only, coarse) is forbidden to farmers, customers and anonymous visitors",
+    "status": "PASS",
+    "detail": "57 ms"
+   },
+   {
+    "group": "map.test.ts",
+    "name": "scan areas (admin only, coarse) rejects an out-of-range window",
+    "status": "PASS",
+    "detail": "2 ms"
+   },
+   {
+    "group": "map.test.ts",
+    "name": "lot journey coordinates returns recorded event coordinates to the owner and to admins, but not on the public trace",
+    "status": "PASS",
+    "detail": "9 ms"
+   },
+   {
+    "group": "map.test.ts",
+    "name": "lot journey coordinates lets admins list all farms with coordinates, and a farmer see only their own",
+    "status": "PASS",
+    "detail": "3 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "authentication & session rejects wrong passwords and unknown users identically",
+    "status": "PASS",
+    "detail": "151 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "authentication & session cannot self-register as admin (role is validated)",
+    "status": "PASS",
+    "detail": "1 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "authentication & session rejects short passwords and duplicate emails",
+    "status": "PASS",
+    "detail": "2 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "authentication & session logout revokes the session server-side",
+    "status": "PASS",
+    "detail": "59 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "authentication & session expired sessions are rejected",
+    "status": "PASS",
+    "detail": "58 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "authentication & session suspended users lose access immediately",
+    "status": "PASS",
+    "detail": "55 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "authentication & session role comes from the database, not the client",
+    "status": "PASS",
+    "detail": "56 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "authentication & session legacy HMAC password hashes verify once and are upgraded to scrypt",
+    "status": "PASS",
+    "detail": "150 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "CSRF rejects state-changing requests without the custom header",
+    "status": "PASS",
+    "detail": "1 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "authorization / IDOR farmer B cannot read, modify, list, or QR-replace farmer A's lot (404, no existence leak)",
+    "status": "PASS",
+    "detail": "29 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "authorization / IDOR customers cannot touch lots, inventory, events, farms, or QR administration",
+    "status": "PASS",
+    "detail": "90 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "authorization / IDOR farmers cannot use admin endpoints or review themselves",
+    "status": "PASS",
+    "detail": "3 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "authorization / IDOR pending farmers cannot create farms/lots; rejected farmers cannot log in",
+    "status": "PASS",
+    "detail": "107 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "authorization / IDOR farmer cannot create a lot on another farmer's farm or product",
+    "status": "PASS",
+    "detail": "6 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "authorization / IDOR orders are only visible to their customer, farmer and admins",
+    "status": "PASS",
+    "detail": "150 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "inventory integrity rejects negative / zero / absurd quantities",
+    "status": "PASS",
+    "detail": "60 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "inventory integrity refuses to oversell and raises an OVER_ORDER alert",
+    "status": "PASS",
+    "detail": "59 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "inventory integrity concurrent orders can never reserve more than is available",
+    "status": "PASS",
+    "detail": "226 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "inventory integrity duplicate order submission with the same Idempotency-Key reserves only once",
+    "status": "PASS",
+    "detail": "93 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "inventory integrity cancellation and rejection release stock exactly once; double transitions are refused",
+    "status": "PASS",
+    "detail": "118 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "inventory integrity invalid state transitions are refused by the backend",
+    "status": "PASS",
+    "detail": "85 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "inventory integrity farmer loss/correction cannot make inventory negative; events cannot be rewritten",
+    "status": "PASS",
+    "detail": "30 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "idempotent events / offline sync same clientEventId returns the original event and changes inventory once",
+    "status": "PASS",
+    "detail": "32 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "idempotent events / offline sync a replayed offline action that conflicts is rejected, alerted, and never overwrites history",
+    "status": "PASS",
+    "detail": "26 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "idempotent events / offline sync future-dated events are refused",
+    "status": "PASS",
+    "detail": "19 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "QR security unknown / malformed / SQLi / traversal tokens return 404 with no data",
+    "status": "PASS",
+    "detail": "7 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "QR security duplicate scan submission (same clientEventId) is recorded once",
+    "status": "PASS",
+    "detail": "4 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "QR security replace + revoke: old QR dies, new QR resolves to the SAME lot with intact history",
+    "status": "PASS",
+    "detail": "43 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "QR security different lots never share a token",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "QR security public trace never leaks private data (XSS payloads are returned as inert JSON text)",
+    "status": "PASS",
+    "detail": "27 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "input handling ignores mass-assigned protected fields (server decides owner, status, inventory, role)",
+    "status": "PASS",
+    "detail": "23 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "input handling malformed JSON returns 400, oversized bodies 413, bad UUIDs 400",
+    "status": "PASS",
+    "detail": "3 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "input handling SQL injection strings are treated as data",
+    "status": "PASS",
+    "detail": "49 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "public marketplace exposure shows only listed, in-stock lots of active farmers and no private fields",
+    "status": "PASS",
+    "detail": "6 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "public marketplace exposure farmers' unlisted lots are not purchasable",
+    "status": "PASS",
+    "detail": "63 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "public landing overview returns live aggregates + one featured public lot, with no private data and no login",
+    "status": "PASS",
+    "detail": "43 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "health /health and /ready report status without leaking secrets",
+    "status": "PASS",
+    "detail": "2 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "health sets security headers",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "payments.test.ts",
+    "name": "configuration and the no-bypass rule exposes only the public key id, never the secret",
+    "status": "PASS",
+    "detail": "2 ms"
+   },
+   {
+    "group": "payments.test.ts",
+    "name": "configuration and the no-bypass rule refuses plain orders while payments are on, so paying cannot be skipped",
+    "status": "PASS",
+    "detail": "59 ms"
+   },
+   {
+    "group": "payments.test.ts",
+    "name": "checkout computes the total on the server, holds stock, and hides the order from the farmer until paid",
+    "status": "PASS",
+    "detail": "101 ms"
+   },
+   {
+    "group": "payments.test.ts",
+    "name": "checkout is idempotent: the same Idempotency-Key gives the same order and the same Razorpay order",
+    "status": "PASS",
+    "detail": "88 ms"
+   },
+   {
+    "group": "payments.test.ts",
+    "name": "checkout never oversells: held stock counts, and the last kilos go to exactly one buyer",
+    "status": "PASS",
+    "detail": "196 ms"
+   },
+   {
+    "group": "payments.test.ts",
+    "name": "checkout releases the hold if the gateway is down, instead of leaking reserved stock",
+    "status": "PASS",
+    "detail": "88 ms"
+   },
+   {
+    "group": "payments.test.ts",
+    "name": "checkout rejects bad input before touching the gateway",
+    "status": "PASS",
+    "detail": "60 ms"
+   },
+   {
+    "group": "payments.test.ts",
+    "name": "browser callback verification rejects a forged signature and a swapped Razorpay order id, and stays unpaid",
+    "status": "PASS",
+    "detail": "68 ms"
+   },
+   {
+    "group": "payments.test.ts",
+    "name": "browser callback verification a valid signature for ANOTHER customer's checkout cannot pay this one",
+    "status": "PASS",
+    "detail": "123 ms"
+   },
+   {
+    "group": "payments.test.ts",
+    "name": "browser callback verification marks the order PAID, shows it to the farmer, and a repeated callback changes nothing",
+    "status": "PASS",
+    "detail": "92 ms"
+   },
+   {
+    "group": "payments.test.ts",
+    "name": "browser callback verification refuses to mark paid when the gateway's own record disagrees on the amount",
+    "status": "PASS",
+    "detail": "66 ms"
+   },
+   {
+    "group": "payments.test.ts",
+    "name": "webhooks rejects a bad signature, and is not subject to the cookie CSRF rule",
+    "status": "PASS",
+    "detail": "1 ms"
+   },
+   {
+    "group": "payments.test.ts",
+    "name": "webhooks payment.captured marks the order paid even if the browser never came back, and redelivery is a no-op",
+    "status": "PASS",
+    "detail": "76 ms"
+   },
+   {
+    "group": "payments.test.ts",
+    "name": "webhooks concurrent duplicate deliveries of one event apply it exactly once",
+    "status": "PASS",
+    "detail": "72 ms"
+   },
+   {
+    "group": "payments.test.ts",
+    "name": "webhooks an amount mismatch is recorded and alerted, never applied",
+    "status": "PASS",
+    "detail": "73 ms"
+   },
+   {
+    "group": "payments.test.ts",
+    "name": "webhooks payment.failed leaves a retryable checkout; a later success still works; a stale failure after success is ignored",
+    "status": "PASS",
+    "detail": "86 ms"
+   },
+   {
+    "group": "payments.test.ts",
+    "name": "webhooks stores identifiers and status only: no raw payload, no card or UPI details",
+    "status": "PASS",
+    "detail": "67 ms"
+   },
+   {
+    "group": "payments.test.ts",
+    "name": "abandoned checkout, late payment, refunds releases held stock when the window passes, and further payment attempts are refused",
+    "status": "PASS",
+    "detail": "101 ms"
+   },
+   {
+    "group": "payments.test.ts",
+    "name": "abandoned checkout, late payment, refunds money arriving after expiry is flagged for refund, never fulfilled",
+    "status": "PASS",
+    "detail": "86 ms"
+   },
+   {
+    "group": "payments.test.ts",
+    "name": "abandoned checkout, late payment, refunds customer can cancel an unpaid checkout, which frees the stock",
+    "status": "PASS",
+    "detail": "78 ms"
+   },
+   {
+    "group": "payments.test.ts",
+    "name": "abandoned checkout, late payment, refunds a farmer rejecting a PAID order moves it to REFUND_PENDING, and an admin refund goes through Razorpay once",
+    "status": "PASS",
+    "detail": "88 ms"
+   },
+   {
+    "group": "payments.test.ts",
+    "name": "inventory stays consistent through all of the above reserved + sold on every lot equals the open and confirmed order lines",
+    "status": "PASS",
+    "detail": "20 ms"
+   },
+   {
+    "group": "pilot.test.ts",
+    "name": "lot identity and public journey uses the SC-state-district-year-sequence code and shows only recorded steps as done",
+    "status": "PASS",
+    "detail": "29 ms"
+   },
+   {
+    "group": "pilot.test.ts",
+    "name": "lot identity and public journey records detailed quality (labelled 'recorded by farmer') and the score rises",
+    "status": "PASS",
+    "detail": "36 ms"
+   },
+   {
+    "group": "pilot.test.ts",
+    "name": "QR disable / enable a disabled QR resolves to a warning with no lot data, and re-enabling restores it",
+    "status": "PASS",
+    "detail": "58 ms"
+   },
+   {
+    "group": "pilot.test.ts",
+    "name": "QR disable / enable a disabled QR can be replaced or revoked",
+    "status": "PASS",
+    "detail": "34 ms"
+   },
+   {
+    "group": "pilot.test.ts",
+    "name": "QR anomaly detection flags impossible travel for the same QR as a *potential* anomaly an admin can handle",
+    "status": "PASS",
+    "detail": "66 ms"
+   },
+   {
+    "group": "pilot.test.ts",
+    "name": "QR anomaly detection does not flag nearby scans, and flags a burst of many distinct scanners",
+    "status": "PASS",
+    "detail": "68 ms"
+   },
+   {
+    "group": "pilot.test.ts",
+    "name": "QR anomaly detection scan analytics count unique scanners vs repeats and failures; farmers only see their own lots",
+    "status": "PASS",
+    "detail": "175 ms"
+   },
+   {
+    "group": "pilot.test.ts",
+    "name": "lot recall blocks sales, warns on the QR page, notifies affected parties, and keeps an audit trail",
+    "status": "PASS",
+    "detail": "202 ms"
+   },
+   {
+    "group": "pilot.test.ts",
+    "name": "reviews only verified purchasers can review, once; admins can hide/restore; ratings ignore hidden reviews",
+    "status": "PASS",
+    "detail": "269 ms"
+   },
+   {
+    "group": "pilot.test.ts",
+    "name": "farmer verification workflow application \u2192 correction required \u2192 resubmit \u2192 verified, with notifications and a review panel",
+    "status": "PASS",
+    "detail": "127 ms"
+   },
+   {
+    "group": "pilot.test.ts",
+    "name": "notifications and inventory under concurrency order lifecycle notifies the right people and marks read",
+    "status": "PASS",
+    "detail": "173 ms"
+   },
+   {
+    "group": "pilot.test.ts",
+    "name": "notifications and inventory under concurrency 10 kg available, two customers order 10 kg at once: exactly one succeeds",
+    "status": "PASS",
+    "detail": "83 ms"
+   },
+   {
+    "group": "pilot.test.ts",
+    "name": "real-time delivery (server-sent events) an admin's open stream receives a change notice when a farmer creates a lot",
+    "status": "PASS",
+    "detail": "1210 ms"
+   },
+   {
+    "group": "seals.test.ts",
+    "name": "seal rules (pure) only allows the documented transitions for each role",
+    "status": "PASS",
+    "detail": "1 ms"
+   },
+   {
+    "group": "seals.test.ts",
+    "name": "seal rules (pure) derives integrity from the seal state and summarises a lot conservatively",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "seals.test.ts",
+    "name": "seal rules (pure) makes seal ids random, readable and unique, and sanitises free text",
+    "status": "PASS",
+    "detail": "3 ms"
+   },
+   {
+    "group": "seals.test.ts",
+    "name": "creating packages splits a harvested lot into sealed packages, each with its own random token and seal id",
+    "status": "PASS",
+    "detail": "10 ms"
+   },
+   {
+    "group": "seals.test.ts",
+    "name": "creating packages refuses to package more than the lot holds, and before harvest",
+    "status": "PASS",
+    "detail": "16 ms"
+   },
+   {
+    "group": "seals.test.ts",
+    "name": "creating packages is restricted to the lot's own farmer or an admin",
+    "status": "PASS",
+    "detail": "121 ms"
+   },
+   {
+    "group": "seals.test.ts",
+    "name": "seal workflow lets a farmer verify seals at dispatch but not declare them intact; admin can",
+    "status": "PASS",
+    "detail": "28 ms"
+   },
+   {
+    "group": "seals.test.ts",
+    "name": "seal workflow public trace by lot QR summarises seals; by package QR it shows that package and its seal id",
+    "status": "PASS",
+    "detail": "10 ms"
+   },
+   {
+    "group": "seals.test.ts",
+    "name": "seal workflow a package scan is recorded against the lot's QR",
+    "status": "PASS",
+    "detail": "5 ms"
+   },
+   {
+    "group": "seals.test.ts",
+    "name": "seal workflow a customer report puts only that package under review and raises an alert; the lot-level state becomes an exception",
+    "status": "PASS",
+    "detail": "23 ms"
+   },
+   {
+    "group": "seals.test.ts",
+    "name": "seal workflow validates and sanitises public reports; unknown tokens 404",
+    "status": "PASS",
+    "detail": "10 ms"
+   },
+   {
+    "group": "seals.test.ts",
+    "name": "seal workflow an exception is resolved only by admin action and a replacement seal must be re-verified; history is append-only",
+    "status": "PASS",
+    "detail": "26 ms"
+   },
+   {
+    "group": "seals.test.ts",
+    "name": "seal workflow a revoked lot QR also disables its package tokens",
+    "status": "PASS",
+    "detail": "107 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "QR identity generates 256-bit unguessable, unique, URL-safe tokens",
+    "status": "PASS",
+    "detail": "7 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "QR identity encodes only the HTTPS trace URL",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "QR identity extracts tokens only from allowed origins and valid paths",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "QR identity formats lot codes",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "order state machine follows the happy path for delivery",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "order state machine follows the happy path for pickup (no dispatch)",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "order state machine never allows any action from a final state",
+    "status": "PASS",
+    "detail": "1 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "order state machine enforces role permissions",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "order state machine requires reasons where configured",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "order state machine every allowed action is a legal transition and every other is rejected",
+    "status": "PASS",
+    "detail": "14 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "lot status derivation derives statuses from inventory",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "lot status derivation rejects illegal lot transitions",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "risk engine (rule-based, explainable) is LOW for fresh grade-A stock",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "risk engine (rule-based, explainable) explains every factor that raises risk",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "risk engine (rule-based, explainable) maps scores to levels",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "public trace projection only exposes allow-listed events and never private fields",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "external data normalisation parses data.gov.in dates",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "external data normalisation validates and normalises records, rejecting unusable ones",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "external data normalisation redacts API keys from stored lineage",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "external data normalisation describes WMO weather codes",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "QR anomaly signals computes great-circle distance",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "QR anomaly signals flags physically impossible travel between scans of the same QR",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "QR anomaly signals does not flag nearby scans, plausible travel, or old scans",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "QR anomaly signals allows for the coarse-coordinate tolerance (no flag for ~30 km jitter)",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "QR anomaly signals flags distant scans in a short time as a weaker signal",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "QR anomaly signals detects session bursts",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "traceability completeness is 100% for an unsold lot with every base component (lifecycle steps do not apply yet)",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "traceability completeness explains what is missing and weights it",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "traceability completeness counts the sale lifecycle once an order exists",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "traceability completeness is 0 when nothing is recorded",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "public journey marks a step DONE only when its event exists and never invents the rest",
+    "status": "PASS",
+    "detail": "0 ms"
+   }
+  ]
+ },
+ {
+  "id": "R019",
+  "at": "2026-10-08T19:39:18+00:00",
+  "name": "Frontend tests (vitest)",
+  "environment": "local",
+  "kind": "vitest",
+  "notes": "",
+  "items": [
+   {
+    "group": "locales.test.ts",
+    "name": "locales English has translations",
+    "status": "PASS",
+    "detail": "1 ms"
+   },
+   {
+    "group": "locales.test.ts",
+    "name": "locales hi has exactly the English keys, no empty values, same placeholders",
+    "status": "PASS",
+    "detail": "10 ms"
+   },
+   {
+    "group": "locales.test.ts",
+    "name": "locales pa has exactly the English keys, no empty values, same placeholders",
+    "status": "PASS",
+    "detail": "9 ms"
+   },
+   {
+    "group": "locales.test.ts",
+    "name": "locales hi uses Devanagari and pa uses Gurmukhi",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "offline-queue.test.ts",
+    "name": "offline queue sends immediately when online and queues nothing",
+    "status": "PASS",
+    "detail": "3 ms"
+   },
+   {
+    "group": "offline-queue.test.ts",
+    "name": "offline queue queues on network failure and replays with the same idempotency data + replay header",
+    "status": "PASS",
+    "detail": "1 ms"
+   },
+   {
+    "group": "offline-queue.test.ts",
+    "name": "offline queue marks a server-rejected action as SYNC_CONFLICT and never drops or retries it silently",
+    "status": "PASS",
+    "detail": "1 ms"
+   },
+   {
+    "group": "offline-queue.test.ts",
+    "name": "offline queue keeps actions queued (in order) while the server is failing with 5xx",
+    "status": "PASS",
+    "detail": "1 ms"
+   },
+   {
+    "group": "offline-queue.test.ts",
+    "name": "offline queue surfaces validation errors instead of queueing them",
+    "status": "PASS",
+    "detail": "1 ms"
+   },
+   {
+    "group": "qr.test.ts",
+    "name": "scanner payload parsing accepts a trace URL on an allowed origin, with or without trailing slash",
+    "status": "PASS",
+    "detail": "1 ms"
+   },
+   {
+    "group": "qr.test.ts",
+    "name": "scanner payload parsing accepts a bare token",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "qr.test.ts",
+    "name": "scanner payload parsing rejects other origins, wrong paths, JSON payloads and junk",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "server-text.test.ts",
+    "name": "server text and enum translation translates known server sentences, exact and patterned",
+    "status": "PASS",
+    "detail": "2 ms"
+   },
+   {
+    "group": "server-text.test.ts",
+    "name": "server text and enum translation leaves text it does not recognise untouched (user-entered notes)",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "server-text.test.ts",
+    "name": "server text and enum translation translates statuses, crops, units and relative time",
+    "status": "PASS",
+    "detail": "10 ms"
+   },
+   {
+    "group": "server-text.test.ts",
+    "name": "server text and enum translation switches language live and back",
+    "status": "PASS",
+    "detail": "0 ms"
+   }
+  ]
+ },
+ {
+  "id": "R020",
+  "at": "2026-10-08T19:37:10.375Z",
+  "name": "E2E smoke script with cart, payments ON (mock Razorpay)",
+  "environment": "local",
+  "kind": "e2e",
+  "notes": "",
+  "items": [
+   {
+    "group": "Platform",
+    "name": "Readiness probe /ready",
+    "status": "PASS",
+    "detail": "HTTP 200"
+   },
+   {
+    "group": "Platform",
+    "name": "Frontend (SPA) served",
+    "status": "PASS",
+    "detail": "HTTP 200"
+   },
+   {
+    "group": "Security",
+    "name": "HSTS / CSP / nosniff headers present",
+    "status": "PASS",
+    "detail": "CSP + nosniff"
+   },
+   {
+    "group": "Auth",
+    "name": "Admin login",
+    "status": "PASS",
+    "detail": "HTTP 200"
+   },
+   {
+    "group": "Admin",
+    "name": "Admin overview loads",
+    "status": "PASS",
+    "detail": "HTTP 200"
+   },
+   {
+    "group": "Auth",
+    "name": "Wrong password rejected",
+    "status": "PASS",
+    "detail": "HTTP 401"
+   },
+   {
+    "group": "Security",
+    "name": "Anonymous blocked from admin API",
+    "status": "PASS",
+    "detail": "HTTP 401"
+   },
+   {
+    "group": "Security",
+    "name": "Request without CSRF header rejected",
+    "status": "PASS",
+    "detail": "HTTP 403"
+   },
+   {
+    "group": "Data",
+    "name": "Ingest pau_potato_punjab",
+    "status": "PASS",
+    "detail": "SUCCESS: 23 records, 0 rejected "
+   },
+   {
+    "group": "Data",
+    "name": "Ingest faostat_potato_india",
+    "status": "PASS",
+    "detail": "SUCCESS: 192 records, 0 rejected "
+   },
+   {
+    "group": "Data",
+    "name": "Punjab district data public, Jalandhar ranked first",
+    "status": "PASS",
+    "detail": "Jalandhar"
+   },
+   {
+    "group": "Data",
+    "name": "FAOSTAT India series public",
+    "status": "PASS",
+    "detail": "64 years"
+   },
+   {
+    "group": "Data",
+    "name": "Data health lists all sources",
+    "status": "PASS",
+    "detail": "9 sources"
+   },
+   {
+    "group": "Farmer",
+    "name": "Farmer registration",
+    "status": "PASS",
+    "detail": "HTTP 201"
+   },
+   {
+    "group": "Farmer",
+    "name": "Pending farmer may create farm profile",
+    "status": "PASS",
+    "detail": "HTTP 201"
+   },
+   {
+    "group": "Farmer",
+    "name": "Pending farmer cannot create lots",
+    "status": "PASS",
+    "detail": "HTTP 403"
+   },
+   {
+    "group": "Admin",
+    "name": "Admin approves farmer",
+    "status": "PASS",
+    "detail": "HTTP 200"
+   },
+   {
+    "group": "Lots",
+    "name": "Approved farmer creates lot",
+    "status": "PASS",
+    "detail": "SC-PB-JAL-2026-000003"
+   },
+   {
+    "group": "Lots",
+    "name": "Lot listed for sale",
+    "status": "PASS",
+    "detail": "HTTP 200"
+   },
+   {
+    "group": "QR",
+    "name": "QR content is only the trace URL on this host",
+    "status": "PASS",
+    "detail": "http://localhost:8084/trace/9qPwkbDLYImtYk8y2PWfBIudEAlbJ3mwhcbydW0v2NM"
+   },
+   {
+    "group": "QR",
+    "name": "Token is high-entropy (>= 40 chars)",
+    "status": "PASS",
+    "detail": "43 chars"
+   },
+   {
+    "group": "QR",
+    "name": "Public trace works without login",
+    "status": "PASS",
+    "detail": "SC-PB-JAL-2026-000003"
+   },
+   {
+    "group": "Privacy",
+    "name": "No private notes, email or phone on public trace",
+    "status": "PASS",
+    "detail": ""
+   },
+   {
+    "group": "QR",
+    "name": "Unknown token returns 404",
+    "status": "PASS",
+    "detail": "HTTP 404"
+   },
+   {
+    "group": "QR",
+    "name": "Scan recorded",
+    "status": "PASS",
+    "detail": "HTTP 200"
+   },
+   {
+    "group": "QR",
+    "name": "Trace page route serves the app",
+    "status": "PASS",
+    "detail": "HTTP 200"
+   },
+   {
+    "group": "Customer",
+    "name": "Customer registration",
+    "status": "PASS",
+    "detail": "HTTP 201"
+   },
+   {
+    "group": "Payments",
+    "name": "Public payment config exposes no secret",
+    "status": "PASS",
+    "detail": "enabled=true mode=test"
+   },
+   {
+    "group": "Payments",
+    "name": "Plain orders refused while online payment is on",
+    "status": "PASS",
+    "detail": "HTTP 409"
+   },
+   {
+    "group": "Payments",
+    "name": "Checkout creates a Razorpay order; total computed on the server (client total ignored)",
+    "status": "PASS",
+    "detail": "amountPaise=44000"
+   },
+   {
+    "group": "Payments",
+    "name": "Same Idempotency-Key returns the same Razorpay order (no double charge setup)",
+    "status": "PASS",
+    "detail": ""
+   },
+   {
+    "group": "Payments",
+    "name": "Unpaid order is invisible to the farmer",
+    "status": "PASS",
+    "detail": "HTTP 404"
+   },
+   {
+    "group": "Payments",
+    "name": "Forged payment signature rejected",
+    "status": "PASS",
+    "detail": "HTTP 400"
+   },
+   {
+    "group": "Payments",
+    "name": "Webhook with a bad signature rejected",
+    "status": "PASS",
+    "detail": "HTTP 400"
+   },
+   {
+    "group": "Payments",
+    "name": "Valid signature marks the order PAID",
+    "status": "PASS",
+    "detail": "APPLIED"
+   },
+   {
+    "group": "Payments",
+    "name": "Repeating the callback is harmless (idempotent)",
+    "status": "PASS",
+    "detail": ""
+   },
+   {
+    "group": "Payments",
+    "name": "Signed webhook accepted; redelivery of the same event is a no-op",
+    "status": "PASS",
+    "detail": "DUPLICATE_STATE then DUPLICATE_EVENT"
+   },
+   {
+    "group": "Orders",
+    "name": "Over-ordering rejected (no negative stock)",
+    "status": "PASS",
+    "detail": "HTTP 409"
+   },
+   {
+    "group": "Orders",
+    "name": "Order action: accept",
+    "status": "PASS",
+    "detail": "ACCEPTED"
+   },
+   {
+    "group": "Orders",
+    "name": "Order action: prepare",
+    "status": "PASS",
+    "detail": "PREPARING"
+   },
+   {
+    "group": "Orders",
+    "name": "Order action: ready",
+    "status": "PASS",
+    "detail": "READY"
+   },
+   {
+    "group": "Orders",
+    "name": "Order action: complete",
+    "status": "PASS",
+    "detail": "DELIVERED"
+   },
+   {
+    "group": "Orders",
+    "name": "Customer sees order status",
+    "status": "PASS",
+    "detail": "DELIVERED"
+   },
+   {
+    "group": "Security",
+    "name": "Customer blocked from admin API",
+    "status": "PASS",
+    "detail": "HTTP 403"
+   },
+   {
+    "group": "Security",
+    "name": "Customer blocked from farmer lots API",
+    "status": "PASS",
+    "detail": "HTTP 403"
+   },
+   {
+    "group": "Seals",
+    "name": "Farmer creates 3 sealed packages, each with its own QR token",
+    "status": "PASS",
+    "detail": "HTTP 201"
+   },
+   {
+    "group": "Seals",
+    "name": "Package QR opens the public trace with its own seal id",
+    "status": "PASS",
+    "detail": "INTACT"
+   },
+   {
+    "group": "Seals",
+    "name": "Lot QR summarises seals as intact when all are verified",
+    "status": "PASS",
+    "detail": "INTACT"
+   },
+   {
+    "group": "Seals",
+    "name": "Public seal report records an exception for that package only",
+    "status": "PASS",
+    "detail": "HTTP 201"
+   },
+   {
+    "group": "Seals",
+    "name": "Exception is isolated: the other package stays intact",
+    "status": "PASS",
+    "detail": "EXCEPTION / INTACT"
+   },
+   {
+    "group": "Seals",
+    "name": "Customer cannot change a seal",
+    "status": "PASS",
+    "detail": "HTTP 403"
+   },
+   {
+    "group": "Cart",
+    "name": "New customer's cart is empty",
+    "status": "PASS",
+    "detail": ""
+   },
+   {
+    "group": "Cart",
+    "name": "Add a lot to the cart",
+    "status": "PASS",
+    "detail": "HTTP 201"
+   },
+   {
+    "group": "Cart",
+    "name": "Add a second lot (same farmer): one group, subtotal from live prices",
+    "status": "PASS",
+    "detail": "subtotal=170"
+   },
+   {
+    "group": "Cart",
+    "name": "Cannot add more than the stock",
+    "status": "PASS",
+    "detail": "HTTP 409"
+   },
+   {
+    "group": "Cart",
+    "name": "Change a quantity",
+    "status": "PASS",
+    "detail": "subtotal=230"
+   },
+   {
+    "group": "Cart",
+    "name": "Server preview prices both lines",
+    "status": "PASS",
+    "detail": "subtotal=230"
+   },
+   {
+    "group": "Cart",
+    "name": "Multi-item checkout: one Razorpay order for the whole farmer group, total from the server",
+    "status": "PASS",
+    "detail": "amountPaise=23000"
+   },
+   {
+    "group": "Cart",
+    "name": "Starting checkout does not empty the cart",
+    "status": "PASS",
+    "detail": "items=2"
+   },
+   {
+    "group": "Cart",
+    "name": "Paying clears exactly those lines from the cart",
+    "status": "PASS",
+    "detail": ""
+   }
+  ]
+ },
+ {
+  "id": "R021",
+  "at": "2026-10-08T19:37:37.732Z",
+  "name": "E2E smoke script with cart, payments OFF",
+  "environment": "local",
+  "kind": "e2e",
+  "notes": "",
+  "items": [
+   {
+    "group": "Platform",
+    "name": "Readiness probe /ready",
+    "status": "PASS",
+    "detail": "HTTP 200"
+   },
+   {
+    "group": "Platform",
+    "name": "Frontend (SPA) served",
+    "status": "PASS",
+    "detail": "HTTP 200"
+   },
+   {
+    "group": "Security",
+    "name": "HSTS / CSP / nosniff headers present",
+    "status": "PASS",
+    "detail": "CSP + nosniff"
+   },
+   {
+    "group": "Auth",
+    "name": "Admin login",
+    "status": "PASS",
+    "detail": "HTTP 200"
+   },
+   {
+    "group": "Admin",
+    "name": "Admin overview loads",
+    "status": "PASS",
+    "detail": "HTTP 200"
+   },
+   {
+    "group": "Auth",
+    "name": "Wrong password rejected",
+    "status": "PASS",
+    "detail": "HTTP 401"
+   },
+   {
+    "group": "Security",
+    "name": "Anonymous blocked from admin API",
+    "status": "PASS",
+    "detail": "HTTP 401"
+   },
+   {
+    "group": "Security",
+    "name": "Request without CSRF header rejected",
+    "status": "PASS",
+    "detail": "HTTP 403"
+   },
+   {
+    "group": "Data",
+    "name": "Ingest pau_potato_punjab",
+    "status": "PASS",
+    "detail": "SUCCESS: 23 records, 0 rejected "
+   },
+   {
+    "group": "Data",
+    "name": "Ingest faostat_potato_india",
+    "status": "PASS",
+    "detail": "SUCCESS: 192 records, 0 rejected "
+   },
+   {
+    "group": "Data",
+    "name": "Punjab district data public, Jalandhar ranked first",
+    "status": "PASS",
+    "detail": "Jalandhar"
+   },
+   {
+    "group": "Data",
+    "name": "FAOSTAT India series public",
+    "status": "PASS",
+    "detail": "64 years"
+   },
+   {
+    "group": "Data",
+    "name": "Data health lists all sources",
+    "status": "PASS",
+    "detail": "9 sources"
+   },
+   {
+    "group": "Farmer",
+    "name": "Farmer registration",
+    "status": "PASS",
+    "detail": "HTTP 201"
+   },
+   {
+    "group": "Farmer",
+    "name": "Pending farmer may create farm profile",
+    "status": "PASS",
+    "detail": "HTTP 201"
+   },
+   {
+    "group": "Farmer",
+    "name": "Pending farmer cannot create lots",
+    "status": "PASS",
+    "detail": "HTTP 403"
+   },
+   {
+    "group": "Admin",
+    "name": "Admin approves farmer",
+    "status": "PASS",
+    "detail": "HTTP 200"
+   },
+   {
+    "group": "Lots",
+    "name": "Approved farmer creates lot",
+    "status": "PASS",
+    "detail": "SC-PB-JAL-2026-000005"
+   },
+   {
+    "group": "Lots",
+    "name": "Lot listed for sale",
+    "status": "PASS",
+    "detail": "HTTP 200"
+   },
+   {
+    "group": "QR",
+    "name": "QR content is only the trace URL on this host",
+    "status": "PASS",
+    "detail": "http://localhost:8085/trace/m2jkdrywK00k47TZxY4VKakQzoEGljcSpjk0QbBh4fE"
+   },
+   {
+    "group": "QR",
+    "name": "Token is high-entropy (>= 40 chars)",
+    "status": "PASS",
+    "detail": "43 chars"
+   },
+   {
+    "group": "QR",
+    "name": "Public trace works without login",
+    "status": "PASS",
+    "detail": "SC-PB-JAL-2026-000005"
+   },
+   {
+    "group": "Privacy",
+    "name": "No private notes, email or phone on public trace",
+    "status": "PASS",
+    "detail": ""
+   },
+   {
+    "group": "QR",
+    "name": "Unknown token returns 404",
+    "status": "PASS",
+    "detail": "HTTP 404"
+   },
+   {
+    "group": "QR",
+    "name": "Scan recorded",
+    "status": "PASS",
+    "detail": "HTTP 200"
+   },
+   {
+    "group": "QR",
+    "name": "Trace page route serves the app",
+    "status": "PASS",
+    "detail": "HTTP 200"
+   },
+   {
+    "group": "Customer",
+    "name": "Customer registration",
+    "status": "PASS",
+    "detail": "HTTP 201"
+   },
+   {
+    "group": "Payments",
+    "name": "Public payment config exposes no secret",
+    "status": "PASS",
+    "detail": "enabled=false mode=n/a"
+   },
+   {
+    "group": "Orders",
+    "name": "Customer places order (pay the farmer directly)",
+    "status": "PASS",
+    "detail": "HTTP 201"
+   },
+   {
+    "group": "Orders",
+    "name": "Same idempotency key does not double-order",
+    "status": "PASS",
+    "detail": "same id: true"
+   },
+   {
+    "group": "Orders",
+    "name": "Over-ordering rejected (no negative stock)",
+    "status": "PASS",
+    "detail": "HTTP 409"
+   },
+   {
+    "group": "Orders",
+    "name": "Order action: accept",
+    "status": "PASS",
+    "detail": "ACCEPTED"
+   },
+   {
+    "group": "Orders",
+    "name": "Order action: prepare",
+    "status": "PASS",
+    "detail": "PREPARING"
+   },
+   {
+    "group": "Orders",
+    "name": "Order action: ready",
+    "status": "PASS",
+    "detail": "READY"
+   },
+   {
+    "group": "Orders",
+    "name": "Order action: complete",
+    "status": "PASS",
+    "detail": "DELIVERED"
+   },
+   {
+    "group": "Orders",
+    "name": "Customer sees order status",
+    "status": "PASS",
+    "detail": "DELIVERED"
+   },
+   {
+    "group": "Security",
+    "name": "Customer blocked from admin API",
+    "status": "PASS",
+    "detail": "HTTP 403"
+   },
+   {
+    "group": "Security",
+    "name": "Customer blocked from farmer lots API",
+    "status": "PASS",
+    "detail": "HTTP 403"
+   },
+   {
+    "group": "Seals",
+    "name": "Farmer creates 3 sealed packages, each with its own QR token",
+    "status": "PASS",
+    "detail": "HTTP 201"
+   },
+   {
+    "group": "Seals",
+    "name": "Package QR opens the public trace with its own seal id",
+    "status": "PASS",
+    "detail": "INTACT"
+   },
+   {
+    "group": "Seals",
+    "name": "Lot QR summarises seals as intact when all are verified",
+    "status": "PASS",
+    "detail": "INTACT"
+   },
+   {
+    "group": "Seals",
+    "name": "Public seal report records an exception for that package only",
+    "status": "PASS",
+    "detail": "HTTP 201"
+   },
+   {
+    "group": "Seals",
+    "name": "Exception is isolated: the other package stays intact",
+    "status": "PASS",
+    "detail": "EXCEPTION / INTACT"
+   },
+   {
+    "group": "Seals",
+    "name": "Customer cannot change a seal",
+    "status": "PASS",
+    "detail": "HTTP 403"
+   },
+   {
+    "group": "Cart",
+    "name": "New customer's cart is empty",
+    "status": "PASS",
+    "detail": ""
+   },
+   {
+    "group": "Cart",
+    "name": "Add a lot to the cart",
+    "status": "PASS",
+    "detail": "HTTP 201"
+   },
+   {
+    "group": "Cart",
+    "name": "Add a second lot (same farmer): one group, subtotal from live prices",
+    "status": "PASS",
+    "detail": "subtotal=170"
+   },
+   {
+    "group": "Cart",
+    "name": "Cannot add more than the stock",
+    "status": "PASS",
+    "detail": "HTTP 409"
+   },
+   {
+    "group": "Cart",
+    "name": "Change a quantity",
+    "status": "PASS",
+    "detail": "subtotal=230"
+   },
+   {
+    "group": "Cart",
+    "name": "Server preview prices both lines",
+    "status": "PASS",
+    "detail": "subtotal=230"
+   },
+   {
+    "group": "Cart",
+    "name": "Multi-item order (pay the farmer directly): one order, two lines, server total",
+    "status": "PASS",
+    "detail": "total=230"
+   },
+   {
+    "group": "Cart",
+    "name": "Buying empties those lines from the cart",
+    "status": "PASS",
+    "detail": ""
+   }
+  ]
+ },
+ {
+  "id": "R022",
+  "at": "2026-10-08T19:39:30+00:00",
+  "name": "Cart and multi-item checkout checked in the browser",
+  "environment": "local",
+  "kind": "manual",
+  "notes": "",
+  "items": [
+   {
+    "group": "Cart",
+    "name": "Lot page offers 'Add to cart' and 'Buy now' side by side; navbar shows a cart icon",
+    "status": "PASS",
+    "detail": "Local app, mock Razorpay"
+   },
+   {
+    "group": "Cart",
+    "name": "Add to cart confirms inline with a link to the cart; cart badge counts lots",
+    "status": "PASS",
+    "detail": ""
+   },
+   {
+    "group": "Cart",
+    "name": "Cart page groups lines by farmer with images, steppers, live prices and per-farmer subtotals/checkout buttons",
+    "status": "PASS",
+    "detail": "2 farmers, 3 lots"
+   },
+   {
+    "group": "Cart",
+    "name": "Pressing + changes quantity and the subtotals/total update from the server",
+    "status": "PASS",
+    "detail": "5 -> 6 kg: subtotal 408, total 828"
+   },
+   {
+    "group": "Checkout",
+    "name": "Checkout for one farmer's two lots lists both lines; total from the server preview (240 + 168 = 408)",
+    "status": "PASS",
+    "detail": ""
+   },
+   {
+    "group": "Checkout",
+    "name": "Simulated Razorpay window pays; success screen shows order id, payment id, amount, method",
+    "status": "PASS",
+    "detail": "Hosted window replaced by a stub; server verification is real"
+   },
+   {
+    "group": "Cart",
+    "name": "After payment only the paid farmer's lines leave the cart; the other farmer's line remains",
+    "status": "PASS",
+    "detail": "Remaining: Gurdev Kaur Farm, Kufri Chipsona x20"
+   },
+   {
+    "group": "Gap",
+    "name": "Real Razorpay hosted window and a live key pair",
+    "status": "FAIL",
+    "detail": "Not tested: needs the owner's Razorpay test keys entered in Render"
+   }
+  ]
  }
 ]

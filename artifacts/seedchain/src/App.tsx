@@ -41,6 +41,7 @@ const AdminUsers = lazy(() => import("@/pages/admin/users"));
 const AdminEvents = lazy(() => import("@/pages/admin/logs").then((m) => ({ default: m.AdminEvents })));
 const AdminAudit = lazy(() => import("@/pages/admin/logs").then((m) => ({ default: m.AdminAudit })));
 const AdminIntegrations = lazy(() => import("@/pages/admin/logs").then((m) => ({ default: m.AdminIntegrations })));
+const CartPage = lazy(() => import("@/pages/customer/cart"));
 const CheckoutPage = lazy(() => import("@/pages/customer/checkout"));
 const AdminPayments = lazy(() => import("@/pages/admin/payments"));
 const AdminMap = lazy(() => import("@/pages/admin/map"));
@@ -84,6 +85,7 @@ function Router() {
       <Route path="/marketplace" component={MarketplacePage} />
       <Route path="/marketplace/:lotId" component={ListingPage} />
       <Route path="/checkout" component={CheckoutPage} />
+      <Route path="/cart">{P("customer", CartPage)}</Route>
       <Route path="/farmers/:id" component={FarmerPublicPage} />
 
       <Route path="/farmer">{P("farmer", FarmerDashboard)}</Route>

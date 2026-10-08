@@ -31,6 +31,7 @@ import { appendEvent, audit, raiseAlert, type Actor } from "./records";
 import { applyLotState, counters, maybeSoldOut, serializeEvent } from "./lots";
 import { notifyChange } from "./realtime";
 import { notify, notifyAdmins, type NotificationType } from "./notifications";
+import { removeBoughtFromCart } from "./cart";
 
 function orderCode(): string {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -298,6 +299,8 @@ export async function createOrder(actor: Actor & { user: User }, idempotencyKey:
       }
       if (!opts.awaitPayment) await notify(tx, [farmerId], { type: "ORDER_NEW", params: { orderCode: order.orderCode, customerName: customer.name }, entityType: "order", entityId: order.id });
       await audit(tx, actor, "ORDER_CREATED", "order", order.id, null, { orderCode: order.orderCode, total: order.totalAmount, items: lines.map((l) => ({ lot: l.lot.lotCode, qty: l.qty })) });
+      // Placed without online payment: these lots are bought now. With online payment they leave the cart when paid.
+      if (!opts.awaitPayment) await removeBoughtFromCart(tx, customer.id, lines.map((l) => l.lot.id));
       await notifyChange(tx, { topic: "orders", entityId: order.id, farmerId: opts.awaitPayment ? undefined : farmerId, customerId: customer.id });
       await notifyChange(tx, { topic: "listings" });
       return order.id;

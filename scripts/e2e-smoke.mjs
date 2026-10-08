@@ -146,6 +146,36 @@ r = await anon("GET", `/api/trace/${pk[0]?.publicToken}`);
 check("Seals", "Exception is isolated: the other package stays intact", bad === "EXCEPTION" && r.j?.physicalIntegrity?.state === "INTACT", `${bad} / ${r.j?.physicalIntegrity?.state}`);
 r = await cust("POST", `/api/packages/${pk[0]?.id}/seal`, { status: "INTACT" }); check("Seals", "Customer cannot change a seal", r.s === 403, `HTTP ${r.s}`);
 
+// ---- multi-item cart
+r = await farmer("POST", "/api/lots", { farmId, productName: "Potato", variety: "Kufri Chipsona", origin: "Nakodar, Jalandhar, Punjab", harvestDate: "2026-09-30", harvestQuantity: 200, qualityGrade: "A" });
+const lot2 = r.j; await farmer("POST", `/api/lots/${lot2?.id}/listing`, { listed: true, pricePerUnit: 30 });
+r = await cust("GET", "/api/cart"); check("Cart", "New customer's cart is empty", r.s === 200 && r.j?.itemCount === 0);
+r = await cust("POST", "/api/cart/items", { lotId: lot?.id, quantity: 5 }); check("Cart", "Add a lot to the cart", r.s === 201 && r.j?.itemCount === 1, `HTTP ${r.s}`);
+r = await cust("POST", "/api/cart/items", { lotId: lot2?.id, quantity: 2 }); check("Cart", "Add a second lot (same farmer): one group, subtotal from live prices", r.j?.groups?.length === 1 && r.j?.groups?.[0]?.subtotal === 5 * 22 + 2 * 30, `subtotal=${r.j?.groups?.[0]?.subtotal}`);
+r = await cust("POST", "/api/cart/items", { lotId: lot2?.id, quantity: 5000 }); check("Cart", "Cannot add more than the stock", r.s === 409 && r.j?.code === "INSUFFICIENT_INVENTORY", `HTTP ${r.s}`);
+r = await cust("PATCH", `/api/cart/items/${lot2?.id}`, { quantity: 4 }); check("Cart", "Change a quantity", r.j?.groups?.[0]?.subtotal === 5 * 22 + 4 * 30, `subtotal=${r.j?.groups?.[0]?.subtotal}`);
+r = await cust("POST", "/api/checkout/preview", { items: [{ lotId: lot?.id, quantity: 5 }, { lotId: lot2?.id, quantity: 4 }], fulfillmentMethod: "CUSTOMER_PICKUP" }); check("Cart", "Server preview prices both lines", r.s === 200 && r.j?.canCheckout === true && r.j?.subtotal === 230, `subtotal=${r.j?.subtotal}`);
+const multi = [{ lotId: lot?.id, quantity: 5 }, { lotId: lot2?.id, quantity: 4 }];
+if (cfg.enabled) {
+  r = await cust("POST", "/api/checkout", { items: multi, fulfillmentMethod: "CUSTOMER_PICKUP" }, { "idempotency-key": crypto.randomUUID() });
+  check("Cart", "Multi-item checkout: one Razorpay order for the whole farmer group, total from the server", r.s === 201 && r.j?.session?.amountPaise === 23000 && r.j?.order?.items?.length === 2, `amountPaise=${r.j?.session?.amountPaise}`);
+  const ss = r.j?.session;
+  r = await cust("GET", "/api/cart"); check("Cart", "Starting checkout does not empty the cart", r.j?.itemCount === 2, `items=${r.j?.itemCount}`);
+  if (SIM_KEY_SECRET && ss) {
+    const pid = `pay_SIM_${ss.razorpayOrderId.replace("order_", "")}`;
+    const sig = createHmac("sha256", SIM_KEY_SECRET).update(`${ss.razorpayOrderId}|${pid}`).digest("hex");
+    r = await cust("POST", "/api/checkout/verify", { orderId: ss.orderId, razorpay_order_id: ss.razorpayOrderId, razorpay_payment_id: pid, razorpay_signature: sig });
+    check("Cart", "Paying clears exactly those lines from the cart", r.j?.order?.paymentStatus === "PAID" && (await cust("GET", "/api/cart")).j?.itemCount === 0);
+  } else if (ss) {
+    r = await cust("POST", `/api/orders/${ss.orderId}/cancel`, { reason: "smoke test" });
+    check("Cart", "Abandoning the checkout leaves the cart intact", r.s === 200 && (await cust("GET", "/api/cart")).j?.itemCount === 2);
+  }
+} else {
+  r = await cust("POST", "/api/orders", { items: multi, fulfillmentMethod: "CUSTOMER_PICKUP" }, { "idempotency-key": crypto.randomUUID() });
+  check("Cart", "Multi-item order (pay the farmer directly): one order, two lines, server total", r.s === 201 && r.j?.items?.length === 2 && r.j?.totalAmount === 230, `total=${r.j?.totalAmount}`);
+  check("Cart", "Buying empties those lines from the cart", (await cust("GET", "/api/cart")).j?.itemCount === 0);
+}
+
 const passed = results.filter((x) => x.status === "PASS").length;
 fs.writeFileSync(out, JSON.stringify({ base: BASE, at: new Date().toISOString(), seconds: Math.round((Date.now() - started) / 1000), passed, total: results.length, results }, null, 2));
 console.log(`\n${passed}/${results.length} passed -> ${out}`);
