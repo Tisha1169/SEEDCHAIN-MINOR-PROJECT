@@ -112,7 +112,7 @@ export async function fetchText(url: string, timeoutMs: number, headers: Record<
     return { body, contentType: res.headers.get("content-type") ?? "", status: res.status };
   } catch (err) {
     const e = err as Error & { cause?: { code?: string } };
-    if (e.name === "AbortError") throw new Error(`Timed out after ${timeoutMs} ms`);
+    if (e.name === "AbortError") throw new Error(`Timed out after ${timeoutMs} ms`, { cause: err });
     throw new Error(e.cause?.code ? `${e.message} (${e.cause.code})` : e.message, { cause: err });
   } finally {
     clearTimeout(t);

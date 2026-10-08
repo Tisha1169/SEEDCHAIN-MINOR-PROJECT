@@ -657,6 +657,34 @@ export interface RecordLotEventBody {
   storage?: StorageInput;
 }
 
+export type ScanAreasCellsItem = {
+  /** Cell centre */
+  lat: number;
+  /** Cell centre */
+  lon: number;
+  scans: number;
+  /** Distinct anonymous browser sessions */
+  scanners: number;
+  lots: number;
+  lastScanAt: string;
+  /**
+     * Most common coarse place name given by scanners
+     * @nullable
+     */
+  label?: string | null;
+};
+
+export interface ScanAreas {
+  gridDegrees: number;
+  approxCellKm: number;
+  days: number;
+  /** Successful scans in the window */
+  okScans: number;
+  /** Of those */
+  scansWithSharedLocation: number;
+  cells: ScanAreasCellsItem[];
+}
+
 export type TraceEventMetadata = { [key: string]: unknown };
 
 export interface TraceEvent {
@@ -2021,6 +2049,14 @@ export type ListQrScansParams = {
  * @maximum 500
  */
 limit?: number;
+};
+
+export type GetScanAreasParams = {
+/**
+ * @minimum 1
+ * @maximum 365
+ */
+days?: number;
 };
 
 export type ListLotsParams = {

@@ -1,3 +1,4 @@
+import { JourneyMap } from "@/components/app/geo-maps";
 import { useTranslation } from "react-i18next";
 import { useState } from "react";
 import { Link, useRoute } from "wouter";
@@ -131,6 +132,7 @@ export default function LotDetailPage({ base }: { base: "farmer" | "admin" }) {
           <Card className="p-5"><h3 className="mb-3 eyebrow !text-ink/75">{t("farmer.detail.storage")}</h3>
             {storage.data?.length ? storage.data.map((s) => <div key={s.id} className="border-b py-2 text-sm last:border-0"><b>{t("farmer.detail.storageAt", { type: enumLabel("storageKind", s.storageType), place: s.storageLocation })}</b><div className="text-xs text-ink/55">{dateTime(s.storageStart)} → {s.storageEnd ? dateTime(s.storageEnd) : t("farmer.detail.ongoing")}{s.temperatureC != null && ` · ${s.temperatureC}°C`}{s.humidityPct != null && ` · ${t("farmer.detail.rh", { n: s.humidityPct })}`}{s.storageCondition && ` · ${s.storageCondition}`}</div></div>) : <p className="text-sm text-ink/50">{t("farmer.detail.noStorage")}</p>}
           </Card>
+          {events.data && <JourneyMap events={events.data} />}
           <Card className="p-5"><h3 className="mb-4 eyebrow !text-ink/75">{t("farmer.detail.history")}</h3>
             {events.isLoading ? <Loading /> : <Timeline items={(events.data ?? []).map((e) => ({ key: e.id, label: enumLabel("event", e.eventType), time: e.eventTime, detail: [e.quantityChange != null && `${e.quantityChange > 0 ? "+" : ""}${e.quantityChange} ${unitLabel(unit)}`, e.quantityAfter != null && t("farmer.detail.availableAfter", { n: e.quantityAfter }), serverText(e.reason)].filter(Boolean).join(" · "), meta: `${e.actorName ?? t("farmer.detail.system")}${e.actorRole ? ` (${enumLabel("role", e.actorRole)})` : ""}${e.source !== "web" ? ` · ${t("farmer.detail.via", { source: enumLabel("eventSource", e.source) })}` : ""}` }))} />}
           </Card>

@@ -1348,5 +1348,815 @@
     "detail": "Reload fixes it; needs an automatic reload-on-chunk-error handler"
    }
   ]
+ },
+ {
+  "id": "R007",
+  "at": "2026-10-08T03:47:10+00:00",
+  "name": "Backend tests (vitest, real Postgres) after map feature",
+  "environment": "local",
+  "kind": "vitest",
+  "notes": "Adds test/map.test.ts: scan areas admin-only and coarse, journey coordinates private",
+  "items": [
+   {
+    "group": "acceptance.test.ts",
+    "name": "acceptance: direct farmer \u2192 customer flow with live QR trace runs the full real-world scenario end to end",
+    "status": "PASS",
+    "detail": "510 ms"
+   },
+   {
+    "group": "acceptance.test.ts",
+    "name": "acceptance: direct farmer \u2192 customer flow with live QR trace pickup orders skip dispatch and are confirmed by the customer",
+    "status": "PASS",
+    "detail": "278 ms"
+   },
+   {
+    "group": "data.test.ts",
+    "name": "PAU parser and validator (real page) extracts the period, attribution, district rows and state total from the real PAU page",
+    "status": "PASS",
+    "detail": "2 ms"
+   },
+   {
+    "group": "data.test.ts",
+    "name": "PAU parser and validator (real page) validates internal consistency and reports (not hides) anything it rejects",
+    "status": "PASS",
+    "detail": "1 ms"
+   },
+   {
+    "group": "data.test.ts",
+    "name": "PAU parser and validator (real page) fails loudly when the page layout changes instead of inventing data",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "data.test.ts",
+    "name": "FAOSTAT parser (real rows) splits quoted CSV with commas inside quotes",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "data.test.ts",
+    "name": "FAOSTAT parser (real rows) keeps only India potato area, yield and production and validates units and consistency",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "data.test.ts",
+    "name": "mandi record validation normalises valid records and never fabricates missing fields",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "data.test.ts",
+    "name": "mandi record validation rejects with a reason: bad date, no price, min>max, modal outside range, future date",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "data.test.ts",
+    "name": "mandi record validation parses CSV exports from the portal",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "data.test.ts",
+    "name": "weather validation accepts plausible values and rejects impossible ones (no clamping)",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "data.test.ts",
+    "name": "freshness vocabulary is CURRENT / CACHED / STALE / NO_DATA / NOT_INTEGRATED",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "data.test.ts",
+    "name": "pipeline end to end the registry covers every named source and is mirrored into the database",
+    "status": "PASS",
+    "detail": "1 ms"
+   },
+   {
+    "group": "data.test.ts",
+    "name": "pipeline end to end PAU: fetch \u2192 raw \u2192 validate \u2192 normalise \u2192 master, idempotent, with lineage and cited API output",
+    "status": "PASS",
+    "detail": "90 ms"
+   },
+   {
+    "group": "data.test.ts",
+    "name": "pipeline end to end when the source later fails: nothing breaks, last validated data stays, an alert is raised, freshness says CACHED",
+    "status": "PASS",
+    "detail": "45 ms"
+   },
+   {
+    "group": "data.test.ts",
+    "name": "pipeline end to end FAOSTAT: streams a zip, keeps only India potatoes, labels the series historical and national",
+    "status": "PASS",
+    "detail": "12 ms"
+   },
+   {
+    "group": "data.test.ts",
+    "name": "pipeline end to end mandi: stores validated daily observations, rejects bad ones with reasons, and never guesses a missing district",
+    "status": "PASS",
+    "detail": "71 ms"
+   },
+   {
+    "group": "data.test.ts",
+    "name": "pipeline end to end an unreachable mandi API leaves previous data intact and reports the real error",
+    "status": "PASS",
+    "detail": "2 ms"
+   },
+   {
+    "group": "data.test.ts",
+    "name": "pipeline end to end source health is visible to admins and farmers, not customers; reference-only sources never claim data",
+    "status": "PASS",
+    "detail": "71 ms"
+   },
+   {
+    "group": "data.test.ts",
+    "name": "pipeline end to end the scheduler only runs sources that are due and configured",
+    "status": "PASS",
+    "detail": "39 ms"
+   },
+   {
+    "group": "map.test.ts",
+    "name": "scan areas (admin only, coarse) groups located scans into ~55 km cells and never returns the submitted point",
+    "status": "PASS",
+    "detail": "27 ms"
+   },
+   {
+    "group": "map.test.ts",
+    "name": "scan areas (admin only, coarse) is forbidden to farmers, customers and anonymous visitors",
+    "status": "PASS",
+    "detail": "57 ms"
+   },
+   {
+    "group": "map.test.ts",
+    "name": "scan areas (admin only, coarse) rejects an out-of-range window",
+    "status": "PASS",
+    "detail": "3 ms"
+   },
+   {
+    "group": "map.test.ts",
+    "name": "lot journey coordinates returns recorded event coordinates to the owner and to admins, but not on the public trace",
+    "status": "PASS",
+    "detail": "9 ms"
+   },
+   {
+    "group": "map.test.ts",
+    "name": "lot journey coordinates lets admins list all farms with coordinates, and a farmer see only their own",
+    "status": "PASS",
+    "detail": "3 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "authentication & session rejects wrong passwords and unknown users identically",
+    "status": "PASS",
+    "detail": "141 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "authentication & session cannot self-register as admin (role is validated)",
+    "status": "PASS",
+    "detail": "1 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "authentication & session rejects short passwords and duplicate emails",
+    "status": "PASS",
+    "detail": "4 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "authentication & session logout revokes the session server-side",
+    "status": "PASS",
+    "detail": "60 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "authentication & session expired sessions are rejected",
+    "status": "PASS",
+    "detail": "59 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "authentication & session suspended users lose access immediately",
+    "status": "PASS",
+    "detail": "59 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "authentication & session role comes from the database, not the client",
+    "status": "PASS",
+    "detail": "57 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "authentication & session legacy HMAC password hashes verify once and are upgraded to scrypt",
+    "status": "PASS",
+    "detail": "152 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "CSRF rejects state-changing requests without the custom header",
+    "status": "PASS",
+    "detail": "1 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "authorization / IDOR farmer B cannot read, modify, list, or QR-replace farmer A's lot (404, no existence leak)",
+    "status": "PASS",
+    "detail": "28 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "authorization / IDOR customers cannot touch lots, inventory, events, farms, or QR administration",
+    "status": "PASS",
+    "detail": "89 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "authorization / IDOR farmers cannot use admin endpoints or review themselves",
+    "status": "PASS",
+    "detail": "4 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "authorization / IDOR pending farmers cannot create farms/lots; rejected farmers cannot log in",
+    "status": "PASS",
+    "detail": "111 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "authorization / IDOR farmer cannot create a lot on another farmer's farm or product",
+    "status": "PASS",
+    "detail": "5 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "authorization / IDOR orders are only visible to their customer, farmer and admins",
+    "status": "PASS",
+    "detail": "136 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "inventory integrity rejects negative / zero / absurd quantities",
+    "status": "PASS",
+    "detail": "55 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "inventory integrity refuses to oversell and raises an OVER_ORDER alert",
+    "status": "PASS",
+    "detail": "55 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "inventory integrity concurrent orders can never reserve more than is available",
+    "status": "PASS",
+    "detail": "233 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "inventory integrity duplicate order submission with the same Idempotency-Key reserves only once",
+    "status": "PASS",
+    "detail": "93 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "inventory integrity cancellation and rejection release stock exactly once; double transitions are refused",
+    "status": "PASS",
+    "detail": "114 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "inventory integrity invalid state transitions are refused by the backend",
+    "status": "PASS",
+    "detail": "83 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "inventory integrity farmer loss/correction cannot make inventory negative; events cannot be rewritten",
+    "status": "PASS",
+    "detail": "32 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "idempotent events / offline sync same clientEventId returns the original event and changes inventory once",
+    "status": "PASS",
+    "detail": "36 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "idempotent events / offline sync a replayed offline action that conflicts is rejected, alerted, and never overwrites history",
+    "status": "PASS",
+    "detail": "27 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "idempotent events / offline sync future-dated events are refused",
+    "status": "PASS",
+    "detail": "20 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "QR security unknown / malformed / SQLi / traversal tokens return 404 with no data",
+    "status": "PASS",
+    "detail": "7 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "QR security duplicate scan submission (same clientEventId) is recorded once",
+    "status": "PASS",
+    "detail": "5 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "QR security replace + revoke: old QR dies, new QR resolves to the SAME lot with intact history",
+    "status": "PASS",
+    "detail": "45 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "QR security different lots never share a token",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "QR security public trace never leaks private data (XSS payloads are returned as inert JSON text)",
+    "status": "PASS",
+    "detail": "28 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "input handling ignores mass-assigned protected fields (server decides owner, status, inventory, role)",
+    "status": "PASS",
+    "detail": "21 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "input handling malformed JSON returns 400, oversized bodies 413, bad UUIDs 400",
+    "status": "PASS",
+    "detail": "3 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "input handling SQL injection strings are treated as data",
+    "status": "PASS",
+    "detail": "50 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "public marketplace exposure shows only listed, in-stock lots of active farmers and no private fields",
+    "status": "PASS",
+    "detail": "6 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "public marketplace exposure farmers' unlisted lots are not purchasable",
+    "status": "PASS",
+    "detail": "63 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "public landing overview returns live aggregates + one featured public lot, with no private data and no login",
+    "status": "PASS",
+    "detail": "41 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "health /health and /ready report status without leaking secrets",
+    "status": "PASS",
+    "detail": "2 ms"
+   },
+   {
+    "group": "negative.test.ts",
+    "name": "health sets security headers",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "pilot.test.ts",
+    "name": "lot identity and public journey uses the SC-state-district-year-sequence code and shows only recorded steps as done",
+    "status": "PASS",
+    "detail": "31 ms"
+   },
+   {
+    "group": "pilot.test.ts",
+    "name": "lot identity and public journey records detailed quality (labelled 'recorded by farmer') and the score rises",
+    "status": "PASS",
+    "detail": "33 ms"
+   },
+   {
+    "group": "pilot.test.ts",
+    "name": "QR disable / enable a disabled QR resolves to a warning with no lot data, and re-enabling restores it",
+    "status": "PASS",
+    "detail": "63 ms"
+   },
+   {
+    "group": "pilot.test.ts",
+    "name": "QR disable / enable a disabled QR can be replaced or revoked",
+    "status": "PASS",
+    "detail": "37 ms"
+   },
+   {
+    "group": "pilot.test.ts",
+    "name": "QR anomaly detection flags impossible travel for the same QR as a *potential* anomaly an admin can handle",
+    "status": "PASS",
+    "detail": "65 ms"
+   },
+   {
+    "group": "pilot.test.ts",
+    "name": "QR anomaly detection does not flag nearby scans, and flags a burst of many distinct scanners",
+    "status": "PASS",
+    "detail": "73 ms"
+   },
+   {
+    "group": "pilot.test.ts",
+    "name": "QR anomaly detection scan analytics count unique scanners vs repeats and failures; farmers only see their own lots",
+    "status": "PASS",
+    "detail": "173 ms"
+   },
+   {
+    "group": "pilot.test.ts",
+    "name": "lot recall blocks sales, warns on the QR page, notifies affected parties, and keeps an audit trail",
+    "status": "PASS",
+    "detail": "190 ms"
+   },
+   {
+    "group": "pilot.test.ts",
+    "name": "reviews only verified purchasers can review, once; admins can hide/restore; ratings ignore hidden reviews",
+    "status": "PASS",
+    "detail": "242 ms"
+   },
+   {
+    "group": "pilot.test.ts",
+    "name": "farmer verification workflow application \u2192 correction required \u2192 resubmit \u2192 verified, with notifications and a review panel",
+    "status": "PASS",
+    "detail": "85 ms"
+   },
+   {
+    "group": "pilot.test.ts",
+    "name": "notifications and inventory under concurrency order lifecycle notifies the right people and marks read",
+    "status": "PASS",
+    "detail": "173 ms"
+   },
+   {
+    "group": "pilot.test.ts",
+    "name": "notifications and inventory under concurrency 10 kg available, two customers order 10 kg at once: exactly one succeeds",
+    "status": "PASS",
+    "detail": "84 ms"
+   },
+   {
+    "group": "pilot.test.ts",
+    "name": "real-time delivery (server-sent events) an admin's open stream receives a change notice when a farmer creates a lot",
+    "status": "PASS",
+    "detail": "1214 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "QR identity generates 256-bit unguessable, unique, URL-safe tokens",
+    "status": "PASS",
+    "detail": "7 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "QR identity encodes only the HTTPS trace URL",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "QR identity extracts tokens only from allowed origins and valid paths",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "QR identity formats lot codes",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "order state machine follows the happy path for delivery",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "order state machine follows the happy path for pickup (no dispatch)",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "order state machine never allows any action from a final state",
+    "status": "PASS",
+    "detail": "1 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "order state machine enforces role permissions",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "order state machine requires reasons where configured",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "order state machine every allowed action is a legal transition and every other is rejected",
+    "status": "PASS",
+    "detail": "15 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "lot status derivation derives statuses from inventory",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "lot status derivation rejects illegal lot transitions",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "risk engine (rule-based, explainable) is LOW for fresh grade-A stock",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "risk engine (rule-based, explainable) explains every factor that raises risk",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "risk engine (rule-based, explainable) maps scores to levels",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "public trace projection only exposes allow-listed events and never private fields",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "external data normalisation parses data.gov.in dates",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "external data normalisation validates and normalises records, rejecting unusable ones",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "external data normalisation redacts API keys from stored lineage",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "external data normalisation describes WMO weather codes",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "QR anomaly signals computes great-circle distance",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "QR anomaly signals flags physically impossible travel between scans of the same QR",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "QR anomaly signals does not flag nearby scans, plausible travel, or old scans",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "QR anomaly signals allows for the coarse-coordinate tolerance (no flag for ~30 km jitter)",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "QR anomaly signals flags distant scans in a short time as a weaker signal",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "QR anomaly signals detects session bursts",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "traceability completeness is 100% for an unsold lot with every base component (lifecycle steps do not apply yet)",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "traceability completeness explains what is missing and weights it",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "traceability completeness counts the sale lifecycle once an order exists",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "traceability completeness is 0 when nothing is recorded",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "unit.test.ts",
+    "name": "public journey marks a step DONE only when its event exists and never invents the rest",
+    "status": "PASS",
+    "detail": "0 ms"
+   }
+  ]
+ },
+ {
+  "id": "R008",
+  "at": "2026-10-08T03:47:20+00:00",
+  "name": "Frontend tests (vitest) after map feature",
+  "environment": "local",
+  "kind": "vitest",
+  "notes": "",
+  "items": [
+   {
+    "group": "locales.test.ts",
+    "name": "locales English has translations",
+    "status": "PASS",
+    "detail": "1 ms"
+   },
+   {
+    "group": "locales.test.ts",
+    "name": "locales hi has exactly the English keys, no empty values, same placeholders",
+    "status": "PASS",
+    "detail": "9 ms"
+   },
+   {
+    "group": "locales.test.ts",
+    "name": "locales pa has exactly the English keys, no empty values, same placeholders",
+    "status": "PASS",
+    "detail": "8 ms"
+   },
+   {
+    "group": "locales.test.ts",
+    "name": "locales hi uses Devanagari and pa uses Gurmukhi",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "offline-queue.test.ts",
+    "name": "offline queue sends immediately when online and queues nothing",
+    "status": "PASS",
+    "detail": "3 ms"
+   },
+   {
+    "group": "offline-queue.test.ts",
+    "name": "offline queue queues on network failure and replays with the same idempotency data + replay header",
+    "status": "PASS",
+    "detail": "1 ms"
+   },
+   {
+    "group": "offline-queue.test.ts",
+    "name": "offline queue marks a server-rejected action as SYNC_CONFLICT and never drops or retries it silently",
+    "status": "PASS",
+    "detail": "1 ms"
+   },
+   {
+    "group": "offline-queue.test.ts",
+    "name": "offline queue keeps actions queued (in order) while the server is failing with 5xx",
+    "status": "PASS",
+    "detail": "1 ms"
+   },
+   {
+    "group": "offline-queue.test.ts",
+    "name": "offline queue surfaces validation errors instead of queueing them",
+    "status": "PASS",
+    "detail": "1 ms"
+   },
+   {
+    "group": "qr.test.ts",
+    "name": "scanner payload parsing accepts a trace URL on an allowed origin, with or without trailing slash",
+    "status": "PASS",
+    "detail": "1 ms"
+   },
+   {
+    "group": "qr.test.ts",
+    "name": "scanner payload parsing accepts a bare token",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "qr.test.ts",
+    "name": "scanner payload parsing rejects other origins, wrong paths, JSON payloads and junk",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "server-text.test.ts",
+    "name": "server text and enum translation translates known server sentences, exact and patterned",
+    "status": "PASS",
+    "detail": "2 ms"
+   },
+   {
+    "group": "server-text.test.ts",
+    "name": "server text and enum translation leaves text it does not recognise untouched (user-entered notes)",
+    "status": "PASS",
+    "detail": "0 ms"
+   },
+   {
+    "group": "server-text.test.ts",
+    "name": "server text and enum translation translates statuses, crops, units and relative time",
+    "status": "PASS",
+    "detail": "10 ms"
+   },
+   {
+    "group": "server-text.test.ts",
+    "name": "server text and enum translation switches language live and back",
+    "status": "PASS",
+    "detail": "0 ms"
+   }
+  ]
+ },
+ {
+  "id": "R009",
+  "at": "2026-10-08T03:47:26+00:00",
+  "name": "Map features checked in the browser",
+  "environment": "local",
+  "kind": "manual",
+  "notes": "Built-in browser pane against a clean worktree build on :8081",
+  "items": [
+   {
+    "group": "Admin map",
+    "name": "Farm & scan map page loads for admin with OpenStreetMap tiles",
+    "status": "PASS",
+    "detail": "After CSP fix (bare host tile.openstreetmap.org); wildcard host did not match and blocked tiles"
+   },
+   {
+    "group": "Admin map",
+    "name": "Farms with coordinates drawn as pins; farms without coordinates counted, not guessed",
+    "status": "PASS",
+    "detail": "7 pins, '2 farm(s) have no coordinates and are not shown'"
+   },
+   {
+    "group": "Admin map",
+    "name": "Scan areas drawn as ~55 km circles, never points; summary shows share of scans that shared location",
+    "status": "PASS",
+    "detail": "11 of 19 successful scans located; 4 areas"
+   },
+   {
+    "group": "Lot journey",
+    "name": "Journey map on admin lot page shows only steps that have coordinates, with ordered list",
+    "status": "PASS",
+    "detail": "2 located steps share one numbered pin; '5 step(s) have no coordinates' stated"
+   },
+   {
+    "group": "Farmer map",
+    "name": "Farmer's Farms page shows a map of only their own farm",
+    "status": "PASS",
+    "detail": "1 map, 1 pin"
+   },
+   {
+    "group": "Access",
+    "name": "Farmer cannot call the admin scan-area API",
+    "status": "PASS",
+    "detail": "HTTP 403"
+   },
+   {
+    "group": "Detection",
+    "name": "Seeded scans from four distant areas raised a potential-anomaly record",
+    "status": "PASS",
+    "detail": "'Qr Anomaly Flagged' appeared in the lot history"
+   }
+  ]
  }
 ]

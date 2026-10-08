@@ -1,7 +1,8 @@
+import { FarmMap } from "@/components/app/geo-maps";
 import { useTranslation } from "react-i18next";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useCreateFarm, useCreateProduct, useListFarms, useListProducts } from "@workspace/api-client-react";
+import { getListFarmsQueryKey, useCreateFarm, useCreateProduct, useListFarms, useListProducts } from "@workspace/api-client-react";
 import { LocateFixed } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, Empty, ErrorState, Field, inputCls, Loading, PageHeader } from "@/components/app/common";
@@ -13,7 +14,7 @@ export default function FarmsPage() {
   const { t } = useTranslation();
   const qc = useQueryClient();
   const { toast } = useToast();
-  const farms = useListFarms();
+  const farms = useListFarms({ query: { queryKey: getListFarmsQueryKey(), refetchInterval: 30_000 } });
   const products = useListProducts();
   const createFarm = useCreateFarm();
   const createProduct = useCreateProduct();
@@ -30,6 +31,7 @@ export default function FarmsPage() {
   return (
     <>
       <PageHeader title={t("farmer.farms.title")} subtitle={t("farmer.farms.subtitle")} />
+      {farms.data && farms.data.length > 0 && <div className="mb-5"><FarmMap farms={farms.data} /></div>}
       <div className="grid gap-5 lg:grid-cols-2">
         <div className="space-y-4">
           <h3 className="eyebrow !text-ink/75">{t("farmer.farms.myFarms")}</h3>

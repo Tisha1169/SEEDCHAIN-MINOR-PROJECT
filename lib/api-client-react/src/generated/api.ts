@@ -45,6 +45,7 @@ import type {
   GetMarketPricesParams,
   GetMarketReferenceParams,
   GetQrAnalyticsParams,
+  GetScanAreasParams,
   GetWeatherParams,
   HealthStatus,
   IngestionRun,
@@ -93,6 +94,7 @@ import type {
   RegisterUserBody,
   ReviewUserBody,
   RevokeQrBody,
+  ScanAreas,
   ScanResult,
   StorageRecord,
   TraceEvent,
@@ -895,6 +897,87 @@ export function useListQrScans<TData = Awaited<ReturnType<typeof listQrScans>>, 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListQrScansQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+/**
+ * Admin only. OK scans that shared a coarse location, grouped into 0.5-degree cells (about 55 km). Never exact points.
+ */
+export const getGetScanAreasUrl = (params?: GetScanAreasParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/scans/areas?${stringifiedParams}` : `/api/admin/scans/areas`
+}
+
+export const getScanAreas = async (params?: GetScanAreasParams, options?: RequestInit): Promise<ScanAreas> => {
+
+  return customFetch<ScanAreas>(getGetScanAreasUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetScanAreasQueryKey = (params?: GetScanAreasParams,) => {
+    return [
+    `/api/admin/scans/areas`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetScanAreasQueryOptions = <TData = Awaited<ReturnType<typeof getScanAreas>>, TError = ErrorType<unknown>>(params?: GetScanAreasParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getScanAreas>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetScanAreasQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getScanAreas>>> = ({ signal }) => getScanAreas(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getScanAreas>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetScanAreasQueryResult = NonNullable<Awaited<ReturnType<typeof getScanAreas>>>
+export type GetScanAreasQueryError = ErrorType<unknown>
+
+
+
+export function useGetScanAreas<TData = Awaited<ReturnType<typeof getScanAreas>>, TError = ErrorType<unknown>>(
+ params?: GetScanAreasParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getScanAreas>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetScanAreasQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

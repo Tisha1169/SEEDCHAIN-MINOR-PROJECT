@@ -188,6 +188,20 @@ paths:
                 type: array
                 items: { $ref: "#/components/schemas/QrScan" }
 
+  /admin/scans/areas:
+    get:
+      operationId: getScanAreas
+      tags: [admin]
+      description: Admin only. OK scans that shared a coarse location, grouped into 0.5-degree cells (about 55 km). Never exact points.
+      parameters:
+        - { name: days, in: query, schema: { type: integer, minimum: 1, maximum: 365 } }
+      responses:
+        "200":
+          description: Approximate scan areas
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ScanAreas" }
+
   # ------------------------------------------------------------------ farms / products
   /farms:
     get:
@@ -1435,6 +1449,28 @@ components:
         longitude: { type: number, minimum: -180, maximum: 180 }
         correctsEventId: { type: string, format: uuid }
         storage: { $ref: "#/components/schemas/StorageInput" }
+    ScanAreas:
+      type: object
+      required: [gridDegrees, approxCellKm, days, okScans, scansWithSharedLocation, cells]
+      properties:
+        gridDegrees: { type: number }
+        approxCellKm: { type: integer }
+        days: { type: integer }
+        okScans: { type: integer, description: Successful scans in the window }
+        scansWithSharedLocation: { type: integer, description: Of those, how many the scanner chose to locate }
+        cells:
+          type: array
+          items:
+            type: object
+            required: [lat, lon, scans, scanners, lots, lastScanAt]
+            properties:
+              lat: { type: number, description: Cell centre }
+              lon: { type: number, description: Cell centre }
+              scans: { type: integer }
+              scanners: { type: integer, description: Distinct anonymous browser sessions }
+              lots: { type: integer }
+              lastScanAt: { type: string, format: date-time }
+              label: { type: [string, "null"], description: Most common coarse place name given by scanners, if any }
     TraceEvent:
       type: object
       required: [id, lotId, eventType, eventTime, recordedAt, source, metadata]

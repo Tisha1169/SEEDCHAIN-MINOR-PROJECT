@@ -1,0 +1,9 @@
+/* Dark look for OpenStreetMap tiles without needing a paid dark tileset. */
+.sc-map { border-radius: 20px; overflow: hidden; background: #0b140f; border: 1px solid rgba(255,255,255,0.1); }
+.sc-map .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(0.82) contrast(0.92) saturate(0.45); }
+.sc-map .leaflet-control-attribution { background: rgba(8,16,11,0.78); color: rgba(233,238,232,0.55); font-size: 10px; }
+.sc-map .leaflet-control-attribution a { color: rgba(134,214,160,0.85); }
+.sc-map .leaflet-control-zoom a { background: rgba(8,16,11,0.85); color: #e9eee8; border-color: rgba(255,255,255,0.12); }
+.sc-map .leaflet-popup-content-wrapper, .sc-map .leaflet-popup-tip { background: rgba(8,16,11,0.96); color: #e9eee8; border: 1px solid rgba(255,255,255,0.12); }
+.sc-map .leaflet-popup-content { margin: 10px 14px; font-size: 12px; line-height: 1.5; }
+.sc-map .sc-pin-num { display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 999px; background: #86d6a0; color: #07130c; font: 600 12px Inter, system-ui, sans-serif; border: 2px solid #07130c; box-shadow: 0 0 0 1px rgba(134,214,160,0.7), 0 0 14px rgba(134,214,160,0.5); }

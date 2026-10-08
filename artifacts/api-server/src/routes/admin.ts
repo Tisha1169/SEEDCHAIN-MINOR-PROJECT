@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import {
   auditLogsTable,
   db,
@@ -13,6 +13,7 @@ import {
 import {
   ListAllTraceEventsQueryParams,
   ListAuditLogsQueryParams,
+  GetScanAreasQueryParams,
   ListQrScansQueryParams,
   ListUsersQueryParams,
   ReviewUserBody,
@@ -134,6 +135,37 @@ router.get("/admin/events", async (req, res) => {
     .orderBy(desc(traceabilityEventsTable.recordedAt))
     .limit(q.limit ?? 200);
   res.json(rows.map((r) => serializeEvent({ ...r.e, lotCode: r.lotCode, actorName: r.actorName })));
+});
+
+const SCAN_GRID_DEG = 0.5;
+router.get("/admin/scans/areas", async (req, res) => {
+  const { days: d } = parse(GetScanAreasQueryParams, req.query);
+  const days = d ?? 30;
+  const since = sql`now() - (${days}::int * interval '1 day')`;
+  const cells = await db.execute(sql`
+    SELECT (floor(approx_lat / ${SCAN_GRID_DEG}) * ${SCAN_GRID_DEG} + ${SCAN_GRID_DEG / 2})::float8 AS lat,
+           (floor(approx_lon / ${SCAN_GRID_DEG}) * ${SCAN_GRID_DEG} + ${SCAN_GRID_DEG / 2})::float8 AS lon,
+           count(*)::int AS scans,
+           count(DISTINCT coalesce(session_id, id::text))::int AS scanners,
+           count(DISTINCT lot_id)::int AS lots,
+           max(scanned_at) AS last_scan_at,
+           mode() WITHIN GROUP (ORDER BY location) AS label
+    FROM qr_scan_events
+    WHERE result = 'OK' AND approx_lat IS NOT NULL AND approx_lon IS NOT NULL AND scanned_at >= ${since}
+    GROUP BY 1, 2 ORDER BY scans DESC LIMIT 200`);
+  const [t] = (await db.execute(sql`
+    SELECT count(*)::int AS ok_scans, count(approx_lat)::int AS located
+    FROM qr_scan_events WHERE result = 'OK' AND scanned_at >= ${since}`)).rows as { ok_scans: number; located: number }[];
+  res.json({
+    gridDegrees: SCAN_GRID_DEG,
+    approxCellKm: 55,
+    days,
+    okScans: t?.ok_scans ?? 0,
+    scansWithSharedLocation: t?.located ?? 0,
+    cells: (cells.rows as { lat: number; lon: number; scans: number; scanners: number; lots: number; last_scan_at: Date | string; label: string | null }[]).map((c) => ({
+      lat: c.lat, lon: c.lon, scans: c.scans, scanners: c.scanners, lots: c.lots, lastScanAt: new Date(c.last_scan_at).toISOString(), label: c.label,
+    })),
+  });
 });
 
 router.get("/admin/scans", async (req, res) => {

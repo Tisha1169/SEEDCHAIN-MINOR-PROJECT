@@ -321,6 +321,35 @@ export const ListQrScansResponseItem = zod.object({
 export const ListQrScansResponse = zod.array(ListQrScansResponseItem)
 
 
+/**
+ * Admin only. OK scans that shared a coarse location, grouped into 0.5-degree cells (about 55 km). Never exact points.
+ */
+export const getScanAreasQueryDaysMax = 365;
+
+
+
+export const GetScanAreasQueryParams = zod.object({
+  "days": zod.coerce.number().min(1).max(getScanAreasQueryDaysMax).optional()
+})
+
+export const GetScanAreasResponse = zod.object({
+  "gridDegrees": zod.number(),
+  "approxCellKm": zod.number(),
+  "days": zod.number(),
+  "okScans": zod.number().describe('Successful scans in the window'),
+  "scansWithSharedLocation": zod.number().describe('Of those'),
+  "cells": zod.array(zod.object({
+  "lat": zod.number().describe('Cell centre'),
+  "lon": zod.number().describe('Cell centre'),
+  "scans": zod.number(),
+  "scanners": zod.number().describe('Distinct anonymous browser sessions'),
+  "lots": zod.number(),
+  "lastScanAt": zod.coerce.date(),
+  "label": zod.string().nullish().describe('Most common coarse place name given by scanners')
+}))
+})
+
+
 export const ListFarmsResponseItem = zod.object({
   "id": zod.string().uuid(),
   "farmerId": zod.string().uuid(),
